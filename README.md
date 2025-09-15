@@ -57,7 +57,7 @@ This project is developed as both:
 5.Open http://localhost:8000
  in browser.
 
-👥 ## **Authors**
+## 👥 Authors
 
 **Hai Tui Minh Team**
 
