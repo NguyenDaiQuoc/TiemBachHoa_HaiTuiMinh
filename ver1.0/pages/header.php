@@ -18,7 +18,7 @@ if (isset($_SESSION['idkhachhang']) && isset($_SESSION['dangky'])) {
     $userAvatar = $defaultAvatar;
 
     $userId = $_SESSION['idkhachhang'];
-    $avatarQuery = "SELECT hinhanh FROM tbl_thongtin_khachhang WHERE id_khachhang = '" . mysqli_real_escape_string($mysqli, $userId) . "' LIMIT 1";
+    $avatarQuery = "SELECT hinhanh FROM tbl_thongtin_khachhang WHERE idkhachhang = '" . mysqli_real_escape_string($mysqli, $userId) . "' LIMIT 1";
     $avatarResult = mysqli_query($mysqli, $avatarQuery);
 
     if ($avatarResult && mysqli_num_rows($avatarResult) > 0) {
