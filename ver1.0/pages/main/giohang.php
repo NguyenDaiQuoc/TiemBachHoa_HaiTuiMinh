@@ -1,7 +1,9 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-include("../../admincp/config/config.php");
+include __DIR__ . "/../../admincp/config/config.php";
 ini_set('display_errors', 1);
 if (isset($_SESSION['idkhachhang'])) {
     $idkhachhang = $_SESSION['idkhachhang'];

@@ -1,5 +1,5 @@
 <?php   
-$mysqli = new mysqli("sql206.byethost31.com", "b31_39008439", "Nguyendaiquoc2004.", "b31_39008439_nhahaidua");
+$mysqli = new mysqli("localhost", "root", "", "b31_39008439_nhahaidua");
 
 // check connection
 if ($mysqli->connect_error) {
