@@ -554,34 +554,42 @@ if (!empty($_SESSION['cart']) && isset($_SESSION['idkhachhang'])) {
         });
     });
 
-    // ✅ Xóa nhiều sản phẩm
-    document.getElementById('deleteSelected').addEventListener('click', function () {
-        const selected = Array.from(document.querySelectorAll('.checkItem:checked')).map(cb => cb.value);
+// ✅ Xóa nhiều sản phẩm
+document.getElementById('deleteSelected').addEventListener('click', function () {
+    const selected = Array.from(document.querySelectorAll('.checkItem:checked')).map(cb => cb.value);
 
-        if (selected.length === 0) {
-            alert('Vui lòng chọn ít nhất một sản phẩm để xóa.');
-            return;
+    if (selected.length === 0) {
+        alert('Vui lòng chọn ít nhất một sản phẩm để xóa.');
+        return;
+    }
+
+    if (!confirm(`Bạn có chắc chắn muốn xoá ${selected.length} sản phẩm đã chọn không?`)) return;
+
+    fetch('pages/main/themgiohang.php', { // <--- ĐẢM BẢO ĐƯỜNG DẪN ĐẾN FILE PHP CHÍNH XÁC
+        method: 'POST',
+        headers: { 
+            // Sử dụng Content-Type này vì chúng ta gửi dữ liệu form
+            'Content-Type': 'application/x-www-form-urlencoded' 
+        },
+        // Gửi action=delete_multiple và danh sách ID
+        body: 'action=delete_multiple&ids=' + selected.join(',')
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('🗑️ Đã xoá thành công các sản phẩm đã chọn!');
+            // Reload trang để tải lại giỏ hàng từ Session/DB đã được cập nhật
+            window.location.reload(); 
+        } else { 
+            // Hiển thị thông báo chi tiết từ PHP
+            alert('❌ Lỗi: ' + (data.message || 'Đã có lỗi xảy ra.'));
         }
-
-        if (!confirm(`Bạn có chắc chắn muốn xoá ${selected.length} sản phẩm đã chọn không?`)) return;
-
-        fetch('pages/main/giohang.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'delete_ids=' + encodeURIComponent(JSON.stringify(selected))
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert('🗑️ Đã xoá sản phẩm đã chọn!');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 300);
-                } else { 
-                    alert(data.message || '❌ Đã có lỗi xảy ra.');
-                }
-            });
+    })
+    .catch(error => {
+        console.error('Lỗi AJAX:', error);
+        alert('❌ Lỗi kết nối. Vui lòng kiểm tra console.');
     });
+});
 
     // ✅ Gọi updateTotal khi vừa load trang
     window.addEventListener('DOMContentLoaded', updateTotal);
