@@ -49,11 +49,10 @@ body {
     width: 90%;
     height: auto;
     min-height: 100vh;
-    /*display: flex;*/
+    display: flex;
     flex-direction: column;
-    align-items: center;
     scroll-behavior: smooth;
-    margin: 0 auto;
+    margin: 0 auto; /* co the bo cai nay*/
 }
 
 /*HEADER*/
@@ -497,7 +496,7 @@ ul.list_menu li a {
 /*MAIN*/
 
 #main {
-    height: 960px;
+    height: auto;
     width: 100%;
 }
 
@@ -505,7 +504,7 @@ ul.list_menu li a {
 
 .maincontent {
     border: 1px solid grey;
-    height: 960px;
+    height: auto;
     width: 79%;
     margin-top: 5px;
     margin-left: 3px;
@@ -743,12 +742,13 @@ ul.list_page li a:hover {
 /*SIDEBAR*/
 
 .sidebar {
+    position: fixed;
     border: 1px solid gainsboro;
     height: auto;
     /*hoac tu chinh px rieng */
-    width: 20%;
+    width: 18%;
     margin-top: 5px;
-    margin-left: 1px;
+    margin-left: 0px;
     float: left;
     font-family: Arial, Helvetica, "sans-serif" !important;
 }
@@ -794,7 +794,7 @@ ul.list_sidebar li a:hover {
 
 /*FOOTER*/
 .footer {
-    height: 150px;
+    height: auto;
     width: 100%;
 }
 
