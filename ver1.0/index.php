@@ -3,6 +3,8 @@ ob_start();
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+// XÁC ĐỊNH: trang chủ là khi không có param quanly
+$isHome = !isset($_GET['quanly']) || trim($_GET['quanly']) === '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,7 +20,7 @@ if (session_status() == PHP_SESSION_NONE) {
     <?php
             include("pages/header.php");
     ?>
-    <div class="wrapper">
+    <div class="<?php echo $isHome ? 'wrapper wrapper-index' : 'wrapper'; ?>">
         <?php   
             include("admincp/config/config.php");
             include("pages/menu.php");

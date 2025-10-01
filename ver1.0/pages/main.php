@@ -1,33 +1,36 @@
 <div id="main">
     <?php
-    include("sidebar/sidebar.php");
+    // Xác định có sidebar hay không
+    $tam = isset($_GET['quanly']) ? $_GET['quanly'] : '';
+
+    $hasSidebar = ($tam == '' || $tam == 'danhmucsanpham');
+
+    if ($hasSidebar) {
+        include("sidebar/sidebar.php");
+    }
     ?>
 
-    <div class="maincontent">
+    <div class="maincontent <?php echo $hasSidebar ? 'with-sidebar' : 'full-width'; ?>">
         <?php
-        if(isset($_GET['quanly'])){
-            $tam = $_GET['quanly'];
-        }else{
-            $tam='';
-        }if( $tam =='dangnhap'){
+        if($tam =='dangnhap'){
             include("main/dangnhap.php");
-        }elseif($tam == 'dangky'){
+        } elseif($tam == 'dangky'){
             include("main/dangky.php");
-        }elseif($tam == 'dangxuat'){
+        } elseif($tam == 'dangxuat'){
             include("main/dangxuat.php");
-        }elseif($tam=='danhmucsanpham'){
+        } elseif($tam=='danhmucsanpham'){
             include("main/danhmuc.php");
-        }elseif($tam=='giohang'){
+        } elseif($tam=='giohang'){
             include("main/giohang.php");
-        }elseif($tam=='tintuc'){
+        } elseif($tam=='tintuc'){
             include("main/tintuc.php");
-        }elseif($tam=='lienhe'){
+        } elseif($tam=='lienhe'){
             include("main/lienhe.php");
-        }elseif($tam=='sanpham'){
+        } elseif($tam=='sanpham'){
             include("main/sanpham.php");
-        }elseif($tam=='timKiem'){
+        } elseif($tam=='timKiem'){
             include("main/timkiem.php");
-        }else{
+        } else{
             include("main/index.php");
         }
         ?>
