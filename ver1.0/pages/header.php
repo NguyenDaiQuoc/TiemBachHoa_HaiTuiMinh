@@ -52,14 +52,15 @@ $isHome = !isset($_GET['quanly']) || trim($_GET['quanly']) === '' || trim($_GET[
                     aria-label="Tìm kiếm">
                     <i class="fa fa-search search_icon"></i>
                 </a>
-                <a href="index.php?quanly=giohang" class="icon_button cart_btn" aria-label="Giỏ hàng">
-                    <i class="fa fa-shopping-cart cart_icon"></i>
-                </a>
             </form>
         </div>
-
         <!-- Mạng xã hội + đăng nhập -->
+
         <div class="header_right">
+            <div class="hotline">
+                <i class="fa fa-phone"></i>
+                <span>Hotline: 093145176</span>
+            </div>
             <div class="social_icons">
                 <a target="_blank" href="https://www.facebook.com/profile.php?id=61576489061227"><i
                         class="fab fa-facebook-f"></i></a>
@@ -86,6 +87,20 @@ $isHome = !isset($_GET['quanly']) || trim($_GET['quanly']) === '' || trim($_GET[
                 <?php else: ?>
                     <a href="index.php?quanly=dangnhap" class="auth_link">Đăng nhập</a>
                 <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="cart_wrapper">
+            <a href="index.php?quanly=giohang" class="cart_icon icon_button cart_btn" aria-label="Giỏ hàng">
+                <i class="fa fa-shopping-cart"></i>
+                <span class="cart_count">0</span>
+                <span class="cart_text">Giỏ hàng</span>
+            </a>
+            <div class="cart_dropdown" id="cartDropdown">
+                <div class="cart_dropdown_content" id="cartDropdownContent">
+                    <!-- Sản phẩm sẽ được render bằng JS -->
+                </div>
+                <button class="cart_viewall_btn" onclick="window.location.href='index.php?quanly=giohang'">Xem tất cả sản phẩm</button>
             </div>
         </div>
     </div>
@@ -173,465 +188,58 @@ $isHome = !isset($_GET['quanly']) || trim($_GET['quanly']) === '' || trim($_GET[
     });
 </script>
 
-<style>
-    /* chỉ fixed cho trang index */
-    .header.fixed-header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 9999;
-    }
+<script>
+    // Demo dữ liệu giỏ hàng (thay bằng dữ liệu thực tế từ PHP nếu có)
+    const cartProducts = [
+        // {
+        //     name: "Sản phẩm 1",
+        //     price: "120.000đ",
+        //     img: "../images/demo1.jpg"
+        // },
+        // ... tối đa 4 sản phẩm
+    ];
 
-    /* Header base layout */
-    .header_background {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        background: linear-gradient(135deg, #fbd786 0%, #f7797d 100%);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        position: relative;
-    }
-
-    .logo {
-        height: 48px;
-        transition: transform 0.3s ease;
-    }
-
-    .logo:hover {
-        transform: scale(1.05);
-    }
-
-    /* Search layout - Cải thiện bố cục */
-    .search_wrapper {
-        height: 40px;
-        flex: 1;
-        display: flex;
-        align-items: center;
-        min-width: 300px;
-        max-width: 600px;
-        position: relative;
-    }
-
-    #search_form {
-        height: 40px;
-        display: flex;
-        align-items: center;
-        width: 100%;
-        gap: 0;
-        /* Loại bỏ gap để nút sát khung tìm kiếm */
-        background: #fff;
-        border-radius: 25px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-    }
-
-    .search_input {
-        flex: 1;
-        height: 45px;
-        padding: 12px 20px;
-        border: none;
-        border-radius: 25px;
-        font-size: 15px;
-        min-width: 0;
-        outline: none;
-        background: transparent;
-    }
-
-    .search_input:focus {
-        box-shadow: none;
-    }
-
-    /* Icon buttons - Đặt sát khung tìm kiếm */
-    .icon_button {
-        height: 45px;
-        min-width: 45px;
-        padding: 0 12px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-        border: none;
-        border-radius: 0;
-        color: #2e7d32;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        position: relative;
-    }
-
-    .icon_button:hover {
-        background: #f8f9fa;
-        color: #1b5e20;
-    }
-
-    .icon_button:first-of-type {
-        border-left: 1px solid #e0e0e0;
-    }
-
-    .search_icon,
-    .cart_icon {
-        font-size: 18px;
-    }
-
-    .header_right {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    /* Social icons styling */
-    .social_icons {
-        display: flex;
-        gap: 8px;
-    }
-
-    .social_icons a {
-        width: 35px;
-        height: 35px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 50%;
-        color: white;
-        text-decoration: none;
-        transition: all 0.3s ease;
-    }
-
-    .social_icons a:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-    }
-
-    /* Auth buttons */
-    .auth_buttons {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .auth_link {
-        color: white;
-        text-decoration: none;
-        padding: 8px 16px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 20px;
-        transition: all 0.3s ease;
-        font-weight: 500;
-    }
-
-    .auth_link:hover {
-        background: rgba(255, 255, 255, 0.3);
-        color: white;
-        text-decoration: none;
-    }
-
-    .user_greeting {
-        color: white;
-        margin: 0;
-        font-weight: 500;
-        font-size: 14px;
-    }
-
-    /* Tablet */
-    @media (max-width: 992px) {
-        .header_background {
-            gap: 15px;
-            padding: 10px 16px;
-        }
-
-        .logo {
-            height: 42px;
-        }
-
-        .search_wrapper {
-            min-width: 250px;
-            max-width: 500px;
-        }
-
-        .search_input {
-            height: 40px;
-            padding: 10px 16px;
-            font-size: 14px;
-        }
-
-        .icon_button {
-            height: 40px;
-            min-width: 40px;
-            padding: 0 10px;
-        }
-
-        .social_icons a {
-            width: 32px;
-            height: 32px;
+    // Render sản phẩm vào dropdown
+    function renderCartDropdown() {
+        const container = document.getElementById('cartDropdownContent');
+        container.innerHTML = '';
+        if (cartProducts.length === 0) {
+            container.innerHTML = '<div class="cart_dropdown_empty">Không có sản phẩm</div>';
+        } else {
+            cartProducts.slice(0, 4).forEach(item => {
+                container.innerHTML += `
+                    <div class="cart_dropdown_item">
+                        <img src="${item.img}" alt="${item.name}" class="cart_dropdown_item_img">
+                        <div class="cart_dropdown_item_info">
+                            <div class="cart_dropdown_item_name">${item.name}</div>
+                            <div class="cart_dropdown_item_price">${item.price}</div>
+                        </div>
+                    </div>
+                `;
+            });
         }
     }
 
-    /* Mobile (general) */
-    @media (max-width: 768px) {
-        .header_background {
-            flex-wrap: wrap;
-            padding: 10px 12px;
-            gap: 10px;
-        }
+    // Hiện/ẩn dropdown khi hover hoặc click
+    document.addEventListener('DOMContentLoaded', function () {
+        const cartWrapper = document.querySelector('.cart_wrapper');
+        const cartIcon = cartWrapper.querySelector('.cart_icon');
 
-        .logo {
-            height: 38px;
-        }
+        renderCartDropdown();
 
-        .search_wrapper {
-            order: 3;
-            width: 100%;
-            min-width: unset;
-            max-width: unset;
-        }
-
-        .header_right {
-            order: 2;
-            width: auto;
-            margin-left: auto;
-            gap: 10px;
-        }
-
-        .social_icons {
-            gap: 6px;
-        }
-
-        .social_icons a {
-            width: 30px;
-            height: 30px;
-            font-size: 14px;
-        }
-    }
-
-    /* Avatar người dùng */
-    .profile_icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        overflow: hidden;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #eee;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        transition: all 0.3s ease;
-    }
-
-    .profile_icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
-    }
-
-    .profile_icon:hover {
-        border-color: rgba(255, 255, 255, 0.6);
-        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
-    }
-
-    /* Container dropdown */
-    .user_dropdown {
-        position: relative;
-    }
-
-    /* Menu dropdown ẩn */
-    .user_dropdown_menu {
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px);
-        transition: all 0.3s ease;
-        position: absolute;
-        top: 45px;
-        right: 0;
-        background-color: #fff;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-        min-width: 200px;
-        z-index: 9999;
-        pointer-events: none;
-    }
-
-    /* Khi mở dropdown */
-    .user_dropdown_menu.show {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-        pointer-events: auto;
-        z-index: 9999;
-    }
-
-    /* Hover effect cho user dropdown */
-    .user_dropdown:hover .user_dropdown_menu {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-        pointer-events: auto;
-    }
-
-    /* Hover effect cho profile icon */
-    .profile_icon {
-        transition: all 0.3s ease;
-    }
-
-    .user_dropdown:hover .profile_icon {
-        transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Link trong menu */
-    .user_dropdown_menu a {
-        display: block;
-        padding: 10px 15px;
-        color: #333;
-        text-decoration: none;
-        font-size: 14px;
-    }
-
-    .user_dropdown_menu a:hover {
-        background-color: #f9f9f9;
-    }
-
-    /* Mobile Small */
-    @media (max-width: 576px) {
-        .header_background {
-            padding: 8px 10px;
-            gap: 8px;
-        }
-
-        .logo {
-            height: 36px;
-        }
-
-        .search_wrapper {
-            width: 100%;
-            margin: 0;
-        }
-
-        #search_form {
-            width: 100%;
-            border-radius: 20px;
-        }
-
-        .search_input {
-            height: 38px;
-            padding: 8px 12px;
-            font-size: 14px;
-        }
-
-        .icon_button {
-            height: 38px;
-            min-width: 38px;
-            padding: 0 8px;
-        }
-
-        .search_icon,
-        .cart_icon {
-            font-size: 16px;
-        }
-
-        .header_right {
-            flex-direction: row;
-            align-items: center;
-            width: auto;
-            margin: 0;
-            gap: 8px;
-        }
-
-        .social_icons {
-            gap: 4px;
-        }
-
-        .social_icons a {
-            width: 28px;
-            height: 28px;
-            font-size: 12px;
-        }
-
-        .auth_buttons {
-            margin: 0;
-        }
-
-        .auth_link {
-            padding: 6px 12px;
-            font-size: 13px;
-        }
-
-        .user_greeting {
-            font-size: 13px;
-        }
-
-        .profile_icon {
-            width: 32px;
-            height: 32px;
-        }
-    }
-
-    /* Mobile: Cải thiện dropdown */
-    @media (max-width: 576px) {
-        .user_dropdown_menu {
-            right: 0;
-            left: auto;
-            top: 40px;
-            min-width: 180px;
-            transform: none;
-        }
-
-        .user_dropdown_menu a {
-            padding: 8px 12px;
-            font-size: 13px;
-        }
-    }
-
-    /* Extra small mobile */
-    @media (max-width: 480px) {
-        .header_background {
-            padding: 6px 8px;
-            gap: 6px;
-        }
-
-        .logo {
-            height: 32px;
-        }
-
-        .search_input {
-            height: 36px;
-            padding: 6px 10px;
-            font-size: 13px;
-        }
-
-        .icon_button {
-            height: 36px;
-            min-width: 36px;
-            padding: 0 6px;
-        }
-
-        .search_icon,
-        .cart_icon {
-            font-size: 14px;
-        }
-
-        .social_icons a {
-            width: 26px;
-            height: 26px;
-            font-size: 11px;
-        }
-
-        .auth_link {
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-
-        .user_greeting {
-            font-size: 12px;
-        }
-
-        .profile_icon {
-            width: 28px;
-            height: 28px;
-        }
-    }
-</style>
+        let hoverTimeout;
+        cartWrapper.addEventListener('mouseenter', function () {
+            clearTimeout(hoverTimeout);
+            cartWrapper.classList.add('show-dropdown');
+        });
+        cartWrapper.addEventListener('mouseleave', function () {
+            hoverTimeout = setTimeout(() => {
+                cartWrapper.classList.remove('show-dropdown');
+            }, 200);
+        });
+        cartIcon.addEventListener('click', function (e) {
+            e.preventDefault();
+            cartWrapper.classList.toggle('show-dropdown');
+        });
+    });
+</script>

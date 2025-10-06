@@ -42,7 +42,17 @@ $total_pages = ceil($total_records / $limit);
                 <p class="product_price"><?php echo number_format($row_sanpham['giaban']) . ' ₫' ?></p>
                 <div class="price_wrapper">
                     <p class="original_price"><?php echo number_format($row_sanpham['giasanpham']) . ' ₫' ?></p>
-                    <p class="discount"><?php echo number_format($row_sanpham['khuyenmai']) ?>%</p>
+                    <p class="discount"><?php echo number_format($row_sanpham['khuyenmai']) ?>%</p>                    
+                </div>
+                <div class="info_wrapper">
+                    <div class="star_rating">
+                        <i class="fa fa-star" style="color:gold"><span><?php echo $row_sanpham['star_rating'] ?></span> </i>
+                    </div>
+                </div>
+                <div class="button_wrapper">
+                    <button class="wishlist_button">yêu thích</button>
+                    <button class="compare_button">so sánh</button>
+                    <button class="share_button">chia sẻ</button>                    
                 </div>
                 <button class="buy_button">mua</button>
             </li>

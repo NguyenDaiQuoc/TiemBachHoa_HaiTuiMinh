@@ -7,6 +7,7 @@ body{background:#f5f5f5;}
 
 /* Sidebar */
 .sidebar{
+    margin-top: 37px;
     background:whitesmoke;
     position:fixed;
     width:23%;
@@ -25,15 +26,18 @@ body{background:#f5f5f5;}
 
 /* Toggle (mobile/tablet) */
 .sidebar-toggle{
-    align-items:center;
-    padding:8px 10px;
-    margin:5px;
-    background:whitesmoke;
-    border-radius:5px;
-    cursor:pointer;
-    transition:background 0.3s ease;
-    position:relative;
-    z-index:1100; /* trên overlay */
+    width: 23%;
+    font-weight: bold;
+    /* margin-top: 50px; */
+    align-items: center;
+    padding: 8px 10px;
+    /* margin: 5px; */
+    background: whitesmoke;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    position: fixed;
+    z-index: 1100; /* trên overlay */
 }
 /* .sidebar-toggle:hover{background:whitesmoke;} */
 
@@ -137,6 +141,7 @@ ul.list_sidebar li a{
 @media(min-width:1025px){
     .sidebar{transform:translateX(0);}
 }
+
 </style>
 
 <div id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -145,7 +150,7 @@ ul.list_sidebar li a{
 <div class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
     <span class="toggle-open" id="toggleOpen">
         <img src="../../images/menu.png" style="width:16px;vertical-align:middle;margin-right:4px;">
-        <strong>DANH MỤC SẢN PHẨM</strong>
+        <span>DANH MỤC SẢN PHẨM</span>
     </span>
     <span class="toggle-close" id="toggleClose" style="display:none;">✖ Đóng</span>
 </div>

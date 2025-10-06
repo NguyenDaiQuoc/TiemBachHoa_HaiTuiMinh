@@ -67,6 +67,94 @@ $query_lienquan = mysqli_query($mysqli, $sql_lienquan);
                     <p class="discount"><?php echo number_format($info['khuyenmai']) ?>%</p>
                 </div>
 
+                <div class="sold_wrapper">
+                    <span class="sold_count">Đã bán: <?php echo $info['daban']; ?></span>
+                    <span class="view_count">Lượt xem: <?php echo $info['luotxem']; ?></span>
+    
+                </div>
+                <div class="product_rating">
+                    <!-- Placeholder for future rating system -->
+                    <span class="rating">⭐️⭐️⭐️⭐️☆</span>
+                    <span class="rating-count">(0 đánh giá)</span>
+                    <span class="review-link"><a href="#">Xem đánh giá</a></span>
+                </div>
+
+                <div class="size_wrapper">
+                    <!-- Placeholder for future size options -->
+                    <label for="size_select" class="size-label">Kích thước:</label>
+                    <select id="size_select" name="size" class="size-select">
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                    </select>
+                </div>
+
+                <div class="color_wrapper">
+                    <!-- Placeholder for future color options -->
+                    <label for="color_select" class="color-label">Màu sắc:</label>
+                    <select id="color_select" name="color" class="color-select">
+                        <option value="Red">Đỏ</option>
+                        <option value="Blue">Xanh dương</option>
+                        <option value="Green">Xanh lá</option>
+                        <option value="Black">Đen</option>
+                    </select>
+                </div>
+
+                <div class="material_wrapper">
+                    <!-- Placeholder for future material options -->
+                    <label for="material_select" class="material-label">Chất liệu:</label>
+                    <select id="material_select" name="material" class="material-select">
+                        <option value="Cotton">Cotton</option>
+                        <option value="Polyester">Polyester</option>
+                        <option value="Wool">Wool</option>
+                        <option value="Silk">Lụa</option>
+                    </select>
+                </div>
+
+                <div class="weight_wrapper"> 
+                    <!-- Placeholder for future weight options -->
+                    <label for="weight_select" class="weight-label">Trọng lượng:</label>
+                    <select id="weight_select" name="weight" class="weight-select">
+                        <option value="Light">Nhẹ</option>
+                        <option value="Medium">Trung bình</option>
+                        <option value="Heavy">Nặng</option>
+                    </select>
+                </div>
+
+                <div class="origin_wrapper">
+                    <!-- Placeholder for future origin options -->
+                    <label for="origin_select" class="origin-label">Xuất xứ:</label>
+                    <select id="origin_select" name="origin" class="origin-select">
+                        <option value="Vietnam">Việt Nam</option>
+                        <option value="USA">Mỹ</option>
+                        <option value="China">Trung Quốc</option>
+                        <option value="Japan">Nhật Bản</option>
+                    </select>
+
+                </div>
+
+                <div class="description_wrapper">
+                    <!-- Placeholder for future description -->
+                    <p class="description"><?php echo nl2br(str_replace(['\r\n', '\n'], "<br>", $info['tomtat'])) ?></p>
+                </div>
+
+                <!-- <div class="additional_info_wrapper">
+                    <h3>Thông tin bổ sung</h3>
+                    <ul>
+                        <li>Ngày sản xuất: <?php echo $info['ngaysanxuat']; ?></li>
+                        <li>Hạn sử dụng: <?php echo $info['hansudung']; ?></li>
+                    </ul>
+                </div> -->
+
+                <div class="shipping_info_wrapper"> 
+                    <!-- Placeholder for future shipping information -->
+                    <h3>Thông tin vận chuyển</h3>
+                    <div class="shipping_info">
+                        <p>Miễn phí vận chuyển cho đơn hàng trên 500.000₫</p>
+                        <p>Thời gian giao hàng: 2-5 ngày làm việc</p>
+                    </div>
+                </div>
                 <div class="soluong" style="margin-top:75px">
                     <label for="soluong_input" class="qty-label">Số lượng :</label>
                     <div style="display: flex; align-items: center;">

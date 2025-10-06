@@ -12,6 +12,14 @@ $isHome = !isset($_GET['quanly']) || trim($_GET['quanly']) === '';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style.css" type="text/css">
+    <link rel="stylesheet" href="css/main.css" type="text/css">
+    <link rel="stylesheet" href="css/header.css" type="text/css">
+    <link rel="stylesheet" href="css/footer.css" type="text/css">
+    <link rel="stylesheet" href="css/menu.css" type="text/css">
+    <link rel="stylesheet" href="css/sidebar.css" type="text/css">
+    <link rel="stylesheet" href="css/login.css" type="text/css">
+    <link rel="stylesheet" href="css/logout.css" type="text/css">
+    <link rel="stylesheet" href="css/register.css" type="text/css">
     <link rel="icon" href="images/icon_web.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <title>Tiệm bách hóa Hai Tụi Mình</title>
