@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luuthongtin'])) {
         if (!is_dir($target_dir)) {
             @mkdir($target_dir, 0755, true);
         }
-        $allowed = ['jpg','jpeg','png','gif','webp'];
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         $tmpPath = $_FILES['avatar']['tmp_name'];
         $originalName = $_FILES['avatar']['name'];
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
@@ -96,10 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luuthongtin'])) {
     <form method="POST" enctype="multipart/form-data" onsubmit="return confirmSave()">
         <!-- Ảnh đại diện -->
         <div class="avatar_section">
-            <img id="avatarPreview" 
-                src="images/<?= $hinhanh ?: 'default_avatar.png' ?>" 
-                onerror="this.src='images/default_avatar.png'" 
-                width="120" height="120"
+            <img id="avatarPreview" src="images/<?= $hinhanh ?: 'default_avatar.png' ?>"
+                onerror="this.src='images/default_avatar.png'" width="120" height="120"
                 style="border-radius: 50%; object-fit: cover;">
 
             <input type="file" name="avatar" accept="image/*" onchange="previewAvatar(event)">
@@ -136,17 +134,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luuthongtin'])) {
     function confirmSave() {
         return confirm("Bạn có chắc muốn lưu các thay đổi?");
     }
-    
+
     function previewAvatar(event) {
-    const file = event.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('avatarPreview').src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+        const file = event.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('avatarPreview').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
     }
-}
 </script>
 
 <style>

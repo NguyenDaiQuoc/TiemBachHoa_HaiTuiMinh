@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "HaiTuiMinh",
+    "slug": "hai-tuiminh",
+    "scheme": "haituiminh",
+    "sdkVersion": "52.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_PROJECT_ID"
+      }
+    }
+  }
+}

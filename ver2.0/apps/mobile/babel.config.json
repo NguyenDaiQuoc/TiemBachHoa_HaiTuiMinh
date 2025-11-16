@@ -1,0 +1,20 @@
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      [
+        'module-resolver',
+        {
+          alias: {
+            '@hai-tuiminh/ui': '../../packages/ui/src',
+            '@hai-tuiminh/core': '../../packages/core/src',
+            '@hai-tuiminh/utils': '../../packages/utils/src',
+            '@hai-tuiminh/api': '../../packages/api/src',
+            '@hai-tuiminh/config': '../../packages/config/src',
+          },
+        },
+      ],
+    ],
+  };
+};
