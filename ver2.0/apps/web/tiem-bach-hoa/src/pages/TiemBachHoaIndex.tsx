@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaFacebook, FaInstagram, FaMapMarkerAlt } from "react-icons/fa";
 
 // --- Định nghĩa các giá trị Style ---
@@ -48,7 +48,6 @@ function ProductCard({ image, name, price, oldPrice, tag }: ProductCardProps) {
   );
 }
 
-
 // --- Component Card Danh mục ---
 function CategoryCard({ image, name }: CategoryCardProps) {
   return (
@@ -62,16 +61,31 @@ function CategoryCard({ image, name }: CategoryCardProps) {
   );
 }
 
-
 // =========================
-//    COMPONENT CHÍNH
+//        COMPONENT INDEX
 // =========================
 export default function TiemBachHoaIndex() {
-  // ─── State bị thiếu (đã bổ sung) ───────────────────────────
+  // ─ STATE ─────────────────────────────────────
   const [searchValue, setSearchValue] = useState("");
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
+  // ─ LOGIC BackToTop chỉ hiện khi OUT HERO SECTION ─────────
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroHeight = document.querySelector(".hero-wrapper")?.clientHeight || 500;
+
+      if (window.scrollY > heroHeight - 100) setShowBackToTop(true);
+      else setShowBackToTop(false);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // ─ GIỎ HÀNG TEST DATA ───────────────────────────────
   const cartItemsData = [
     { name: "Sản phẩm A", qty: 1, price: 100000, image: "https://picsum.photos/80" },
     { name: "Sản phẩm B", qty: 2, price: 50000, image: "https://picsum.photos/50" },
@@ -83,8 +97,7 @@ export default function TiemBachHoaIndex() {
   const formatCurrency = (v: number) =>
     v.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
 
-  // ───────────────────────────────────────────────────────────
-
+  // ─ DỮ LIỆU GIẢ ──────────────────────────────────────
   const products = [
     { name: "Nến thơm thư giãn", price: "180.000đ", oldPrice: "200.000đ", tag: "Mới", image: "https://picsum.photos/100" },
     { name: "Bánh quy yến mạch", price: "150.000đ", oldPrice: "180.000đ", tag: "Hot", image: "https://picsum.photos/80" },
@@ -141,18 +154,13 @@ export default function TiemBachHoaIndex() {
               <span className="user-icon">👤</span>
 
               {isUserDropdownOpen && (
-                <div
-                  className={`user-dropdown `}
-                >
-                  {/* <div className="user-dropdown-header">Tài khoản của tôi</div> */}
+                <div className="user-dropdown">
                   <div className="user-dropdown-list">
                     <a href="/profile">Thông tin cá nhân</a>
                     <a href="/wishlist">❤️ Danh mục yêu thích</a>
                     <a href="/orders">Đơn mua hàng</a>
                     <a href="/coupons">Mã giảm giá</a>
-                    <a className="user-logout">
-                      Đăng xuất
-                    </a>
+                    <a className="user-logout">Đăng xuất</a>
                   </div>
                 </div>
               )}
@@ -167,9 +175,7 @@ export default function TiemBachHoaIndex() {
               <span className="cart-dropdown">
                 🛒
                 {cartTotalCount > 0 && (
-                  <span className="cart-count">
-                    {cartTotalCount}
-                  </span>
+                  <span className="cart-count">{cartTotalCount}</span>
                 )}
               </span>
 
@@ -201,7 +207,9 @@ export default function TiemBachHoaIndex() {
                   <div className="cart-footer">
                     <div className="cart-totalprice">
                       <span>Tổng cộng:</span>
-                      <span className="cart-totalprice-value">{formatCurrency(cartTotalPrice)}</span>
+                      <span className="cart-totalprice-value">
+                        {formatCurrency(cartTotalPrice)}
+                      </span>
                     </div>
 
                     <button className="cart-checkout-button">
@@ -218,31 +226,23 @@ export default function TiemBachHoaIndex() {
       {/* HERO SECTION */}
       <div className="hero-wrapper">
         <img
-            src="https://via.placeholder.com/300x500/E5D3BD?text=Hero%20Image" 
+          src="https://via.placeholder.com/300x500/E5D3BD?text=Hero%20Image"
           className="hero-img"
         />
 
         <div className="hero-overlay"></div>
 
-
         <div className="hero-content">
-          <h1 className="hero-title">
-            Những điều nhỏ xinh làm nên tổ ấm
-          </h1>
-          <button className={`hero-button`}>
-            Khám Phá Ngay
-          </button>
+          <h1 className="hero-title">Những điều nhỏ xinh làm nên tổ ấm</h1>
+          <button className="hero-button">Khám Phá Ngay</button>
         </div>
       </div>
 
-      {/* <!-- DANH MỤC --> */}
+      {/* DANH MỤC */}
       <div className="relative">
         <h2 className="category-title">Danh Mục Nổi Bật</h2>
 
-        <a
-          href="/categories"
-          className="view-more-floating"
-        >
+        <a href="/categories" className="view-more-floating">
           Xem thêm →
         </a>
 
@@ -253,15 +253,11 @@ export default function TiemBachHoaIndex() {
         </div>
       </div>
 
-
-      {/*SẢN PHẨM HOT SALES*/}
+      {/* HOT SALES */}
       <div className="relative">
         <h2 className="section-title">Sản Phẩm Giảm Giá Sốc</h2>
 
-        <a
-          href="/sale"
-          className="view-more-floating"
-        >
+        <a href="/sale" className="view-more-floating">
           Xem thêm →
         </a>
 
@@ -274,15 +270,11 @@ export default function TiemBachHoaIndex() {
         </div>
       </div>
 
-
-      {/* SẢN PHẨM MỚI*/}
+      {/* SẢN PHẨM MỚI */}
       <div className="relative">
         <h2 className="section-title">Sản Phẩm Mới</h2>
 
-        <a
-          href="/products"
-          className="view-more-floating"
-        >
+        <a href="/products" className="view-more-floating">
           Xem thêm →
         </a>
 
@@ -294,13 +286,11 @@ export default function TiemBachHoaIndex() {
           </div>
         </div>
       </div>
-
-
 
       {/* CÂU CHUYỆN */}
       <div className="story-wrapper">
         <div className="story-img">
-          <img   src="https://via.placeholder.com/300x500/E5D3BD?text=Hero%20Image"  />
+          <img src="https://via.placeholder.com/300x500/E5D3BD?text=Hero%20Image" />
         </div>
 
         <div className="story-content">
@@ -312,15 +302,103 @@ export default function TiemBachHoaIndex() {
         </div>
       </div>
 
+      {/* FLOATING BUTTONS */}
+      <div className="floating-buttons">
+
+        {/* BACK TO TOP */}
+        {showBackToTop && (
+          <div
+            className="float-btn backtotop"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          >
+            ⬆
+          </div>
+        )}
+
+        {/* ZALO */}
+        <a
+          href="https://zalo.me/0931454176"
+          target="_blank"
+          className="float-btn zalo"
+        >
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/9/91/Icon_of_Zalo.svg"
+            alt="Zalo"
+          />
+        </a>
+
+        {/* MESSENGER */}
+        <a
+          href="https://m.me/61576489061227"
+          target="_blank"
+          className="float-btn messenger"
+        >
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/6/63/Facebook_Messenger_logo_2025.svg"
+            alt="Messenger"
+          />
+        </a>
+      </div>
+
+      {/* CHATBOT */}
+      <div className="float-btn chatbot" onClick={() => setIsChatOpen(!isChatOpen)}>
+        💬
+      </div>
+
+      {isChatOpen && (
+        <div className="chatbot-window">
+          <div className="chatbot-header">
+            <span>Chat với Hai Tụi Mình</span>
+            <button onClick={() => setIsChatOpen(false)}>✖</button>
+          </div>
+
+          <div className="chatbot-body">
+            <div className="chatbot-message bot">
+              Xin chào 👋 Bạn muốn tìm sản phẩm nào ạ?
+            </div>
+          </div>
+
+          <div className="chatbot-input-wrapper">
+            <input className="chatbot-input" placeholder="Nhập tin nhắn..." />
+            <button className="chatbot-send">Gửi</button>
+          </div>
+        </div>
+      )}
 
       {/* FOOTER */}
       <footer className="site-footer">
         <div className="footer-container">
           <div className="footer-section">
-            <span className="footer-title">Tiệm Bách Hóa</span>
-            <p>Địa chỉ: 55 Lý Tự Trọng</p>
-            <p>Hotline: 090xxxxxx</p>
+            <span className="footer-title">Tiệm Bách Hóa Hai Tụi Mình</span>
+            <p className="footer-text">
+              Giao nhanh tận nơi. Cảm ơn bạn đã tin chọn cửa hàng của chúng mình.
+            </p>
+
+            <h4 className="footer-title">Liên kết</h4>
+
+            <div className="social-container">
+              <a
+                target="_blank"
+                href="https://www.facebook.com/profile.php?id=61576489061227"
+                className="social-btn facebook"
+              >
+                <i className="fab fa-facebook-f"></i> Facebook
+              </a>
+
+              <a href="#" className="social-btn shopee">
+                <i className="fab fa-shopee"></i> Shopee
+              </a>
+
+              <a href="#" className="social-btn tiktok">
+                <i className="fab fa-tiktok"></i> TikTok
+              </a>
+
+              <a href="#" className="social-btn instagram">
+                <i className="fab fa-instagram"></i> Instagram
+              </a>
+            </div>
           </div>
+
           <div className="footer-section">
             <span className="footer-title">Hỗ trợ khách hàng</span>
             <ul className="footer-list">
@@ -329,6 +407,7 @@ export default function TiemBachHoaIndex() {
               <li>FAQ</li>
             </ul>
           </div>
+
           <div className="footer-section">
             <span className="footer-title">Về Tiệm</span>
             <ul className="footer-list">
@@ -336,12 +415,14 @@ export default function TiemBachHoaIndex() {
               <li>Blog</li>
             </ul>
           </div>
+
           <div className="footer-section">
             <span className="footer-title">Nhận bản tin</span>
             <div className="newsletter">
               <input type="text" placeholder="Email của bạn" className="newsletter-input" />
               <button className="newsletter-button">Gửi</button>
             </div>
+
             <div className="footer-icons">
               <FaFacebook />
               <FaInstagram />
@@ -350,8 +431,6 @@ export default function TiemBachHoaIndex() {
           </div>
         </div>
       </footer>
-
-
     </div>
   );
 }
