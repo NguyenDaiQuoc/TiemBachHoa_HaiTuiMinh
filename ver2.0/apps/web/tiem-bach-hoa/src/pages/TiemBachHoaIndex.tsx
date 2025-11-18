@@ -242,7 +242,7 @@ export default function TiemBachHoaIndex() {
       <div className="relative">
         <h2 className="category-title">Danh Mục Nổi Bật</h2>
 
-        <a href="/categories" className="view-more-floating">
+        <a href="/categories" className="view-more-floating cate">
           Xem thêm →
         </a>
 
@@ -257,7 +257,7 @@ export default function TiemBachHoaIndex() {
       <div className="relative">
         <h2 className="section-title">Sản Phẩm Giảm Giá Sốc</h2>
 
-        <a href="/sale" className="view-more-floating">
+        <a href="/sale" className="view-more-floating sale">
           Xem thêm →
         </a>
 
@@ -338,42 +338,52 @@ export default function TiemBachHoaIndex() {
             alt="Messenger"
           />
         </a>
-      </div>
 
-      {/* CHATBOT */}
-      <div className="float-btn chatbot" onClick={() => setIsChatOpen(!isChatOpen)}>
-        💬
-      </div>
+        {/* CHATBOT */}
+        <div className="chatbot-wrapper">
+          <span className="chatbot-tooltip">Chat với Chat Bot</span>
+          <div
+            className="float-btn chatbot-btn"
+            onClick={() => setIsChatOpen(!isChatOpen)}
+          >
+            💬
 
-      {isChatOpen && (
-        <div className="chatbot-window">
-          <div className="chatbot-header">
-            <span>Chat với Hai Tụi Mình</span>
-            <button onClick={() => setIsChatOpen(false)}>✖</button>
           </div>
 
-          <div className="chatbot-body">
-            <div className="chatbot-message bot">
-              Xin chào 👋 Bạn muốn tìm sản phẩm nào ạ?
+          {isChatOpen && (
+            <div className="chatbot-window">
+              <div className="chatbot-header">
+                <span>Chat với Hai Tụi Mình</span>
+                <button onClick={() => setIsChatOpen(false)}>✖</button>
+              </div>
+
+              <div className="chatbot-body">
+                <div className="chatbot-message bot">
+                  Xin chào 👋 Bạn muốn tìm sản phẩm nào ạ?
+                </div>
+              </div>
+
+              <div className="chatbot-input-wrapper">
+                <input className="chatbot-input" placeholder="Nhập tin nhắn..." />
+                <button className="chatbot-send">Gửi</button>
+              </div>
             </div>
-          </div>
-
-          <div className="chatbot-input-wrapper">
-            <input className="chatbot-input" placeholder="Nhập tin nhắn..." />
-            <button className="chatbot-send">Gửi</button>
-          </div>
+          )}
         </div>
-      )}
+
+      </div>
+
 
       {/* FOOTER */}
       <footer className="site-footer">
         <div className="footer-container">
+
+          {/* GIỚI THIỆU */}
           <div className="footer-section">
             <span className="footer-title">Tiệm Bách Hóa Hai Tụi Mình</span>
             <p className="footer-text">
               Giao nhanh tận nơi. Cảm ơn bạn đã tin chọn cửa hàng của chúng mình.
             </p>
-
             <h4 className="footer-title">Liên kết</h4>
 
             <div className="social-container">
@@ -393,29 +403,54 @@ export default function TiemBachHoaIndex() {
                 <i className="fab fa-tiktok"></i> TikTok
               </a>
 
+              
+
               <a href="#" className="social-btn instagram">
                 <i className="fab fa-instagram"></i> Instagram
               </a>
             </div>
+            
+            
           </div>
+          
 
+          {/* HỖ TRỢ KHÁCH HÀNG */}
           <div className="footer-section">
             <span className="footer-title">Hỗ trợ khách hàng</span>
             <ul className="footer-list">
-              <li>Chính sách đổi trả</li>
-              <li>Hướng dẫn mua hàng</li>
-              <li>FAQ</li>
+              <li><a href="/terms">Điều khoản và quy định chung</a></li>
+              <li><a href="/return-policy">Chính sách đổi trả & hoàn tiền</a></li>
+              <li><a href="/shipping-policy">Chính sách vận chuyển & giao nhận</a></li>
+              <li><a href="/warranty">Chính sách bảo hành sản phẩm</a></li>
+              <li><a href="/purchase-guide">Hướng dẫn mua hàng</a></li>
+              <li><a href="/payment-methods">Quy định và hình thức thanh toán</a></li>
+              <li><a href="/faq">Các câu hỏi thường gặp (FAQs)</a></li>
             </ul>
+
+            <h4 className="footer-title mt-4">Hình thức thanh toán</h4>
+            <div className="footer-icons">
+              <img src="/images/payment-cod.png" alt="CoD" className="payment-icon" />
+              <img src="/images/payment-banking.png" alt="Banking" className="payment-icon" />
+              <img src="/images/payment-cash.png" alt="Tiền mặt" className="payment-icon" />
+              <img src="/images/payment-zalopay.png" alt="ZaloPay" className="payment-icon" />
+              <img src="/images/payment-momo.png" alt="Momo" className="payment-icon" />
+              <img src="/images/payment-vnpay.png" alt="VNPay" className="payment-icon" />
+            </div>
+
           </div>
 
+          {/* VỀ TIỆM */}
           <div className="footer-section">
             <span className="footer-title">Về Tiệm</span>
             <ul className="footer-list">
-              <li>Giới thiệu</li>
-              <li>Blog</li>
+              <li><a href="/about">Giới thiệu</a></li>
+              <li><a href="/story">Câu chuyện</a></li>
+              <li><a href="/blog">Blog</a></li>
+              <li><a href="/tips">Góc nội trợ & mẹo vặt cuộc sống</a></li>
             </ul>
           </div>
 
+          {/* NHẬN BẢN TIN & THANH TOÁN */}
           <div className="footer-section">
             <span className="footer-title">Nhận bản tin</span>
             <div className="newsletter">
@@ -423,14 +458,17 @@ export default function TiemBachHoaIndex() {
               <button className="newsletter-button">Gửi</button>
             </div>
 
-            <div className="footer-icons">
-              <FaFacebook />
-              <FaInstagram />
-              <FaMapMarkerAlt />
-            </div>
+            
+            
           </div>
+
+        </div>
+
+        <div className="footer_bottom">
+          <p className="footer_copyright">© 2025 Bách Hóa Nhà Hai Đứa. All rights reserved.</p>
         </div>
       </footer>
+
     </div>
   );
 }
