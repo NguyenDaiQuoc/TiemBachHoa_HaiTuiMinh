@@ -1,0 +1,264 @@
+/* --- Page & Layout --- */
+.product-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  font-family: sans-serif;
+  background-color: #FBF8F5;
+}
+
+.product-header {
+  width: 100%;
+  background-color: #FBF8F5;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  padding: 16px 32px;
+}
+
+.header-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-title {
+  font-weight: bold;
+  font-size: 1.25rem;
+}
+
+/* --- Breadcrumb & Title --- */
+.product-main {
+  width: 100%;
+  max-width: 1280px;
+  padding: 0 32px;
+  margin-top: 24px;
+}
+
+.breadcrumb {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 16px;
+}
+
+.product-category-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin-bottom: 32px;
+  color: #3C3C3C;
+}
+
+/* --- Content Layout --- */
+.product-content {
+  display: flex;
+  gap: 40px;
+}
+
+/* --- Filter Sidebar --- */
+.product-filter {
+  flex: 1;
+}
+
+.filter-sidebar {
+  width: 256px;
+  padding: 24px;
+  border-radius: 12px;
+  background-color: #E5D3BD;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.filter-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #3C3C3C;
+}
+
+.filter-group {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #D1D5DB;
+}
+
+.filter-group-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1F2937;
+}
+
+.filter-group-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-checkbox {
+  accent-color: #4A6D56;
+}
+
+.filter-label {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.filter-label:hover {
+  color: #111827;
+}
+
+.filter-apply-btn {
+  width: 100%;
+  padding: 8px 0;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #C75F4B;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.filter-apply-btn:hover {
+  opacity: 0.9;
+}
+
+/* --- Product List --- */
+.product-list-section {
+  flex: 3;
+}
+
+.product-list-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #D1D5DB;
+  padding-bottom: 12px;
+}
+
+.product-count {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+.product-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.product-sort-select {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #D1D5DB;
+  background-color: #E5D3BD80; /* opacity 70% */
+  outline: none;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* --- ProductCard --- */
+.product-card {
+  display: flex;
+  flex-direction: column;
+  background-color: #E5D3BD;
+  background-opacity: 70%;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: box-shadow 0.3s;
+}
+
+.product-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.product-card-image-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+  height: 192px;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-card-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  color: #fff;
+  background-color: #C75F4B;
+}
+
+.product-card-name {
+  font-weight: 500;
+  font-size: 1rem;
+  color: #3C3C3C;
+}
+
+.product-card-price-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 4px;
+}
+
+.product-card-price {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #4A6D56;
+}
+
+.product-card-oldprice {
+  font-size: 0.875rem;
+  color: #6B7280;
+  text-decoration: line-through;
+}
+
+/* --- Pagination --- */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 40px;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  border-radius: 9999px;
+  border: 1px solid #D1D5DB;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.pagination-current {
+  background-color: #4A6D56;
+  color: #333;
+  font-weight: 700;
+  border: none;
+}

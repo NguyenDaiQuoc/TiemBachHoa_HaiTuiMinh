@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "../../css/contact.css";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import FloatingButtons from "../components/FloatingButtons";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 // -------------------------
 // Style Colors (Tailwind giữ nguyên)
@@ -59,11 +64,8 @@ function CustomInput({
 // MAIN CONTACT PAGE
 // -------------------------
 export default function ContactPage() {
-  const [searchValue, setSearchValue] = useState("");
-  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
 
   // Logic hiện nút BackToTop
   useEffect(() => {
@@ -75,151 +77,78 @@ export default function ContactPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Fake Cart
-  const cartItemsData = [
-    { name: "Sản phẩm A", qty: 1, price: 100000, image: "https://picsum.photos/80" },
-    { name: "Sản phẩm B", qty: 2, price: 50000, image: "https://picsum.photos/50" },
-  ];
+  // Leaflet map + custom marker + popup
+  useEffect(() => {
+    if (!mapRef.current) return;
 
-  const cartTotalCount = cartItemsData.reduce((s, i) => s + i.qty, 0);
-  const cartTotalPrice = cartItemsData.reduce((s, i) => s + i.qty * i.price, 0);
+    const position: [number, number] = [10.8622032, 106.5926953];
 
-  const formatCurrency = (v: number) =>
-    v.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
+    const map = L.map(mapRef.current, {
+      center: position,
+      zoom: 17,
+      scrollWheelZoom: false,
+    });
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    }).addTo(map);
+
+    // Custom logo marker with shadow
+    const customIcon = L.icon({
+      iconUrl: "/images/logo-maker.png",
+      iconSize: [50, 50],
+      iconAnchor: [25, 50],
+      popupAnchor: [0, -50],
+      className: "custom-marker-shadow", // thêm shadow css
+    });
+
+    const marker = L.marker(position, { icon: customIcon }).addTo(map);
+
+    const gmapLink = `https://www.google.com/maps/dir/?api=1&destination=${position[0]},${position[1]}`;
+    marker.bindPopup(
+      `<b>📍 Tiệm Bách Hóa Hai Tụi Mình</b><br/>
+       82/1E ấp 39, Xuân Thới Sơn, Hóc Môn, TP.HCM<br/>
+       <a href="${gmapLink}" target="_blank" style="color:#C75F4B;text-decoration:underline;">Chỉ đường → Google Maps</a>`,
+      {
+        offset: L.point(0, 30),
+        closeButton: false,
+      }
+    );
+
+    // Popup hover with delay
+    let popupTimeout: NodeJS.Timeout;
+    marker.on("mouseover", () => {
+      clearTimeout(popupTimeout);
+      marker.openPopup();
+    });
+    marker.on("mouseout", () => {
+      popupTimeout = setTimeout(() => marker.closePopup(), 1000); // delay 1s trước khi ẩn
+    });
+
+    // Mobile: luôn mở
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) marker.openPopup();
+
+    return () => {
+      map.remove();
+    };
+  }, []);
 
   return (
     <div className="contact-wrapper">
-
-      {/* ====================== HEADER ====================== */}
-      <div className="header">
-        <div className="header-container flex justify-between items-center p-4">
-          <a href="/" className="header-logo-text font-bold text-lg">
-            Tiệm Bách Hóa Hai Tụi Mình
-          </a>
-
-          {/* MENU */}
-          <div className="header-menu flex gap-6">
-            <a href="/">Trang chủ</a>
-            <a href="/products">Sản phẩm</a>
-            <a href="/combo">Combo & Ưu đãi</a>
-            <a href="/blog">Blog</a>
-            <a href="/contact" className="font-bold text-[#C75F4B]">Liên hệ</a>
-          </div>
-
-          {/* SEARCH + USER + CART */}
-          <div className="header-icons">
-
-            {/* SEARCH */}
-            <div className="search-field">
-              <span className="search-icon">🔍</span>
-              <input
-                type="text"
-                placeholder="Tìm kiếm sản phẩm..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-              />
-            </div>
-
-            {/* USER */}
-            <div
-              className="relative"
-              onMouseEnter={() => setIsUserDropdownOpen(true)}
-              onMouseLeave={() => setIsUserDropdownOpen(false)}
-            >
-              <span className="user-icon">👤</span>
-
-              {isUserDropdownOpen && (
-                <div className="user-dropdown">
-                  <div className="user-dropdown-list">
-                    <a href="/profile">Thông tin cá nhân</a>
-                    <a href="/wishlist">❤️ Yêu thích</a>
-                    <a href="/orders">Đơn hàng</a>
-                    <a href="/coupons">Mã giảm giá</a>
-                    <a className="user-logout">Đăng xuất</a>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* CART */}
-            <div
-              className="relative"
-              onMouseEnter={() => setIsCartDropdownOpen(true)}
-              onMouseLeave={() => setIsCartDropdownOpen(false)}
-            >
-              <span className="cart-dropdown">
-                🛒
-                {cartTotalCount > 0 && (
-                  <span className="cart-count">{cartTotalCount}</span>
-                )}
-              </span>
-
-              {isCartDropdownOpen && (
-                <div className="cart-dropdown-menu">
-                  <div className="cart-header">
-                    Giỏ hàng ({cartTotalCount})
-                  </div>
-
-                  <ul className="cart-dropdown-list">
-                    {cartItemsData.map((item, index) => (
-                      <li key={index} className="cart-items">
-                        <div className="cart-content">
-                          <img src={item.image} alt={item.name} className="cart-img" />
-                          <div>
-                            <div className="cart-name">{item.name}</div>
-                            <div className="cart-price">
-                              SL: {item.qty} × {formatCurrency(item.price)}
-                            </div>
-                          </div>
-                        </div>
-                        <span className="cart-total">
-                          {formatCurrency(item.qty * item.price)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="cart-footer">
-                    <div className="cart-totalprice">
-                      <span>Tổng cộng:</span>
-                      <span className="cart-totalprice-value">
-                        {formatCurrency(cartTotalPrice)}
-                      </span>
-                    </div>
-
-                    <button className="cart-checkout-button">
-                      Xem Giỏ Hàng & Thanh Toán
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ====================== CONTENT ====================== */}
+      <Header />
       <main className="contact-container">
         <h1 className="contact-title">Liên Hệ Với Chúng Tôi</h1>
-
         <p className="contact-desc">
           “Nhà Hai Đứa” luôn sẵn sàng lắng nghe và hỗ trợ bạn.
         </p>
 
         <div className="contact-grid">
-
-          {/* LEFT FORM */}
           <section className="contact-form-card">
             <h2 className="contact-form-title">Gửi Yêu Cầu Hỗ Trợ</h2>
-
             <form className="form-fields">
-
               <div className="form-grid-2">
-                <CustomInput
-                  label="Họ và Tên"
-                  placeholder="Ví dụ: Trần Văn C"
-                  required
-                />
+                <CustomInput label="Họ và Tên" placeholder="Ví dụ: Trần Văn C" required />
                 <CustomInput
                   label="Email"
                   placeholder="Ví dụ: email@domain.com"
@@ -227,176 +156,54 @@ export default function ContactPage() {
                   required
                 />
               </div>
-
-              <CustomInput
-                label="Số Điện Thoại"
-                placeholder="090xxxxxxx"
-                type="tel"
-              />
-
+              <CustomInput label="Số Điện Thoại" placeholder="090xxxxxxx" type="tel" />
               <CustomInput
                 label="Tiêu đề"
                 placeholder="Bạn cần hỗ trợ vấn đề gì?"
                 required
               />
-
               <CustomInput
                 label="Nội dung chi tiết"
                 placeholder="Hãy mô tả chi tiết yêu cầu của bạn..."
                 isTextArea
                 required
               />
-
               <button type="submit" className="contact-submit-btn">
                 Gửi Yêu Cầu
               </button>
             </form>
           </section>
 
-          {/* RIGHT INFO */}
           <aside className="contact-right">
             <div className="contact-info-card">
               <h3 className="info-title">Thông Tin Liên Lạc</h3>
-
               <div className="info-list">
-                <p><span>📞</span> <strong>Hotline:</strong> 090 123 4567</p>
-                <p><span>📧</span> <strong>Email:</strong> support@nhahaidua.vn</p>
-                <p><span>📍</span> <strong>Địa chỉ:</strong> 123 Đường Sạch Đẹp, Q.7, TP.HCM</p>
-                <p className="worktime">Thời gian: 8h00 – 17h00 (T2 – T6)</p>
+                <p>
+                  <span>📞</span> <strong>Hotline:</strong> 093 145 4176 - 089 945 4041
+                </p>
+                <p>
+                  <span>📧</span> <strong>Email:</strong> support@nhahaidua.vn
+                </p>
+                <p>
+                  <span>📍</span> <strong>Địa chỉ:</strong> 82/1F ấp Xuân Thới Đông 3, Hóc Môn, TP.HCM
+                </p>
+                <p className="worktime">Thời gian: 8h00 – 22h00 (T2 – T7)</p>
               </div>
             </div>
 
             <div className="contact-map-card">
               <h3 className="map-title">Văn Phòng / Kho Hàng</h3>
-
-              <div className="map-wrapper">
-                <iframe
-                  className="map-iframe"
-                  loading="lazy"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.164985242964!2d106.7017553!3d10.8007398!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317528dabcac5809%3A0x8c953c0c8a57e4!2zUGjGsOG7nW5nIDEgLSBRdeG6rW4gNw!5e0!3m2!1svi!2s!4v1700000000000"
-                ></iframe>
-              </div>
-
+              <div
+                ref={mapRef}
+                style={{ height: "200px", width: "100%", borderRadius: "8px", boxShadow:  "0 0 12px rgba(199, 95, 75, 0.28)"}}
+              />
               <p className="map-note">(Bản đồ chỉ đường thực tế)</p>
             </div>
           </aside>
         </div>
       </main>
-
-      {/* ====================== FOOTER ====================== */}
-      <footer className="site-footer">
-        <div className="footer-container">
-
-          <div className="footer-section">
-            <span className="footer-title">Tiệm Bách Hóa Hai Tụi Mình</span>
-            <p className="footer-text">
-              Giao nhanh tận nơi. Cảm ơn bạn đã tin chọn cửa hàng của chúng mình.
-            </p>
-            <h4 className="footer-title">Liên kết</h4>
-
-            <div className="social-container">
-              <a
-                target="_blank"
-                href="https://www.facebook.com/profile.php?id=61576489061227"
-                className="social-btn facebook"
-              >
-                <i className="fab fa-facebook-f"></i> Facebook
-              </a>
-
-              <a href="#" className="social-btn shopee">
-                <i className="fab fa-shopee"></i> Shopee
-              </a>
-
-              <a href="#" className="social-btn tiktok">
-                <i className="fab fa-tiktok"></i> TikTok
-              </a>
-
-              <a href="#" className="social-btn instagram">
-                <i className="fab fa-instagram"></i> Instagram
-              </a>
-            </div>
-          </div>
-
-          <div className="footer-section">
-            <span className="footer-title">Hỗ trợ khách hàng</span>
-            <ul className="footer-list">
-              <li><a href="/terms">Điều khoản và quy định chung</a></li>
-              <li><a href="/return-policy">Chính sách đổi trả & hoàn tiền</a></li>
-              <li><a href="/shipping-policy">Chính sách vận chuyển & giao nhận</a></li>
-              <li><a href="/warranty">Chính sách bảo hành sản phẩm</a></li>
-              <li><a href="/purchase-guide">Hướng dẫn mua hàng</a></li>
-              <li><a href="/payment-methods">Quy định và hình thức thanh toán</a></li>
-              <li><a href="/faq">Các câu hỏi thường gặp (FAQs)</a></li>
-            </ul>
-
-            <h4 className="footer-title mt-4">Hình thức thanh toán</h4>
-            <div className="footer-icons">
-              <img src="/images/payment-cod.png" alt="CoD" className="payment-icon" />
-              <img src="/images/payment-banking.png" alt="Banking" className="payment-icon" />
-              <img src="/images/payment-cash.png" alt="Tiền mặt" className="payment-icon" />
-              <img src="/images/payment-zalopay.png" alt="ZaloPay" className="payment-icon" />
-              <img src="/images/payment-momo.png" alt="Momo" className="payment-icon" />
-              <img src="/images/payment-vnpay.png" alt="VNPay" className="payment-icon" />
-            </div>
-          </div>
-
-          <div className="footer-section">
-            <span className="footer-title">Về Tiệm</span>
-            <ul className="footer-list">
-              <li><a href="/about">Giới thiệu</a></li>
-              <li><a href="/story">Câu chuyện</a></li>
-              <li><a href="/blog">Blog</a></li>
-              <li><a href="/tips">Góc nội trợ & mẹo vặt cuộc sống</a></li>
-            </ul>
-          </div>
-
-          <div className="footer-section">
-            <span className="footer-title">Nhận bản tin</span>
-            <div className="newsletter">
-              <input type="text" placeholder="Email của bạn" className="newsletter-input" />
-              <button className="newsletter-button">Gửi</button>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer_bottom">
-          <p className="footer_copyright">© 2025 Bách Hóa Nhà Hai Đứa. All rights reserved.</p>
-        </div>
-      </footer>
-
-      {/* ===================== FLOATING BUTTONS ===================== */}
-      {/* KÉO LÊN ĐẦU TRANG */}
-      {showBackToTop && (
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="floating-backtotop"
-        >
-          ⬆
-        </button>
-      )}
-
-      {/* CHAT ICON */}
-      <button
-        onClick={() => setIsChatOpen(!isChatOpen)}
-        className="floating-chat"
-      >
-        💬
-      </button>
-
-      {/* CHAT BOX */}
-      {isChatOpen && (
-        <div className="chat-box">
-          <div className="chat-header">Chat với Nhà Hai Đứa</div>
-          <div className="chat-body">👉 Tính năng chat đang phát triển...</div>
-        </div>
-      )}
-
-      {/* SOCIAL FLOATING
-      <div className="floating-social">
-        <a href="https://facebook.com" target="_blank"><FaFacebook /></a>
-        <a href="https://instagram.com" target="_blank"><FaInstagram /></a>
-        <a href="https://maps.google.com" target="_blank"><FaMapMarkerAlt /></a>
-      </div> */}
+      <Footer />
+      <FloatingButtons />
     </div>
   );
 }
