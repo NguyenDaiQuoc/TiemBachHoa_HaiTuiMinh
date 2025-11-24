@@ -143,7 +143,7 @@ export default function AdminDashboardPage() {
     // Lấy tên từ Firestore
     const fetchAdmin = async () => {
       try {
-        const docRef = doc(db, "users", info.uid);
+        const docRef = doc(db, "admins", info.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -179,7 +179,7 @@ export default function AdminDashboardPage() {
       <div className="dashboard-content">
         <header className="dashboard-header">
           <h2 className="dashboard-title">Tổng Quan Hoạt Động</h2>
-          <span className="dashboard-greeting">Xin chào, {adminName} (Phiên bản Flash 2.5)</span>
+          <span className="dashboard-greeting">Xin chào, Admin {adminName} (Phiên bản Flash 2.5)</span>
         </header>
 
         {/* KPI Grid */}
