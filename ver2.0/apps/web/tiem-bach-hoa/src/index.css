@@ -1489,3 +1489,89 @@
   filter: brightness(1.1);         /* hover:brightness-110 */
   transform: translateY(-1px);     /* optional: nhún nhẹ khi hover */
 }
+
+
+/* =========================
+   Fade-in / Fade-out Effect
+========================= */
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.fade-in-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-out-section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+/* --- Floating Button --- */
+.floating-button {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.floating-icon {
+  width: 50px;
+  height: 50px;
+}
+
+.floating-panel {
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 10px;
+  width: 200px;
+}
+
+.floating-button.expanded .floating-panel {
+  display: block;
+}
+
+.floating-button.collapsed .floating-panel {
+  display: none;
+}
+
+/* --- Overlay --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 999;
+}
+
+.close-button {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* --- Product / Category Cards --- */
+.product-card, .category-card {
+  background: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  margin: 10px;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover, .category-card:hover {
+  transform: translateY(-5px);
+}

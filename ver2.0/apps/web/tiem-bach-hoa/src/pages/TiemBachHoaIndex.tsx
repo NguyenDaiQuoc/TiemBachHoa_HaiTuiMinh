@@ -23,7 +23,7 @@ function ProductCard({ image, name, price, oldPrice, tag }: ProductCardProps) {
   const isSale = oldPrice !== undefined;
 
   return (
-    <div className="product-card cursor-pointer">
+    <div className="product-card cursor-pointer fade-in-section">
       <div className="product-image-wrapper">
         <div className="product-image-container">
           <img src={image} alt={name} className="product-image" />
@@ -42,7 +42,7 @@ function ProductCard({ image, name, price, oldPrice, tag }: ProductCardProps) {
 // --- Component Card Danh mục ---
 function CategoryCard({ image, name }: CategoryCardProps) {
   return (
-    <div className="category-card cursor-pointer">
+    <div className="category-card cursor-pointer fade-in-section">
       <div className="category-image-wrapper">
         <img src={image} alt={name} className="category-image" />
       </div>
@@ -68,17 +68,14 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
     secs: 0,
   });
 
-  // --- Thời gian đếm ngược --- //
   const SALE_END_DATE = new Date();
-  SALE_END_DATE.setDate(SALE_END_DATE.getDate() + 1); // ví dụ: kết thúc sau 1 ngày
+  SALE_END_DATE.setDate(SALE_END_DATE.getDate() + 1);
 
   const calculateCountdown = () => {
     const now = new Date().getTime();
     const distance = SALE_END_DATE.getTime() - now;
 
-    if (distance <= 0) {
-      return { days: 0, hours: 0, mins: 0, secs: 0 };
-    }
+    if (distance <= 0) return { days: 0, hours: 0, mins: 0, secs: 0 };
 
     const days = Math.floor(distance / (1000 * 60 * 60 * 24));
     const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -92,7 +89,7 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
     const today = new Date().toISOString().slice(0, 10);
     const closedDate = localStorage.getItem(OVERLAY_KEY);
 
-    if (closedDate == today) {
+    if (closedDate != today) {
       setShowOverlay(true);
       setTimeout(() => setFadeClass("opacity-100 transition-opacity duration-500"), 50);
 
@@ -126,7 +123,6 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
 
   return (
     <>
-      {/* Overlay */}
       {showOverlay && (
         <div
           className={`modal-overlay ${fadeClass}`}
@@ -148,14 +144,12 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
         </div>
       )}
 
-      {/* Floating mini icon trái */}
       {showFloating && (
         <div
           className={`floating-button ${floatingExpanded ? "expanded" : "collapsed"}`}
           onMouseEnter={() => setFloatingExpanded(true)}
           onMouseLeave={() => setFloatingExpanded(false)}
         >
-          {/* Icon thu nhỏ */}
           {!floatingExpanded && (
             <img
               src="/blackfriday.ico"
@@ -165,11 +159,8 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
             />
           )}
 
-          {/* Panel mở rộng */}
           {floatingExpanded && (
             <div className="floating-panel expanded">
-
-              {/* Nút X */}
               <button
                 className="close-floating"
                 onClick={(e) => {
@@ -180,32 +171,17 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
                 &times;
               </button>
 
-              {/* Icon lớn */}
-              {/* <img
-                src="/blackfriday.ico"
-                alt="Black Friday"
-                className="floating-icon expanded"
-                onClick={handleNavigate}
-              /> */}
-
-              {/* Countdown */}
               <div className="flash-sale-text">
                 Mừng BlackFriday - Giảm giá đến 60%<br />
                 Còn: {countdown.days}d {countdown.hours}h {countdown.mins}m {countdown.secs}s kết thúc giảm giá
               </div>
-              <button
-                onClick={handleNavigate}
-                className="sale-redirect"
-              >
+              <button onClick={handleNavigate} className="sale-redirect">
                 Mua sắm ngay →
               </button>
-
             </div>
           )}
         </div>
       )}
-
-
     </>
   );
 }
@@ -216,58 +192,55 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
 export default function TiemBachHoaIndex() {
   const navigate = useNavigate();
 
-  const [searchValue, setSearchValue] = useState("");
-  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const heroHeight = document.querySelector(".hero-wrapper")?.clientHeight || 500;
-      setShowBackToTop(window.scrollY > heroHeight - 100);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const cartItemsData = [
-    { name: "Sản phẩm A", qty: 1, price: 100000, image: "https://picsum.photos/80" },
-    { name: "Sản phẩm B", qty: 2, price: 50000, image: "https://picsum.photos/50" },
-  ];
-
-  const products = [
+  const [products] = useState([
     { name: "Nến thơm thư giãn", price: "180.000đ", oldPrice: "200.000đ", tag: "Mới", image: "https://picsum.photos/100" },
-    { name: "Bánh quy yến mạch", price: "150.000đ", oldPrice: "180.000đ", tag: "Hot", image: "https://picsum.photos/80" },
+    { name: "Bánh quy yến mạch", price: "150.000đ", oldPrice: "180.000đ", tag: "Hot", image: "httpsum.photos/80" },
     { name: "Khăn quấn organic", price: "150.000đ", tag: null, image: "https://picsum.photos/20" },
-  ];
+  ]);
 
-  const categories = [
+  const [categories] = useState([
     { name: "Hàng mới về", image: "https://picsum.photos/50" },
     { name: "Đồ công nghệ", image: "https://picsum.photos/70" },
     { name: "Chăm sóc cá nhân", image: "https://picsum.photos/30" },
     { name: "Vệ sinh nhà cửa", image: "https://picsum.photos/90" },
-  ];
+  ]);
+
+  // === Fade-in / Fade-out khi scroll ===
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("fade-in-visible");
+            entry.target.classList.remove("fade-out-section");
+          } else {
+            entry.target.classList.remove("fade-in-visible");
+            entry.target.classList.add("fade-out-section");
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    const elements = document.querySelectorAll(".fade-in-section");
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="wrapper">
       <Header />
-
-      {/* Overlay Banner global */}
       <OverlayBanner imageSrc="/images/blackfriday.png" />
 
-      {/* HERO SECTION */}
-      <div className="hero-wrapper cursor-pointer" onClick={() => navigate("/products")}>
+      {/* HERO */}
+      <div className="hero-wrapper cursor-pointer fade-in-section" onClick={() => navigate("/products")}>
         <img src="/images/hero-img.png" className="hero-img" alt="Hero" />
-        <div className="hero-overlay" style={{ pointerEvents: "none" }}></div>
       </div>
 
-      {/* DANH MỤC */}
-      <div className="relative">
+      {/* Categories */}
+      <div className="relative fade-in-section">
         <h2 className="category-title">Danh Mục Nổi Bật</h2>
-        <a href="/categories" className="view-more-floating cate">
-          Xem thêm →
-        </a>
         <div className="category-grid">
           {categories.map((cat) => (
             <div key={cat.name} onClick={() => navigate("/products")}>
@@ -278,11 +251,8 @@ export default function TiemBachHoaIndex() {
       </div>
 
       {/* HOT SALES */}
-      <div className="relative">
+      <div className="relative fade-in-section">
         <h2 className="section-title">Sản Phẩm Giảm Giá Sốc</h2>
-        <a href="/sale" className="view-more-floating sale">
-          Xem thêm →
-        </a>
         <div className="product-wrapper">
           <div className="product-grid">
             {products.map((p, index) => (
@@ -295,11 +265,8 @@ export default function TiemBachHoaIndex() {
       </div>
 
       {/* SẢN PHẨM MỚI */}
-      <div className="relative">
+      <div className="relative fade-in-section">
         <h2 className="section-title">Sản Phẩm Mới</h2>
-        <a href="/products" className="view-more-floating">
-          Xem thêm →
-        </a>
         <div className="product-wrapper">
           <div className="product-grid">
             {products.map((p, index) => (
@@ -312,7 +279,7 @@ export default function TiemBachHoaIndex() {
       </div>
 
       {/* CÂU CHUYỆN */}
-      <div className="story-wrapper">
+      <div className="story-wrapper fade-in-section">
         <div className="story-img">
           <img
             src="https://via.placeholder.com/300x500/E5D3BD?text=Hero%20Image"
