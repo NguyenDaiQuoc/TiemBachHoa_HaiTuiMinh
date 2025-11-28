@@ -1,0 +1,120 @@
+/* Wrapper & layout */
+.fp-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: sans-serif;
+  background-color: #FBF8F5;
+  align-items: center;
+}
+.fp-content {
+  width: 100%;
+  max-width: 400px;
+  margin: 4rem 0 5rem;
+}
+
+/* Card */
+.fp-card {
+  background-color: #E5D3BD;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  text-align: center;
+}
+.fp-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #3C3C3C;
+  margin-bottom: 0.75rem;
+}
+.fp-subtitle {
+  font-size: 0.875rem;
+  color: #555;
+  margin-bottom: 1.5rem;
+}
+
+/* Form */
+.fp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.fp-input-group {
+  display: flex;
+  flex-direction: column;
+}
+.fp-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  color: #3C3C3C;
+}
+.fp-required {
+  color: #F87171;
+}
+.fp-input {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #FBF8F5;
+  border: 1px solid #D1D5DB;
+  font-size: 0.875rem;
+}
+.fp-input:focus {
+  outline: 2px solid #4A6D56;
+}
+
+/* Button */
+.fp-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #C75F4B;
+  color: white;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+}
+.fp-btn:hover {
+  opacity: 0.9;
+}
+
+/* Success state */
+.fp-success {
+  border: 1px solid #4ADE80;
+  background-color: #ECFDF5;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+}
+.fp-success-icon {
+  font-size: 2rem;
+  color: #16A34A;
+  margin-bottom: 0.5rem;
+}
+.fp-success-title {
+  font-weight: 600;
+  color: #166534;
+}
+.fp-success-text {
+  font-size: 0.875rem;
+  color: #555;
+  margin-top: 0.25rem;
+}
+
+/* Back link */
+.fp-back {
+  margin-top: 1.5rem;
+  border-top: 1px solid #D1D5DB;
+  padding-top: 1rem;
+}
+.fp-back a {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4A6D56;
+  text-decoration: none;
+}
+.fp-back a:hover {
+  opacity: 0.8;
+}

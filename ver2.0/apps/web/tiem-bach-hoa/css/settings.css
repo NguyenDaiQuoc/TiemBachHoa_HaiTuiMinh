@@ -1,0 +1,119 @@
+/* =====================================================
+   COLOR SYSTEM – dùng chung
+===================================================== */
+:root {
+  --primary: #4a6d56;
+  --danger: #d9534f;
+  --border: #dcdcdc;
+  --bg-light: #fafafa;
+  --text-main: #333;
+}
+
+/* =====================================================
+   PAGE WRAPPER
+===================================================== */
+.settings-page {
+  padding: 40px 0;
+  background: var(--bg-light);
+}
+
+.settings-container {
+  max-width: 1000px;
+  margin: auto;
+  background: #fff;
+  padding: 25px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.settings-title {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 30px;
+}
+
+/* =====================================================
+   LAYOUT: SIDEBAR + CONTENT
+===================================================== */
+.settings-layout {
+  display: flex;
+  gap: 25px;
+}
+
+.settings-sidebar {
+  width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* =====================================================
+   SIDEBAR BUTTONS
+===================================================== */
+.settings-menu-item {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  text-align: left;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.settings-menu-item:hover {
+  background: #f0f0f0;
+}
+
+.settings-menu-item.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  font-weight: 600;
+}
+
+/* DELETE BUTTON */
+.settings-delete-btn {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--danger);
+  border: none;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.settings-delete-btn:hover {
+  opacity: 0.85;
+}
+
+/* =====================================================
+   CONTENT AREA
+===================================================== */
+.settings-content {
+  flex: 1;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  min-height: 260px;
+  font-size: 15px;
+  color: var(--text-main);
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+@media (max-width: 768px) {
+  .settings-layout {
+    flex-direction: column;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+  }
+}

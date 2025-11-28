@@ -1,0 +1,177 @@
+/* ===== Layout chung ===== */
+.wishlist-wrapper {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* ===== Title ===== */
+.wishlist-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #4A6D56;
+  margin-bottom: 24px;
+}
+
+/* ===== Grid danh sách ===== */
+.wishlist-grid {
+  display: grid;
+  gap: 16px;
+}
+
+/* ===== Card sản phẩm ===== */
+.wishlist-card {
+  display: flex;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: box-shadow 0.2s;
+}
+
+.wishlist-card:hover {
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+
+/* Ảnh */
+.wishlist-img {
+  width: 110px;
+  height: 110px;
+  background: #e6e6e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wishlist-img-icon {
+  font-size: 36px;
+}
+
+/* Info */
+.wishlist-info {
+  flex: 1;
+  padding: 12px 16px;
+}
+
+.wishlist-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #3C3C3C;
+  margin-bottom: 4px;
+}
+
+.wishlist-price {
+  font-size: 18px;
+  font-weight: 800;
+  color: #C75F4B;
+}
+
+.wishlist-stock {
+  font-size: 13px;
+  color: #777;
+  margin-top: 4px;
+}
+
+/* Actions */
+.wishlist-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  align-items: flex-end;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #d33;
+  font-size: 20px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.remove-btn:hover {
+  color: #b00;
+}
+
+.add-btn {
+  padding: 8px 14px;
+  background: #4A6D56;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.add-btn:hover {
+  opacity: 0.9;
+}
+
+.add-btn.disabled {
+  background: #bbb;
+  cursor: not-allowed;
+}
+
+/* ===== Empty State ===== */
+.wishlist-empty {
+  text-align: center;
+  padding: 40px 20px;
+  background: #E5D3BDcc;
+  border-radius: 14px;
+}
+
+.empty-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.empty-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.empty-desc {
+  font-size: 14px;
+  color: #555;
+}
+
+.continue-btn {
+  margin-top: 14px;
+  padding: 10px 24px;
+  background: #C75F4B;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.continue-btn:hover {
+  opacity: 0.9;
+}
+
+/* ===== Clear expired ===== */
+.wishlist-clear {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.clear-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.clear-btn:hover {
+  color: #d33;
+}

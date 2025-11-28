@@ -1,0 +1,119 @@
+/* -----------------------------------
+   COLOR SYSTEM
+----------------------------------- */
+:root {
+  --primary-bg: #e5d3bd;
+  --secondary-bg: #fbf8f5;
+  --accent-orange: #c75f4b;
+  --accent-green: #4a6d56;
+  --text-dark: #3c3c3c;
+  --text-light: #6f6f6f;
+}
+
+/* -----------------------------------
+   PAGE LAYOUT
+----------------------------------- */
+.terms-page {
+  background: var(--secondary-bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.terms-container {
+  width: 100%;
+  max-width: 850px;
+  margin-top: 40px;
+  margin-bottom: 80px;
+  padding: 0 20px;
+}
+
+/* -----------------------------------
+   TITLES & TEXT
+----------------------------------- */
+.terms-title {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.terms-updated {
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.terms-intro {
+  color: #555;
+  font-size: 15px;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+/* -----------------------------------
+   POLICY BOX
+----------------------------------- */
+.policy-box {
+  background: var(--primary-bg);
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.policy-section {
+  padding-bottom: 22px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #c2c2c2;
+}
+
+.policy-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.policy-heading {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent-green);
+  margin-bottom: 10px;
+}
+
+.policy-list {
+  padding-left: 20px;
+  color: #444;
+  line-height: 1.55;
+}
+
+.policy-text {
+  color: #444;
+  line-height: 1.55;
+}
+
+/* -----------------------------------
+   SUPPORT CTA
+----------------------------------- */
+.support-box {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 25px;
+  border-top: 1px solid #ccc;
+  color: #444;
+}
+
+.support-button {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 12px 26px;
+  background: var(--accent-orange);
+  border-radius: 999px;
+  font-weight: 700;
+  color: #fff;
+  transition: 0.2s ease;
+}
+
+.support-button:hover {
+  opacity: 0.85;
+}

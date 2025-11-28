@@ -1,0 +1,182 @@
+/* ===== Layout Chung ===== */
+.coupon-page {
+  max-width: 760px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #fff;
+}
+
+.coupon-heading {
+  font-size: 26px;
+  font-weight: 700;
+  color: #4a6d56;
+  margin-bottom: 24px;
+}
+
+/* ===== Bộ Lọc ===== */
+.coupon-filter {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 24px;
+}
+
+.filter-item {
+  padding: 8px 18px;
+  border-radius: 20px;
+  background: #f2f2f2;
+  color: #444;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.filter-item:hover {
+  background: #e6e6e6;
+}
+
+.filter-active {
+  background: #c75f4b;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.18);
+}
+
+/* ===== Danh Sách Coupon ===== */
+.coupon-grid {
+  display: grid;
+  gap: 20px;
+}
+
+/* ===== Card Coupon ===== */
+.coupon-card {
+  position: relative;
+  padding: 20px;
+  border-radius: 14px;
+  border: 2px solid #ccc;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  transition: 0.2s;
+}
+
+.coupon-card.active {
+  border-color: #4a6d56;
+}
+
+.coupon-card.disabled {
+  opacity: 0.5;
+}
+
+/* Status góc phải */
+.coupon-status {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-bottom-left-radius: 8px;
+  color: #fff;
+}
+
+.status-green {
+  background: #4a6d56;
+}
+
+.status-gray {
+  background: #888;
+}
+
+/* Body coupon */
+.coupon-body {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.coupon-info {
+  flex: 2;
+}
+
+.coupon-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #555;
+}
+
+.title-orange {
+  color: #c75f4b;
+}
+
+.coupon-min {
+  font-size: 13px;
+  color: #777;
+}
+
+/* Code box */
+.coupon-code-wrap {
+  flex: 1;
+  text-align: right;
+}
+
+.coupon-code-box {
+  padding: 8px;
+  border: 2px dashed #bbb;
+  border-radius: 10px;
+}
+
+.coupon-code {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.coupon-copy {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #4a6d56;
+  cursor: pointer;
+}
+
+.coupon-unavailable {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+}
+
+.coupon-expire {
+  font-size: 12px;
+  color: #777;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+}
+
+/* ===== Rỗng ===== */
+.coupon-empty {
+  padding: 24px;
+  background: #e5d3bd;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.empty-sub {
+  font-size: 13px;
+  margin-top: 6px;
+  color: #666;
+}
+
+/* ===== Link ưu đãi thêm ===== */
+.coupon-more {
+  margin-top: 30px;
+  padding-top: 16px;
+  border-top: 1px solid #ddd;
+  text-align: center;
+}
+
+.coupon-more a {
+  color: #4a6d56;
+  font-weight: 500;
+  text-decoration: none;
+}

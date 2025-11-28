@@ -1,18 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, db } from "../../firebase"; // adjust path
+import { auth, db } from "../../firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Line, Pie } from 'react-chartjs-2';
-import "../../../css/dashboard.css";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Line, Pie } from "react-chartjs-2";
+import "../../../css/admin/dashboard.css";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Tooltip,
+  Legend
+);
 
-// --- Format tiền tệ ---
+// --- FORMAT TIỀN ---
 const formatCurrency = (amount: number) =>
   Number(amount).toLocaleString("vi-VN") + " VNĐ";
 
-// --- Component Metric Card ---
+// --- KPI COMPONENT ---
 interface MetricCardProps {
   title: string;
   value: number;
@@ -23,27 +40,30 @@ interface MetricCardProps {
 function MetricCard({ title, value, change, isMoney = false }: MetricCardProps) {
   const isPositive = change >= 0;
   const arrow = isPositive ? "↑" : "↓";
-  const changeClass = isPositive ? "metric-change-positive" : "metric-change-negative";
+  const changeClass = isPositive
+    ? "metric-change-positive"
+    : "metric-change-negative";
 
   return (
     <div className="metric-card">
       <p className="metric-title">{title}</p>
-      <h3 className="metric-value">{isMoney ? formatCurrency(value) : value.toLocaleString("vi-VN")}</h3>
+      <h3 className="metric-value">
+        {isMoney
+          ? formatCurrency(value)
+          : value.toLocaleString("vi-VN")}
+      </h3>
       <div className="metric-change-container">
-        <span className={changeClass}>{arrow} {Math.abs(change).toLocaleString("vi-VN")}%</span>
+        <span className={changeClass}>
+          {arrow} {Math.abs(change)}%
+        </span>
         <span className="metric-change-subtext">so với tháng trước</span>
       </div>
     </div>
   );
 }
 
-// --- Chart Placeholder (sử dụng ChartJS) ---
-interface ChartPlaceholderProps {
-  title: string;
-  type: "line" | "pie";
-}
-
-function ChartPlaceholder({ title, type }: ChartPlaceholderProps) {
+// --- BIỂU ĐỒ ---
+function ChartPlaceholder({ title, type }: { title: string; type: "line" | "pie" }) {
   if (type === "line") {
     const data = {
       labels: ["Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11"],
@@ -83,8 +103,16 @@ function ChartPlaceholder({ title, type }: ChartPlaceholderProps) {
   }
 }
 
-// --- Sidebar Component ---
+// --- SIDEBAR ---
 function AdminSidebar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("adminLoginInfo");
+    auth.signOut();
+    navigate("/admin");
+  };
+
   const menuItems = [
     { label: "Dashboard", icon: "🏠", path: "/dashboard" },
     { label: "Quản Lý Đơn Hàng", icon: "📦", path: "/orders" },
@@ -94,12 +122,6 @@ function AdminSidebar() {
     { label: "Báo Cáo", icon: "📊", path: "/reports" },
     { label: "Cấu Hình", icon: "⚙️", path: "/settings" },
   ];
-
-  const navigate = useNavigate();
-  const handleLogout = () => {
-    localStorage.removeItem("adminLoginInfo");
-    navigate("/admin");
-  };
 
   return (
     <div className="sidebar">
@@ -114,48 +136,53 @@ function AdminSidebar() {
           </li>
         ))}
       </ul>
+
       <div className="sidebar-footer">
-        <button className="logout-button" onClick={handleLogout}><span>🚪</span> Đăng Xuất</button>
+        <button className="logout-button" onClick={handleLogout}>
+          <span>🚪</span> Đăng Xuất
+        </button>
       </div>
     </div>
   );
 }
 
-// --- Admin Dashboard Page ---
+// --- DASHBOARD PAGE ---
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const [adminName, setAdminName] = useState<string>("Admin");
+  const [adminName, setAdminName] = useState("Admin");
 
-  // --- Kiểm tra login và lấy tên từ Firestore ---
   useEffect(() => {
-    const saved = localStorage.getItem("adminLoginInfo");
-    if (!saved) {
-      navigate("/admin");
-      return;
-    }
-    const info = JSON.parse(saved);
-    if (new Date().getTime() > info.expiry) {
-      localStorage.removeItem("adminLoginInfo");
-      navigate("/admin");
-      return;
-    }
-
-    // Lấy tên từ Firestore
-    const fetchAdmin = async () => {
-      try {
-        const docRef = doc(db, "admins", info.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setAdminName(data.name || "Admin");
-        }
-      } catch (error) {
-        console.error("Không thể lấy tên admin:", error);
+    // 1) Kiểm tra session Firebase (luôn luôn có)
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        // Không có session → Quay về đăng nhập
+        navigate("/admin");
+        return;
       }
-    };
-    fetchAdmin();
+
+      // 2) Kiểm tra xem user có chọn “ghi nhớ đăng nhập” hay không
+      const saved = localStorage.getItem("adminLoginInfo");
+
+      if (saved) {
+        // --- TRƯỜNG HỢP GHI NHỚ ---
+        const info = JSON.parse(saved);
+        if (Date.now() > info.expiry) {
+          localStorage.removeItem("adminLoginInfo");
+          navigate("/admin");
+          return;
+        }
+      }
+      // Nếu không lưu → vẫn cho vào (chỉ giữ trong phiên)
+
+      // 3) Lấy tên admin
+      const snap = await getDoc(doc(db, "admins", user.uid));
+      if (snap.exists()) setAdminName(snap.data().name || "Admin");
+    });
+
+    return () => unsubscribe();
   }, [navigate]);
 
+  // --- KPI ---
   const kpiData = [
     { title: "Tổng Doanh Thu (Tháng này)", value: 125400000, change: 15.2, isMoney: true },
     { title: "Số Lượng Đơn Hàng", value: 850, change: 8.5 },
@@ -163,7 +190,7 @@ export default function AdminDashboardPage() {
     { title: "Tỉ Lệ Chuyển Đổi", value: 2.5, change: 0.5 },
   ];
 
-  // Top sản phẩm hardcode với ảnh, mã danh mục, mã sản phẩm
+  // --- TOP PRODUCTS ---
   const topProducts = [
     { name: "Nến Thơm Organic Vỏ Cam Quế", image: "/images/candle.jpg", categoryCode: "C001", productCode: "P001" },
     { name: "Hộp Trà Hoa Cúc Thư Giãn", image: "/images/tea.jpg", categoryCode: "C002", productCode: "P002" },
@@ -179,15 +206,15 @@ export default function AdminDashboardPage() {
       <div className="dashboard-content">
         <header className="dashboard-header">
           <h2 className="dashboard-title">Tổng Quan Hoạt Động</h2>
-          <span className="dashboard-greeting">Xin chào, Admin {adminName} (Phiên bản Flash 2.5)</span>
+          <span className="dashboard-greeting">
+            Xin chào, {adminName} (Phiên bản Flash 2.5)
+          </span>
         </header>
 
-        {/* KPI Grid */}
         <div className="kpi-grid">
-          {kpiData.map((data, index) => <MetricCard key={index} {...data} />)}
+          {kpiData.map((d, i) => <MetricCard key={i} {...d} />)}
         </div>
 
-        {/* Charts & Details */}
         <div className="charts-grid">
           <div className="charts-main">
             <ChartPlaceholder title="Biểu Đồ Doanh Thu 6 Tháng Gần Nhất" type="line" />
@@ -198,10 +225,12 @@ export default function AdminDashboardPage() {
             <ul className="top-products-list">
               {topProducts.map((p) => (
                 <li key={p.productCode} className="top-product-item">
-                  <img src={p.image} alt={p.name} className="top-product-image" />
+                  <img src={p.image} className="top-product-image" />
                   <div className="top-product-info">
                     <p className="top-product-name">{p.name}</p>
-                    <p className="top-product-codes">Danh mục: {p.categoryCode} | Mã SP: {p.productCode}</p>
+                    <p className="top-product-codes">
+                      Danh mục: {p.categoryCode} | Mã SP: {p.productCode}
+                    </p>
                   </div>
                 </li>
               ))}
@@ -238,7 +267,9 @@ export default function AdminDashboardPage() {
                 </tr>
               </tbody>
             </table>
-            <a href="/orders" className="view-all-orders">→ Xem Toàn Bộ Đơn Hàng</a>
+            <a href="/orders" className="view-all-orders">
+              → Xem Toàn Bộ Đơn Hàng
+            </a>
           </div>
         </div>
       </div>

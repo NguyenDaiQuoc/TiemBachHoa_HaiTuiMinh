@@ -1,0 +1,241 @@
+/* ─────────────────────────────────────────────── */
+/* BASE LAYOUT */
+/* ─────────────────────────────────────────────── */
+
+.blog-wrapper {
+  background: #fbf8f5;
+  min-height: 100vh;
+  padding: 40px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.blog-container {
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 24px;
+}
+
+/* ─────────────────────────────────────────────── */
+/* HEADER BÀI VIẾT */
+/* ─────────────────────────────────────────────── */
+
+.blog-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.blog-category {
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #c75f4b;
+  color: white;
+  border-radius: 6px;
+  letter-spacing: 1px;
+}
+
+.blog-title {
+  font-size: 42px;
+  font-weight: 800;
+  color: #3c3c3c;
+  margin: 20px 0;
+  font-family: serif;
+}
+
+.blog-meta {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+/* ─────────────────────────────────────────────── */
+/* IMAGE */
+/* ─────────────────────────────────────────────── */
+
+.blog-image-box {
+  width: 100%;
+  max-height: 480px;
+  overflow: hidden;
+  border-radius: 16px;
+  margin-bottom: 48px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
+
+.blog-image-box img {
+  width: 100%;
+  object-fit: cover;
+}
+
+/* ─────────────────────────────────────────────── */
+/* LAYOUT 2 CỘT */
+/* ─────────────────────────────────────────────── */
+
+.blog-layout {
+  display: flex;
+  gap: 40px;
+}
+
+.blog-main {
+  width: 75%;
+}
+
+.blog-sidebar {
+  width: 25%;
+  background: #e5d3bd;
+  padding: 20px;
+  border-radius: 14px;
+  position: sticky;
+  top: 20px;
+  height: fit-content;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+/* ─────────────────────────────────────────────── */
+/* CONTENT BÊN TRONG */
+/* ─────────────────────────────────────────────── */
+
+.blog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.blog-paragraph {
+  font-size: 18px;
+  line-height: 1.7;
+  color: #444;
+}
+
+.blog-subtitle {
+  font-size: 26px;
+  margin-top: 28px;
+  font-weight: 700;
+  color: #4a6d56;
+}
+
+.blog-quote {
+  border-left: 4px solid #c75f4b;
+  padding-left: 16px;
+  color: #444;
+  font-style: italic;
+  margin: 24px 0;
+  font-size: 20px;
+}
+
+.blog-list {
+  padding-left: 20px;
+  line-height: 1.6;
+  color: #444;
+}
+
+.blog-list li {
+  margin-bottom: 8px;
+}
+
+/* ─────────────────────────────────────────────── */
+/* TAGS */
+/* ─────────────────────────────────────────────── */
+
+.blog-tags {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.tag-label {
+  font-weight: 600;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.tag-item {
+  background: #e2e2e2;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────── */
+/* SHARE */
+/* ─────────────────────────────────────────────── */
+
+.blog-share {
+  margin-top: 20px;
+  display: flex;
+  gap: 14px;
+  font-size: 15px;
+  color: #555;
+}
+
+.share-ico {
+  font-size: 22px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.share-ico:hover {
+  opacity: 0.7;
+}
+
+/* ─────────────────────────────────────────────── */
+/* SIDEBAR */
+/* ─────────────────────────────────────────────── */
+
+.sidebar-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #3c3c3c;
+  margin-bottom: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #999;
+}
+
+.sidebar-item {
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+
+.sidebar-item-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a6d56;
+}
+
+.sidebar-date {
+  font-size: 12px;
+  color: #555;
+}
+
+.sidebar-button {
+  width: 100%;
+  margin-top: 20px;
+  padding: 10px;
+  background: #c75f4b;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sidebar-button:hover {
+  opacity: 0.9;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .blog-layout {
+    flex-direction: column;
+  }
+  .blog-main,
+  .blog-sidebar {
+    width: 100%;
+  }
+}

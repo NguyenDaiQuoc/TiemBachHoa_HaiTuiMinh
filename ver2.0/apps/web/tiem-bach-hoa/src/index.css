@@ -606,12 +606,15 @@
   background-color: #e5d3bd; /* COLORS.primaryBg */
   align-items: center;
   gap: 20px;
+  width: 58rem;
 }
 
-.story-img {
-  width: 60%; /* w-3/5 */
-  height: 20rem; /* h-80 = 320px */
+.story-img img{
+  width: 100%; /* w-3/5 */
+  height: 25rem; /* h-80 = 320px */
   object-fit: cover;
+  background-repeat: no-repeat;
+  border-radius: 20px;
 }
 
 .story-image {
@@ -620,11 +623,6 @@
   object-fit: cover;
 }
 
-.story-img img {
-  width: 400px;
-  height: auto;
-  object-fit: cover;
-}
 
 .story-content {
   width: 40%; /* w-2/5 */
@@ -686,6 +684,12 @@
   grid-template-columns: 1fr; /* Mobile: 1 cột */
   gap: 2rem; /* gap-8 */
   font-size: 0.875rem;
+}
+
+.footer-icons {
+  display: grid;
+  gap: 0.25rem; /* space-x-4 */
+  grid-template-columns: repeat(3, 1fr);
 }
 
 /* TABLET */
@@ -1146,7 +1150,7 @@
   font-size: 20px;
   font-weight: bold;
   color: #fff;
-  background-color: #e5d3bd;
+  background-color: orange;
 }
 
 /* ZALO màu xanh */
@@ -1216,10 +1220,10 @@
 
 /* Back To Top Button */
 .backtotop {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: bold;
-  background: #e5d3bd;
-  color: white;
+  color: #fff;
+  background-color: orange;
 }
 
 /* ============================
@@ -1399,22 +1403,22 @@
 /* ===== Floating Panel (hover) ===== */
 .floating-panel {
   position: relative;
-  width: 18rem; /* gọn đẹp hơn 16rem */
+  width: 200px;
+  height: 18rem;
   background-color: #333;
-  background-image: url('sale_background.png') ;
-  background-repeat: no-repeat;                  /* KHÔNG lặp lại */
-  
   border-radius: 0.5rem;
   padding: 1rem .75rem;
   box-shadow: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
-  height: 20rem;
-  display: flex;
-  flex-direction: column;
   align-items: center;
   text-align: center;
-
   transition: all 0.3s ease;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #ccc;
+  padding: 10px;
 }
+
 
 /* ICON */
 .floating-icon {
@@ -1431,7 +1435,7 @@
   height: 3rem;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
-  background-image: url('/sale_background.png');
+  background-image: url('sale_background.png');
 }
 
 /* TEXT */
@@ -1440,7 +1444,7 @@
   font-weight: 700;
   font-size: 0.75rem;
   line-height: 1.2rem;
-  margin-top: 16.25rem;
+  margin-top: 16rem;
   text-align: center;
   font-family:'Science Gothic';
 }
@@ -1471,7 +1475,7 @@
 }
 
 .sale-redirect {
-  margin-top: 0.75rem;             /* mt-3 */
+  margin-top: 0rem;             /* mt-3 */
   padding: 0.5rem 1rem;            /* py-2 px-4 */
   background-color: #C75F4B;       /* bg-[#C75F4B] */
   color: #ffffff;                  /* text-white */
@@ -1526,12 +1530,6 @@
   height: 50px;
 }
 
-.floating-panel {
-  background: #fff;
-  border: 1px solid #ccc;
-  padding: 10px;
-  width: 200px;
-}
 
 .floating-button.expanded .floating-panel {
   display: block;

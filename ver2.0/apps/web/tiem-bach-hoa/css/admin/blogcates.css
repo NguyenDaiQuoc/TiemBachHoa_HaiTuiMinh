@@ -1,0 +1,197 @@
+/* ===============================
+   COLORS
+================================*/
+:root {
+  --bg-light: #f7f7f7;
+  --text-dark: #3c3c3c;
+  --accent-orange: #c75f4b;
+  --card-bg: #fff;
+  --status-show-bg: #d1fae5;
+  --status-show-text: #065f46;
+  --status-hide-bg: #fee2e2;
+  --status-hide-text: #991b1b;
+}
+
+/* ===============================
+   LAYOUT
+================================*/
+.blog-wrapper {
+  min-height: 100vh;
+  background: var(--bg-light);
+  display: flex;
+}
+
+.blog-container {
+  width: 100%;
+  padding: 32px;
+  font-family: sans-serif;
+}
+
+/* ===============================
+   HEADER
+================================*/
+.blog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.blog-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.btn-add {
+  background: var(--accent-orange);
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.btn-icon {
+  margin-right: 6px;
+  font-size: 16px;
+}
+
+/* ===============================
+   FILTER BAR
+================================*/
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 32px;
+}
+
+.filter-input {
+  flex-grow: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.btn-apply {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+}
+
+/* ===============================
+   TABLE
+================================*/
+.table-card {
+  background: var(--card-bg);
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow-x: auto;
+}
+
+.category-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.category-table th {
+  text-align: left;
+  padding: 12px 8px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-dark);
+  background: #f9fafb;
+}
+
+.category-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.cat-name {
+  font-weight: 600;
+}
+
+.cat-slug {
+  font-style: italic;
+  color: #666;
+  font-size: 12px;
+}
+
+.posts-label {
+  font-size: 12px;
+  color: #666;
+}
+
+/* ===============================
+   STATUS BADGE
+================================*/
+.status-badge {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.status-show {
+  background: var(--status-show-bg);
+  color: var(--status-show-text);
+}
+
+.status-hide {
+  background: var(--status-hide-bg);
+  color: var(--status-hide-text);
+}
+
+/* ===============================
+   ACTION BUTTONS
+================================*/
+.action-edit {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 500;
+  margin-right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.action-delete {
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ===============================
+   TABLE NOTE
+================================*/
+.table-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #555;
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "../../../css/adminindex.css";
+import "../../../css/admin/adminindex.css";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -53,12 +53,16 @@ export default function AdminLoginPage() {
       if (adminDoc.exists() && adminDoc.data().role === "admin") {
         // --- Ghi nhớ email ---
         if (rememberMe) {
-          localStorage.setItem("rememberedAdminEmail", email);
-          const expiry = new Date().getTime() + 24 * 60 * 60 * 1000 * 7; // 7 ngày
+          // --- Ghi nhớ đăng nhập 7 ngày ---
+          const expiry = new Date().getTime() + 24 * 60 * 60 * 1000 * 7;
           localStorage.setItem(LOGIN_KEY, JSON.stringify({ uid: user.uid, expiry }));
+          localStorage.setItem("rememberedAdminEmail", email);
         } else {
+          // ❗Không ghi nhớ → lưu chỉ trong sessionStorage
+          sessionStorage.setItem("sessionAdmin", JSON.stringify({ uid: user.uid }));
           localStorage.removeItem("rememberedAdminEmail");
         }
+
 
         // Fade-out + navigate
         setFade(false);

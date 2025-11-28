@@ -160,7 +160,16 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
           )}
 
           {floatingExpanded && (
-            <div className="floating-panel expanded">
+            <div
+              className="floating-panel expanded"
+              style={{
+                backgroundImage: "url('/sale_background.png')",
+                alignItems: "center",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                
+              }}
+            >
               <button
                 className="close-floating"
                 onClick={(e) => {
@@ -172,7 +181,7 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
               </button>
 
               <div className="flash-sale-text">
-                Mừng BlackFriday - Giảm giá đến 60%<br />
+                {/* Mừng BlackFriday - Giảm giá đến 60%<br /> */}
                 Còn: {countdown.days}d {countdown.hours}h {countdown.mins}m {countdown.secs}s kết thúc giảm giá
               </div>
               <button onClick={handleNavigate} className="sale-redirect">
@@ -194,7 +203,7 @@ export default function TiemBachHoaIndex() {
 
   const [products] = useState([
     { name: "Nến thơm thư giãn", price: "180.000đ", oldPrice: "200.000đ", tag: "Mới", image: "https://picsum.photos/100" },
-    { name: "Bánh quy yến mạch", price: "150.000đ", oldPrice: "180.000đ", tag: "Hot", image: "httpsum.photos/80" },
+    { name: "Bánh quy yến mạch", price: "150.000đ", oldPrice: "180.000đ", tag: "Hot", image: "https://picsum.photos/80" },
     { name: "Khăn quấn organic", price: "150.000đ", tag: null, image: "https://picsum.photos/20" },
   ]);
 
@@ -205,7 +214,6 @@ export default function TiemBachHoaIndex() {
     { name: "Vệ sinh nhà cửa", image: "https://picsum.photos/90" },
   ]);
 
-  // === Fade-in / Fade-out khi scroll ===
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -282,14 +290,15 @@ export default function TiemBachHoaIndex() {
       <div className="story-wrapper fade-in-section">
         <div className="story-img">
           <img
-            src="https://via.placeholder.com/300x500/E5D3BD?text=Hero%20Image"
+            src="/images/story.png"
             alt="Story"
           />
         </div>
         <div className="story-content">
           <h2 className="story-title">Câu chuyện nhà Hai Đứa</h2>
           <p className="story-text">
-            Tụi mình tin những điều nhỏ bé, chân thật tạo nên tổ ấm...
+            Tụi mình tin rằng một ngôi nhà đầy đủ tiện nghi và đồ dùng chất lượng giúp mỗi ngày trở của bạn nên dễ dàng và vui hơn 🫶...
+
           </p>
           <button className="story-button">Đọc thêm</button>
         </div>

@@ -1,0 +1,198 @@
+/* Wrapper & Layout */
+.tracking-wrapper {
+  font-family: sans-serif;
+  background-color: #FBF8F5;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  align-items: center;
+}
+.tracking-content {
+  width: 100%;
+  max-width: 900px;
+  padding: 2rem;
+}
+
+/* Timeline */
+.timeline-wrapper {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  padding: 2rem 0;
+}
+.timeline-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 0.25rem;
+  background-color: #D4C6B1;
+  border-radius: 9999px;
+  z-index: 0;
+}
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 25%;
+  z-index: 10;
+}
+.timeline-circle {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: white;
+  border: 2px solid #9CA3AF;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.timeline-circle.active {
+  background-color: #4A6D56;
+  color: white;
+}
+.timeline-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  color: #9CA3AF;
+}
+.timeline-name.active {
+  color: #4A6D56;
+}
+.timeline-date {
+  font-size: 0.75rem;
+  color: #D1D5DB;
+}
+.timeline-date.active {
+  color: #6B7280;
+}
+
+/* Map */
+.map-wrapper {
+  padding: 1.5rem;
+  background-color: #E5D3BD;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+}
+.map-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #3C3C3C;
+}
+.map-box {
+  position: relative;
+  height: 14rem;
+  border-radius: 1rem;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 2px solid #D1D5DB;
+}
+.map-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #D1D5DB;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-style: italic;
+  color: #6B7280;
+  text-align: center;
+  padding: 1rem;
+}
+.map-truck {
+  position: absolute;
+  top: 50%;
+  left: 60%;
+  transform: translate(-50%, -50%);
+  padding: 0.5rem;
+  border-radius: 50%;
+  background-color: #4A6D56;
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.map-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.highlight-green { color: #4A6D56; font-weight: bold; }
+.highlight-orange { color: #C75F4B; font-weight: bold; }
+
+/* Checkpoints */
+.map-checkpoints h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #3C3C3C;
+}
+.checkpoint {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+.checkpoint-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: #9CA3AF;
+  margin-right: 0.5rem;
+  margin-top: 0.25rem;
+}
+.checkpoint-dot.highlight-orange { background-color: #C75F4B; }
+.checkpoint-time {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+/* Chi tiết đơn hàng */
+.tracking-grid {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+.tracking-info, .tracking-products {
+  width: 50%;
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid #D1D5DB;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.summary { margin-top: 0.75rem; border-top: 1px dashed #D1D5DB; padding-top: 0.75rem; }
+.summary-row { display: flex; justify-content: space-between; margin-bottom: 0.25rem; }
+.summary-row.total { font-weight: bold; font-size: 1rem; }
+
+/* Products */
+.product-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+.product-row:last-child { border-bottom: none; }
+
+/* Support */
+.tracking-support {
+  margin-top: 2.5rem;
+  text-align: center;
+}
+.btn-support {
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  font-weight: bold;
+  border: 2px solid #4A6D56;
+  color: #4A6D56;
+  background-color: transparent;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btn-support:hover { background-color: white; }

@@ -1,0 +1,191 @@
+/* =======================================
+   COLOR SYSTEM (dùng chung toàn dự án)
+======================================= */
+:root {
+  --primary-bg: #e5d3bd;
+  --secondary-bg: #fbf8f5;
+  --accent-orange: #c75f4b;
+  --accent-green: #4a6d56;
+
+  --text-main: #3c3c3c;
+}
+
+/* =======================================
+   LAYOUT WRAPPER
+======================================= */
+.ab-wrapper {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.06);
+}
+
+.ab-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--accent-green);
+  margin-bottom: 25px;
+}
+
+/* =======================================
+   BUTTON: ADD NEW ADDRESS
+======================================= */
+.ab-add-btn {
+  width: 100%;
+  padding: 14px;
+  border: 2px dashed var(--accent-orange);
+  color: var(--accent-orange);
+  background: transparent;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ab-add-btn:hover {
+  background: rgba(229, 211, 189, 0.4);
+}
+
+.ab-add-icon {
+  font-size: 26px;
+  margin-right: 6px;
+}
+
+/* =======================================
+   GRID LIST
+======================================= */
+.ab-grid {
+  margin-top: 25px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+@media (min-width: 768px) {
+  .ab-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* =======================================
+   ADDRESS CARD
+======================================= */
+.ab-card {
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 14px;
+  transition: 0.2s;
+}
+
+.ab-card-default {
+  border: 2px solid var(--accent-green);
+  box-shadow: 0 0 10px rgba(74, 109, 86, 0.3);
+}
+
+.ab-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.ab-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+}
+
+.ab-badge-default {
+  margin-left: 6px;
+  font-size: 11px;
+  padding: 3px 7px;
+  border-radius: 10px;
+  background: var(--accent-green);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* =======================================
+   ACTION BUTTONS
+======================================= */
+.ab-actions {
+  display: flex;
+  font-size: 14px;
+}
+
+.ab-action-edit {
+  color: var(--accent-orange);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ab-action-edit:hover {
+  opacity: 0.8;
+}
+
+.ab-action-delete {
+  color: red;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ab-action-delete:hover {
+  opacity: 0.8;
+}
+
+.ab-divider {
+  margin: 0 8px;
+  color: #bbb;
+}
+
+/* =======================================
+   ADDRESS INFO
+======================================= */
+.ab-info {
+  font-size: 14px;
+  margin: 4px 0;
+  color: #444;
+}
+
+/* =======================================
+   SET DEFAULT
+======================================= */
+.ab-set-default {
+  margin-top: 12px;
+  background: none;
+  border: none;
+  color: var(--accent-green);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ab-set-default:hover {
+  opacity: 0.8;
+}
+
+/* =======================================
+   EMPTY STATE
+======================================= */
+.ab-empty-box {
+  margin-top: 20px;
+  padding: 18px;
+  background: var(--primary-bg);
+  opacity: 0.9;
+  border-radius: 14px;
+  color: #444;
+  text-align: center;
+}

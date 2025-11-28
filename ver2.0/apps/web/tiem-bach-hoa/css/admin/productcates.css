@@ -1,0 +1,144 @@
+:root {
+  --primary-dark: #4a6d56;
+  --accent-orange: #c75f4b;
+  --bg-light: #f7f7f7;
+  --text-dark: #3c3c3c;
+  --border-gray: #e0e0e0;
+  --green: #16a34a;
+  --red: #dc2626;
+  --gray-light: #f3f4f6;
+  --gray-dark: #555;
+}
+
+/* Layout */
+.page-wrapper {
+  min-height: 100vh;
+  font-family: sans-serif;
+  background: var(--bg-light);
+  padding: 32px;
+}
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.content-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--text-dark);
+}
+
+/* Buttons */
+.btn-add-category {
+  background: var(--accent-orange);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+.btn-edit {
+  color: var(--primary-dark);
+  margin-right: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.btn-edit:hover {
+  text-decoration: underline;
+}
+.btn-delete {
+  color: var(--red);
+  font-size: 12px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.btn-delete:hover {
+  text-decoration: underline;
+}
+
+/* Table */
+.table-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+.category-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.category-table th,
+.category-table td {
+  padding: 12px;
+  font-size: 14px;
+  text-align: left;
+}
+.category-table th {
+  background: var(--gray-light);
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 12px;
+}
+.category-row:hover {
+  background: var(--gray-light);
+  border-bottom: 1px dashed var(--border-gray);
+}
+.prefix {
+  margin-right: 4px;
+  color: var(--gray-dark);
+}
+.category-name {
+  font-weight: 600;
+}
+
+/* Status */
+.status {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+.status-visible {
+  background: #d1fae5;
+  color: var(--green);
+}
+.status-hidden {
+  background: #fee2e2;
+  color: var(--red);
+}
+
+/* Table Note */
+.table-note {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--gray-dark);
+  border-top: 1px solid var(--gray-light);
+  background: #f9fafb;
+}
+
+/* SEO Tool */
+.seo-tool {
+  margin-top: 32px;
+  padding: 20px;
+  border-radius: 12px;
+  background: rgba(74, 109, 86, 0.1);
+}
+.seo-tool h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: var(--text-dark);
+}
+.seo-tool p {
+  font-size: 14px;
+  color: #333;
+}

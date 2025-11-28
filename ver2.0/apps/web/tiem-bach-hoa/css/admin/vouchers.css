@@ -1,0 +1,218 @@
+:root {
+  --primary-dark: #4a6d56;
+  --accent-orange: #c75f4b;
+  --bg-light: #f7f7f7;
+  --text-dark: #3c3c3c;
+  --border-gray: #e0e0e0;
+  --green: #16a34a;
+  --blue: #3b82f6;
+  --red: #dc2626;
+  --yellow: #ca8a04;
+}
+
+/* Layout */
+.page-wrapper {
+  min-height: 100vh;
+  font-family: sans-serif;
+  background: var(--bg-light);
+  padding: 32px;
+}
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.content-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--text-dark);
+}
+.btn-create {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--accent-orange);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Metrics */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.metric-card {
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-left-width: 4px;
+}
+.metric-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+.metric-value {
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+.metric-total {
+  border-color: var(--primary-dark);
+  color: var(--text-dark);
+}
+.metric-active {
+  border-color: var(--green);
+  color: var(--green);
+}
+.metric-usage {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+.filter-input,
+.filter-select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-gray);
+}
+.filter-input:focus,
+.filter-select:focus {
+  border-color: var(--primary-dark);
+  outline: none;
+}
+.btn-apply {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-gray);
+  background: #fff;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+.btn-apply:hover {
+  background: #f3f4f6;
+}
+
+/* Table */
+.table-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+.voucher-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.voucher-table th,
+.voucher-table td {
+  padding: 12px;
+  font-size: 14px;
+  text-align: left;
+}
+.voucher-table th {
+  background: #f3f4f6;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 12px;
+}
+.voucher-row:hover {
+  background: #f9fafb;
+  border-bottom: 1px dashed var(--border-gray);
+}
+.voucher-id {
+  font-weight: 700;
+  color: var(--accent-orange);
+}
+.validity {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+/* Status */
+.status {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+.status-active {
+  background: #d1fae5;
+  color: var(--green);
+}
+.status-expired {
+  background: #fee2e2;
+  color: var(--red);
+}
+.status-paused {
+  background: #fef3c7;
+  color: var(--yellow);
+}
+
+/* Buttons in table */
+.btn-edit {
+  font-size: 12px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--blue);
+}
+.btn-edit:hover {
+  text-decoration: underline;
+}
+.btn-stop {
+  font-size: 12px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--red);
+}
+.btn-stop:hover {
+  text-decoration: underline;
+}
+
+/* Pagination */
+.table-pagination {
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e5e7eb;
+  font-size: 12px;
+  color: #555;
+}
+.pagination-buttons {
+  display: flex;
+  gap: 4px;
+}
+.pagination-buttons button {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.current-page {
+  background: #e5e7eb;
+  font-weight: bold;
+}

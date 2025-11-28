@@ -1,0 +1,197 @@
+:root {
+  --primary-dark: #4a6d56;
+  --accent-orange: #c75f4b;
+  --bg-light: #f7f7f7;
+  --text-dark: #3c3c3c;
+  --border-gray: #e0e0e0;
+  --red: #dc2626;
+  --yellow: #facc15;
+  --green: #16a34a;
+  --blue: #2563eb;
+  --gray-light: #f3f4f6;
+  --gray-dark: #555;
+}
+
+/* Layout */
+.page-wrapper {
+  min-height: 100vh;
+  font-family: sans-serif;
+  background: var(--bg-light);
+  padding: 32px;
+}
+.content-header {
+  margin-bottom: 24px;
+}
+.content-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--text-dark);
+}
+
+/* Metrics */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.metric-card {
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-left-width: 4px;
+}
+.metric-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-dark);
+}
+.metric-value {
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 6px;
+  color: var(--text-dark);
+}
+.metric-card.primary {
+  border-left-color: var(--primary-dark);
+}
+.metric-card.urgent {
+  border-left-color: var(--red);
+  color: var(--red);
+}
+.metric-card.processing {
+  border-left-color: var(--blue);
+  color: var(--blue);
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.toolbar input,
+.toolbar select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-gray);
+  font-size: 14px;
+}
+.btn-apply {
+  padding: 6px 12px;
+  background: var(--accent-orange);
+  color: #fff;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+.btn-add {
+  padding: 6px 12px;
+  border: 1px solid var(--border-gray);
+  border-radius: 6px;
+  cursor: pointer;
+  background: #fff;
+}
+
+/* Table */
+.table-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.orders-table th,
+.orders-table td {
+  padding: 12px;
+  font-size: 14px;
+  text-align: left;
+}
+.orders-table th {
+  background: var(--gray-light);
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 12px;
+}
+.orders-table tbody tr:hover {
+  background: var(--gray-light);
+}
+
+.total {
+  font-weight: bold;
+}
+.actions button {
+  margin-right: 6px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+}
+.edit-btn {
+  color: var(--blue);
+}
+.edit-btn:hover {
+  text-decoration: underline;
+}
+.delete-btn {
+  color: var(--red);
+}
+.delete-btn:hover {
+  text-decoration: underline;
+}
+
+/* Status */
+.status {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 12px;
+  text-align: center;
+}
+.status-pending {
+  background: #fee2e2;
+  color: var(--red);
+}
+.status-paid {
+  background: #fef3c7;
+  color: var(--yellow);
+}
+.status-delivered {
+  background: #d1fae5;
+  color: var(--green);
+}
+.status-cancelled {
+  background: #e5e7eb;
+  color: var(--gray-dark);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  font-size: 12px;
+}
+.pages {
+  display: flex;
+  gap: 4px;
+}
+.pages button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-gray);
+  cursor: pointer;
+}
+.pages .current {
+  font-weight: bold;
+  color: #fff;
+  background: var(--primary-dark);
+  border: none;
+}

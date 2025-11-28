@@ -1,0 +1,159 @@
+/* --- Wrapper Layout --- */
+.checkout-wrapper {
+  background: #fbf8f5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.checkout-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  gap: 40px;
+  padding: 50px 20px 80px;
+}
+
+/* --- Columns --- */
+.checkout-left {
+  width: 65%;
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+}
+
+.checkout-right {
+  width: 35%;
+}
+
+/* --- Typography --- */
+.checkout-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #3c3c3c;
+  margin-bottom: 25px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4a6d56;
+  margin-bottom: 15px;
+}
+
+/* --- Form Styles --- */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #3c3c3c;
+}
+
+.form-group input {
+  padding: 12px;
+  border: 1px solid #d6d6d6;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+/* --- Shipping & Payment Blocks --- */
+.section-block {
+  padding: 20px 0;
+  border-top: 1px solid #e0e0e0;
+}
+
+.shipping-option,
+.payment-option {
+  background: #e5d3bd;
+  padding: 12px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  border: 1px solid #c9b59d;
+}
+
+.payment-option {
+  margin-bottom: 10px;
+  background: #f0e3d6;
+}
+
+/* --- Summary Box --- */
+.summary-box {
+  background: #e5d3bd;
+  padding: 25px;
+  border-radius: 14px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.summary-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: #3c3c3c;
+}
+
+.summary-items {
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #474747;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: 800;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #bbb;
+  color: #4a6d56;
+}
+
+/* --- Submit Button --- */
+.btn-submit {
+  width: 100%;
+  padding: 14px 0;
+  background: #c75f4b;
+  color: white;
+  border: none;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 50px;
+  margin-top: 20px;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.btn-submit:hover {
+  opacity: 0.9;
+}

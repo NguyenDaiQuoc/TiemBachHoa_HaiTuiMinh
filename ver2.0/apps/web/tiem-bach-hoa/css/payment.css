@@ -1,0 +1,160 @@
+/* Wrapper & layout */
+.payment-wrapper {
+  font-family: sans-serif;
+  background-color: #FBF8F5;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  align-items: center;
+}
+.payment-content {
+  width: 100%;
+  max-width: 900px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tiêu đề */
+.payment-content h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  color: #4A6D56;
+}
+
+/* Tin cậy / bảo mật */
+.payment-trust {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background-color: #E5D3BD;
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+.payment-trust span {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+/* Nút thêm mới */
+.payment-add {
+  margin-bottom: 1.5rem;
+}
+.btn-add {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.75rem;
+  width: 100%;
+  border-radius: 1rem;
+  border: 2px dashed #C75F4B;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #C75F4B;
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.btn-add span {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+}
+.btn-add:hover {
+  background-color: rgba(229,211,189,0.4);
+}
+
+/* Danh sách thẻ thanh toán */
+.payment-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+@media (min-width: 768px) {
+  .payment-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.payment-empty {
+  padding: 2rem;
+  background-color: #E5D3BD;
+  border-radius: 1rem;
+  text-align: center;
+  color: #4A4A4A;
+}
+
+/* Thẻ thanh toán */
+.card-wrapper {
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background-color: white;
+  border: 1px solid #D1D5DB;
+  transition: box-shadow 0.2s;
+}
+.card-wrapper.card-default {
+  border: 2px solid #4A6D56;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #E5E7EB;
+  padding-bottom: 0.75rem;
+}
+.card-info {
+  display: flex;
+  align-items: center;
+}
+.card-icon {
+  font-size: 1.75rem;
+  margin-right: 0.75rem;
+}
+.card-name {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #3C3C3C;
+  display: flex;
+  align-items: center;
+}
+.card-default-label {
+  margin-left: 0.5rem;
+  font-size: 0.625rem;
+  font-weight: bold;
+  color: white;
+  background-color: #4A6D56;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+.action-edit { color: #C75F4B; cursor: pointer; }
+.action-edit:hover { opacity: 0.8; }
+.action-delete { color: #EF4444; cursor: pointer; }
+.action-delete:hover { color: #B91C1C; }
+
+/* Nội dung thẻ */
+.card-text {
+  font-size: 0.875rem;
+  color: #374151;
+  margin-top: 0.25rem;
+}
+
+/* Nút đặt mặc định */
+.btn-set-default {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4A6D56;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-set-default:hover { opacity: 0.8; }
