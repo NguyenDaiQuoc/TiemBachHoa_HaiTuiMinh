@@ -6,7 +6,7 @@
 }
 
 /* Sidebar */
-.sidebar {
+/* .admin-sidebar {
   width: 240px;
   background-color: #4a6d56;
   color: white;
@@ -17,7 +17,7 @@
   bottom: 0;
 }
 
-.sidebar-header {
+.admin-sidebar-header {
   font-size: 24px;
   font-weight: 800;
   margin-bottom: 32px;
@@ -25,7 +25,7 @@
   padding-bottom: 12px;
 }
 
-.sidebar-menu {
+.admin-sidebar-menu {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -57,14 +57,14 @@
   font-size: 20px;
 }
 
-.sidebar-footer {
+.admin-sidebar-footer {
   position: absolute;
   bottom: 16px;
   left: 16px;
   right: 16px;
   border-top: 1px solid #3c3c3c;
   padding-top: 16px;
-}
+} */
 
 .logout-button {
   width: 100%;
@@ -109,14 +109,14 @@
 }
 
 /* KPI Grid */
-.kpi-grid {
+.dashboard-kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 24px;
   margin-bottom: 40px;
 }
 
-.metric-card {
+.dashboard-metric-card {
   padding: 20px;
   background-color: white;
   border-radius: 16px;
@@ -125,7 +125,7 @@
   transition: box-shadow 0.3s;
 }
 
-.metric-card:hover {
+.dashboard-metric-card:hover {
   box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
@@ -167,7 +167,7 @@
 }
 
 /* Charts */
-.charts-grid {
+.dashboard-charts-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 24px;
@@ -180,7 +180,7 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.chart-card {
+.dashboard-chart-card {
   background-color: white;
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -188,7 +188,7 @@
   height: 320px;
 }
 
-.chart-title {
+.dashboard-chart-title {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 16px;
@@ -232,7 +232,7 @@
   color: #3c3c3c;
 }
 
-.orders-table {
+.dashboard-orders-table {
   width: 100%;
   text-align: left;
   font-size: 14px;

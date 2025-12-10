@@ -1,0 +1,138 @@
+/* src/components/Sidebar.css */
+
+/* --- Custom Properties --- */
+:root {
+    --color-primary-bg: #FBF8F5; /* Màu nền Sidebar (Tailwind: bg-[#FBF8F5]) */
+    --color-primary: #4A6D56; /* Màu chủ đạo/hover (Tailwind: text-[#4A6D56]) */
+    --color-accent: #C75F4B; /* Màu nhấn/active (Tailwind: bg-[#C75F4B]) */
+    --color-accent-hover: #E5D3BD; /* Màu hover nhẹ (Tailwind: hover:bg-[#E5D3BD]) */
+    --color-text-dark: #3C3C3C;
+}
+
+/* --- CONTAINER & LIST --- */
+
+.sidebar-container {
+    width: 100%;
+    /* w-full md:w-64 flex-shrink-0 */
+    min-width: 250px; 
+    max-width: 300px;
+    background-color: var(--color-primary-bg);
+    padding: 0.5rem; /* p-2 */
+    border-radius: 0.5rem; /* rounded-lg */
+    border: 1px solid #e0e0e0; /* border border-gray-200 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    height: fit-content;
+}
+
+@media (min-width: 768px) {
+    .sidebar-container {
+        /* Đảm bảo Sidebar có kích thước cố định trên desktop */
+        flex-shrink: 0;
+    }
+}
+
+.sidebar-loading {
+    padding: 1rem;
+    text-align: center;
+    color: var(--color-text-dark);
+}
+
+.sidebar-title {
+    font-weight: 700; /* font-bold */
+    font-size: 1.125rem; /* text-lg */
+    padding: 0.5rem; /* p-2 */
+    color: var(--color-text-dark);
+    border-bottom: 1px solid #e0e0e0; /* border-b */
+    margin-bottom: 0.5rem; /* mb-2 */
+}
+
+.tree-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    margin-top: 0.25rem;
+}
+
+.tree-item {
+    margin-bottom: 0.25rem; /* space-y-1 */
+}
+
+/* --- TREE ITEM LINK (Chung cho cả cấp 0 và cấp 1) --- */
+
+.tree-item-link {
+    display: flex;
+    align-items: center; /* items-center */
+    padding: 0.5rem 0.75rem; /* p-3 */
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 0.875rem; /* text-sm */
+    transition: all 0.2s ease-in-out;
+    border-radius: 0.375rem; /* rounded-md */
+    color: var(--color-text-dark); /* text-[#3C3C3C] */
+}
+
+.tree-item-link:hover {
+    background-color: var(--color-accent-hover); /* hover:bg-[#E5D3BD] */
+}
+
+.item-icon {
+    width: 1rem; /* w-4 */
+    height: 1rem; /* h-4 */
+    margin-right: 0.5rem; /* mr-2 */
+    object-fit: contain;
+}
+
+.item-name {
+    font-weight: 500; /* font-medium */
+}
+
+/* --- CẤP ĐỘ (TreeItem) --- */
+
+/* Cấp 0 (Root/Cha) */
+.tree-level-0 {
+    font-weight: 600;
+}
+
+/* Cấp 1 (Con) */
+.tree-level-1 {
+    /* Điều chỉnh lề để lồng vào trong */
+    padding-left: 2rem; /* pl-8 (Ghi đè cho cấp 1) */
+}
+
+
+/* --- TRẠNG THÁI ACTIVE (Đã chọn) --- */
+
+.active-item {
+    background-color: var(--color-accent) !important; /* bg-[#C75F4B] */
+    color: white !important;
+    box-shadow: 0 1px 3px rgba(199, 95, 75, 0.4);
+}
+
+.active-item:hover {
+    /* Giữ nguyên màu active khi hover */
+    background-color: var(--color-accent) !important;
+}
+
+
+/* --- TOGGLE ICON (Nút mở/đóng danh mục con) --- */
+
+.tree-toggle {
+    width: 1rem; /* w-4 */
+    text-align: center;
+    margin-right: 0.5rem; /* mr-2 */
+    color: var(--color-primary); /* text-[#4A6D56] */
+    transition: transform 0.2s; /* transition-transform */
+}
+
+.is-open {
+    transform: rotate(90deg); /* rotate-90 */
+}
+
+/* --- SUBMENU --- */
+
+.tree-submenu {
+    list-style: none;
+    padding: 0; /* pl-0 */
+    margin-top: 0.25rem; /* mt-1 */
+    margin-bottom: 0;
+}

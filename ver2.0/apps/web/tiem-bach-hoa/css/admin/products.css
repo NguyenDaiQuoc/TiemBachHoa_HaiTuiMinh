@@ -12,54 +12,54 @@
 }
 
 /* Layout */
-.page-wrapper {
+.admin-product-page-wrapper {
   display: flex;
   min-height: 100vh;
-  font-family: sans-serif;
   background: var(--secondary-light);
 }
-.sidebar {
+.admin-product-sidebar {
   width: 250px;
   background: var(--primary-dark);
   color: #fff;
   padding: 24px;
   flex-shrink: 0;
 }
-.sidebar-title {
+.admin-product-sidebar-title {
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 24px;
 }
-.sidebar-nav .sidebar-item {
+.admin-product-sidebar-nav .admin-product-sidebar-item {
   padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
   margin-bottom: 6px;
 }
-.sidebar-nav .sidebar-item.active {
+.admin-product-sidebar-nav .admin-product-sidebar-item.admin-product-active {
   background: #3c5745;
   font-weight: 600;
 }
-.sidebar-nav .sidebar-item:hover {
+.admin-product-sidebar-nav .admin-product-sidebar-item:hover {
   background: #3c5745;
 }
 
-.content {
+.admin-product-content {
+  margin-left: 280px;
   flex: 1;
   padding: 32px;
 }
-.content-header {
+.admin-product-content-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
 }
-.content-title {
+.admin-product-content-title {
   font-size: 28px;
   font-weight: bold;
   color: var(--text-dark);
 }
-.btn-add {
+.admin-product-btn-add {
   padding: 8px 16px;
   background: var(--primary-dark);
   color: #fff;
@@ -68,24 +68,24 @@
   border: none;
   cursor: pointer;
 }
-.btn-add:hover {
+.admin-product-btn-add:hover {
   background: #3c5745;
 }
 
 /* Toolbar */
-.toolbar {
+.admin-product-toolbar {
   display: flex;
   gap: 12px;
   margin-bottom: 24px;
 }
-.toolbar input,
-.toolbar select {
+.admin-product-toolbar input,
+.admin-product-toolbar select {
   padding: 6px 10px;
   border-radius: 6px;
   border: 1px solid var(--border-gray);
   font-size: 14px;
 }
-.btn-filter {
+.admin-product-btn-filter {
   padding: 6px 12px;
   background: var(--accent);
   color: #fff;
@@ -95,51 +95,57 @@
 }
 
 /* Table */
-.table-container {
+.admin-product-table-container {
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.admin-product-05);
   overflow-x: auto;
 }
-.products-table {
+.admin-product-products-table {
   width: 100%;
   border-collapse: collapse;
 }
-.products-table th,
-.products-table td {
+.admin-product-products-table th,
+.admin-product-products-table td {
   padding: 12px;
   font-size: 14px;
   text-align: left;
 }
-.products-table th {
+.admin-product-products-table th {
   background: var(--gray-light);
   text-transform: uppercase;
   font-weight: 600;
   color: var(--text-dark);
   font-size: 12px;
 }
-.products-table tbody tr:hover {
+.admin-product-products-table tbody tr:hover {
   background: var(--gray-light);
 }
 
-.product-name {
+.admin-product-product-name {
   font-weight: 600;
 }
-.sku {
+.admin-product-sku {
   font-size: 12px;
   color: var(--gray-dark);
 }
 
-.price {
+.pro-admin-product-price {
   color: var(--accent);
   font-weight: bold;
 }
-.low-stock {
+.admin-product-low-stock {
   color: var(--red);
   font-weight: bold;
 }
 
-.status {
+.product-old-price {
+  color: var(--gray-dark);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.admin-product-status {
   display: inline-block;
   padding: 2px 8px;
   font-size: 10px;
@@ -147,64 +153,144 @@
   border-radius: 12px;
   text-align: center;
 }
-.status-active {
+.admin-product-status-active {
   background: #d1fae5;
   color: var(--green);
 }
-.status-soldout {
+.admin-product-status-soldout {
   background: #fef3c7;
   color: var(--yellow);
 }
-.status-hidden {
+.admin-product-status-hidden {
   background: #fee2e2;
   color: var(--red);
 }
-.status-default {
+.admin-product-status-default {
   background: #f3f3f3;
   color: var(--gray-dark);
 }
 
-.actions button {
+.admin-product-actions button {
   margin-right: 6px;
   background: none;
   border: none;
   font-size: 12px;
   cursor: pointer;
 }
-.edit-btn {
+.admin-product-edit-btn {
   color: #2563eb;
 }
-.edit-btn:hover {
+.admin-product-edit-btn:hover {
   text-decoration: underline;
 }
-.delete-btn {
+.admin-product-delete-btn {
   color: var(--red);
 }
-.delete-btn:hover {
+.admin-product-delete-btn:hover {
   text-decoration: underline;
 }
 
 /* Pagination */
-.pagination {
+.admin-product-pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 16px;
   font-size: 12px;
 }
-.pages {
+.admin-product-pages {
   display: flex;
   gap: 4px;
 }
-.pages button {
+.admin-product-pages button {
   padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid var(--border-gray);
   cursor: pointer;
 }
-.pages .current {
+.admin-product-pages .admin-product-current {
   font-weight: bold;
   color: #fff;
   background: var(--primary-dark);
   border: none;
+}
+
+/* ======================================= */
+/* 4. MODAL CRUD (Form) */
+/* ======================================= */
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Lớp phủ mờ */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.modal-content label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.modal-content input[type="text"],
+.modal-content input[type="number"],
+.modal-content textarea,
+.modal-content select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.modal-actions {
+    margin-top: 30px;
+    text-align: right;
+}
+
+.modal-actions .btn-save,
+.modal-actions .btn-cancel {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.modal-actions .btn-save {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-actions .btn-cancel {
+    background-color: #6c757d;
+    color: white;
 }

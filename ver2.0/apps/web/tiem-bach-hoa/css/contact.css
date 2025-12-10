@@ -2,9 +2,9 @@
    Wrapper tổng
 =========================== */
 .contact-wrapper {
+  align-items: center;
   min-height: 100vh;
-  background: #FBF8F5;
-  font-family: "Inter", sans-serif;
+  background-color: #FBF8F5;
 }
 
 /* ===========================

@@ -1,10 +1,7 @@
 /* Wrapper & Layout */
 .auth-wrapper {
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
   background-color: #FBF8F5;
-  font-family: sans-serif;
   align-items: center;
 }
 .auth-content {

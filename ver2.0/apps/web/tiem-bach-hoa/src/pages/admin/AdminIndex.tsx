@@ -25,7 +25,7 @@ export default function AdminLoginPage() {
       if (now < info.expiry) {
         // Còn hạn → fade-out rồi chuyển hướng
         setFade(false);
-        setTimeout(() => navigate("/dashboard"), 100); // 0.3s fade
+        setTimeout(() => navigate("/admin/dashboard"), 100); // 0.3s fade
       } else {
         localStorage.removeItem(LOGIN_KEY);
       }
@@ -66,7 +66,7 @@ export default function AdminLoginPage() {
 
         // Fade-out + navigate
         setFade(false);
-        setTimeout(() => navigate("/dashboard"), 300); // 0.3s fade
+        setTimeout(() => navigate("/admin/dashboard"), 300); // 0.3s fade
       } else {
         setError("Bạn không có quyền admin.");
         await auth.signOut();

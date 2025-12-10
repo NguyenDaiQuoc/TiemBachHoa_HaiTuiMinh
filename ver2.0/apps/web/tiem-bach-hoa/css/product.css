@@ -1,10 +1,7 @@
 /* --- Page & Layout --- */
 .product-page {
-  display: flex;
-  flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  font-family: sans-serif;
   background-color: #FBF8F5;
 }
 
@@ -33,7 +30,7 @@
 .product-main {
   width: 100%;
   max-width: 1280px;
-  padding: 0 32px;
+  /* padding: 0 32px; */
   margin-top: 24px;
 }
 
@@ -240,15 +237,15 @@
   text-decoration: line-through;
 }
 
-/* --- Pagination --- */
-.pagination {
+/* --- product-pagination --- */
+.product-pagination {
   display: flex;
   justify-content: center;
   gap: 8px;
   margin-top: 40px;
 }
 
-.pagination button {
+.product-pagination button {
   padding: 8px 16px;
   border-radius: 9999px;
   border: 1px solid #D1D5DB;
@@ -256,9 +253,93 @@
   cursor: pointer;
 }
 
-.pagination-current {
+.product-pagination-current {
   background-color: #4A6D56;
   color: #333;
   font-weight: 700;
   border: none;
+}
+
+/* --- ACTIONS: WISHLIST & CART/BUY NOW --- */
+
+/* Khối chứa 2 nút Thao tác */
+.product-card-actions {
+    display: flex;
+    width: 100%;
+    gap: 8px; /* Khoảng cách giữa 2 nút */
+    margin-top: 12px;
+}
+
+/* 1. WISHLIST BUTTON (Nút Yêu Thích) */
+.wishlist-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    /* Nền trắng mờ để nổi bật trên ảnh */
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px; 
+    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s, background-color 0.2s;
+    outline: none;
+}
+
+.wishlist-btn:hover {
+    transform: scale(1.1);
+    background-color: #fff;
+}
+
+/* Icon được set trong JS (❤️ / 🤍) */
+.wishlist-btn.wished {
+    /* Khi đã ở trạng thái yêu thích, giữ nguyên style */
+}
+
+/* 2. Nút Thêm vào Giỏ (Chỉ Icon) */
+.add-to-cart-btn {
+    flex-grow: 1; /* Chiếm 1/4 không gian */
+    padding: 10px;
+    /* Màu phụ (Accent/Secondary) */
+    background-color: #4A6D56; 
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.125rem; /* Icon 🛒 */
+    transition: background-color 0.2s, opacity 0.2s;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-to-cart-btn:hover {
+    background-color: #385440; /* Màu đậm hơn khi hover */
+    opacity: 0.95;
+}
+
+/* 3. Nút Mua Ngay */
+.buy-now-btn {
+    flex-grow: 3; /* Chiếm 3/4 không gian */
+    padding: 10px 15px;
+    /* Màu chính (Primary) */
+    background-color: #C75F4B; 
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: background-color 0.2s, opacity 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.buy-now-btn:hover {
+    background-color: #a74f3c; /* Màu đậm hơn khi hover */
+    opacity: 0.95;
 }

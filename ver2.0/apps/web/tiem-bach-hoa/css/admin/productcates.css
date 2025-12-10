@@ -1,144 +1,194 @@
-:root {
-  --primary-dark: #4a6d56;
-  --accent-orange: #c75f4b;
-  --bg-light: #f7f7f7;
-  --text-dark: #3c3c3c;
-  --border-gray: #e0e0e0;
-  --green: #16a34a;
-  --red: #dc2626;
-  --gray-light: #f3f4f6;
-  --gray-dark: #555;
+/* ================================================= */
+/* 1. Layout cơ bản (Cần thiết cho Sidebar) */
+/* ================================================= */
+
+.cate-dashboard-container {
+  display: flex;
+  min-height: 100vh;
 }
 
-/* Layout */
-.page-wrapper {
-  min-height: 100vh;
-  font-family: sans-serif;
-  background: var(--bg-light);
-  padding: 32px;
+.cate-dashboard-content {
+  margin-left: 280px;
+  flex-grow: 1;
+  padding: 20px 30px;
+  background-color: #f4f7f9;
 }
-.content-header {
+
+/* ================================================= */
+/* 2. Header và Button Thêm mới */
+/* ================================================= */
+.cate-content-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-}
-.content-title {
-  font-size: 28px;
-  font-weight: bold;
-  color: var(--text-dark);
+  margin-bottom: 25px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ddd;
 }
 
-/* Buttons */
-.btn-add-category {
-  background: var(--accent-orange);
-  color: #fff;
-  padding: 6px 12px;
+.cate-content-title {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.cate-btn-add-category {
+  background-color: #4a6d56;
+  color: white;
+  border: none;
+  padding: 10px 15px;
   border-radius: 6px;
-  border: none;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  font-weight: 600;
-}
-.btn-edit {
-  color: var(--primary-dark);
-  margin-right: 8px;
-  font-size: 12px;
-  cursor: pointer;
-  background: none;
-  border: none;
-}
-.btn-edit:hover {
-  text-decoration: underline;
-}
-.btn-delete {
-  color: var(--red);
-  font-size: 12px;
-  cursor: pointer;
-  background: none;
-  border: none;
-}
-.btn-delete:hover {
-  text-decoration: underline;
+  font-weight: 500;
+  transition: background-color 0.2s;
 }
 
-/* Table */
-.table-container {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  overflow-x: auto;
+.cate-btn-add-category:hover {
+  background-color: #3e5845;
 }
+
+/* ================================================= */
+/* 3. Bảng Danh Mục */
+/* ================================================= */
+.table-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
 .category-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.95rem;
 }
-.category-table th,
-.category-table td {
-  padding: 12px;
-  font-size: 14px;
+
+.category-table thead th {
+  background-color: #ecf0f1;
+  color: #7f8c8d;
   text-align: left;
-}
-.category-table th {
-  background: var(--gray-light);
-  text-transform: uppercase;
+  padding: 12px 15px;
   font-weight: 600;
-  color: var(--text-dark);
-  font-size: 12px;
+  border-bottom: 2px solid #ddd;
 }
+
+.category-row td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
 .category-row:hover {
-  background: var(--gray-light);
-  border-bottom: 1px dashed var(--border-gray);
-}
-.prefix {
-  margin-right: 4px;
-  color: var(--gray-dark);
-}
-.category-name {
-  font-weight: 600;
+  background-color: #f9f9f9;
 }
 
-/* Status */
-.status {
+/* ⭐️ CSS CẬP NHẬT CHO ICON IMAGE ⭐️ */
+.cate-category-icon-img {
+  margin-right: 5px;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  vertical-align: middle;
   display: inline-block;
-  padding: 2px 8px;
-  font-size: 10px;
+}
+
+/* CSS cho Emoji/Ký tự (Nếu là ký tự Unicode) */
+.cate-category-icon-emoji {
+  margin-right: 5px;
+  font-size: 1.1rem;
+  display: inline-block;
+  width: 20px;
+  text-align: center;
+}
+
+.cate-category-name {
+  font-weight: 500;
+  margin-left: 5px;
+}
+
+.prefix {
+  margin-right: 5px;
+  color: #95a5a6;
+}
+
+/* Trạng thái */
+.status {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
   font-weight: 600;
-  border-radius: 12px;
 }
+
 .status-visible {
-  background: #d1fae5;
-  color: var(--green);
+  background-color: #e8f5e9;
+  color: #2e7d32;
 }
+
 .status-hidden {
-  background: #fee2e2;
-  color: var(--red);
+  background-color: #ffebee;
+  color: #c62828;
 }
 
-/* Table Note */
-.table-note {
-  padding: 12px;
-  font-size: 12px;
-  color: var(--gray-dark);
-  border-top: 1px solid var(--gray-light);
-  background: #f9fafb;
+/* Hành động */
+.btn-edit,
+.btn-delete {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 5px;
+  font-size: 0.85rem;
 }
 
-/* SEO Tool */
+.cate-btn-edit {
+  color: #fff;
+  background-color: #3498db;
+  border: none;
+  border-radius: 4px;
+}
+
+.cate-btn-edit:hover {
+  background-color: #2980b9;
+}
+
+.cate-btn-delete {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.cate-btn-delete:hover {
+  background-color: #c0392b;
+}
+
+/* Ghi chú bảng */
+.cate-table-note {
+  padding: 10px 15px;
+  background-color: #f7f7f7;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  border-top: 1px solid #eee;
+}
+
+/* ================================================= */
+/* 4. Công cụ SEO */
+/* ================================================= */
 .seo-tool {
-  margin-top: 32px;
   padding: 20px;
-  border-radius: 12px;
-  background: rgba(74, 109, 86, 0.1);
+  background-color: #ecf0f1;
+  border-radius: 8px;
+  border-left: 5px solid #f39c12;
 }
+
 .seo-tool h3 {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 12px;
-  color: var(--text-dark);
+  margin-top: 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
 }
+
 .seo-tool p {
-  font-size: 14px;
-  color: #333;
+  margin-bottom: 0;
+  color: #34495e;
 }

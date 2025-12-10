@@ -23,17 +23,17 @@ function ProductCard({ image, name, price, oldPrice, tag }: ProductCardProps) {
   const isSale = oldPrice !== undefined;
 
   return (
-    <div className="product-card cursor-pointer fade-in-section">
-      <div className="product-image-wrapper">
-        <div className="product-image-container">
-          <img src={image} alt={name} className="product-image" />
+    <div className="home-product-card cursor-pointer fade-in-section">
+      <div className="home-product-image-wrapper">
+        <div className="home-product-image-container">
+          <img src={image} alt={name} className="home-product-image" />
         </div>
-        {tag && <span className="product-tag">{tag}</span>}
+        {tag && <span className="home-product-tag">{tag}</span>}
       </div>
-      <span className="product-name">{name}</span>
-      <div className="product-price-row">
-        <span className="product-price">{price}</span>
-        {isSale && <span className="product-old-price">{oldPrice}</span>}
+      <span className="home-product-name">{name}</span>
+      <div className="home-product-price-row">
+        <span className="home-product-price">{price}</span>
+        {isSale && <span className="home-product-old-price">{oldPrice}</span>}
       </div>
     </div>
   );
@@ -49,6 +49,37 @@ function CategoryCard({ image, name }: CategoryCardProps) {
       <span className="category-name">{name}</span>
     </div>
   );
+}
+
+// ------------------- Button Xem Thêm (Custom CSS thuần) -------------------
+function ViewMoreButton({ text, onClick }: { text: string; onClick: () => void }) {
+    // SỬ DỤNG CLASS CSS: custom-view-more-button
+    return (
+        <button 
+            onClick={onClick}
+            // Class CSS thuần đã được thay đổi
+            className="custom-view-more-button" 
+        >
+            {/* Tên nút */}
+            {text} 
+            
+            {/* Icon mũi tên (thay cho ký tự ->) */}
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="arrow-icon" // Class CSS cho icon
+            >
+                <path d="M5 12l14 0" />
+                <path d="M15 16l4 -4" />
+                <path d="M15 8l4 4" />
+            </svg>
+        </button>
+    );
 }
 
 // ------------------- Overlay Banner + Floating -------------------
@@ -196,7 +227,7 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
 }
 
 // =========================
-//        COMPONENT INDEX
+//         COMPONENT INDEX
 // =========================
 export default function TiemBachHoaIndex() {
   const navigate = useNavigate();
@@ -247,8 +278,12 @@ export default function TiemBachHoaIndex() {
       </div>
 
       {/* Categories */}
-      <div className="relative fade-in-section">
-        <h2 className="category-title">Danh Mục Nổi Bật</h2>
+      <div className="relative fade-in-section"> 
+        <div className="home-section-header">
+            <h2 className="category-title">Danh Mục Nổi Bật</h2>
+            {/* BUTTON XEM THÊM DANH MỤC */}
+            <ViewMoreButton text="Xem thêm" onClick={() => navigate("/categories")} />
+        </div>
         <div className="category-grid">
           {categories.map((cat) => (
             <div key={cat.name} onClick={() => navigate("/products")}>
@@ -258,11 +293,17 @@ export default function TiemBachHoaIndex() {
         </div>
       </div>
 
+    
+
       {/* HOT SALES */}
       <div className="relative fade-in-section">
-        <h2 className="section-title">Sản Phẩm Giảm Giá Sốc</h2>
-        <div className="product-wrapper">
-          <div className="product-grid">
+        <div className="home-section-header">
+            <h2 className="home-section-title">Sản Phẩm Giảm Giá Sốc</h2>
+            {/* BUTTON XEM THÊM SALE */}
+            <ViewMoreButton text="Xem thêm" onClick={() => navigate("/sales")} />
+        </div>
+        <div className="home-product-wrapper">
+          <div className="home-product-grid">
             {products.map((p, index) => (
               <div key={index} onClick={() => navigate("/products")}>
                 <ProductCard {...p} />
@@ -272,11 +313,17 @@ export default function TiemBachHoaIndex() {
         </div>
       </div>
 
+      
+
       {/* SẢN PHẨM MỚI */}
       <div className="relative fade-in-section">
-        <h2 className="section-title">Sản Phẩm Mới</h2>
-        <div className="product-wrapper">
-          <div className="product-grid">
+        <div className="home-section-header">
+            <h2 className="home-section-title">Sản Phẩm Mới</h2>
+            {/* BUTTON XEM THÊM SẢN PHẨM MỚI */}
+            <ViewMoreButton text="Xem thêm" onClick={() => navigate("/new-product")} />
+        </div>
+        <div className="home-product-wrapper">
+          <div className="home-product-grid">
             {products.map((p, index) => (
               <div key={index} onClick={() => navigate("/products")}>
                 <ProductCard {...p} />
@@ -285,6 +332,8 @@ export default function TiemBachHoaIndex() {
           </div>
         </div>
       </div>
+
+      
 
       {/* CÂU CHUYỆN */}
       <div className="story-wrapper fade-in-section">

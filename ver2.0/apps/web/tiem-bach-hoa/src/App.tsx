@@ -3,10 +3,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 //import for root page
 import TiemBachHoaIndex from "./pages/TiemBachHoaIndex";
 import Contact from "./pages/Contact";
+// Giả định component Product là ProductListingPage của bạn
 import Product from "./pages/Product";
 import Nothing404 from "./pages/Nothing404";
 import AboutUs from "./pages/AboutUs";
-import Categories from "./pages/Categories";
+import Categories from "./pages/Categories"; // <-- Component Categories
 import FAQ from "./pages/FAQ";
 import Term from "./pages/Term";
 import Payment from "./pages/Payment";
@@ -50,6 +51,7 @@ import News from "./pages/admin/News";
 import Analytics from "./pages/admin/Analytics";
 import General from "./pages/admin/General";
 // import Dashboard from "./pages/admin/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 
 export default function App() {
@@ -58,54 +60,64 @@ export default function App() {
       <Routes>
         <Route path="/" element={<TiemBachHoaIndex />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/categories" element={<Categories/>}></Route>
-        <Route path="/products" element={<Product/>}/>
-        <Route path="/404" element={<Nothing404/>}></Route>
-        <Route path="/about-us" element={<AboutUs/>}></Route>
-        <Route path="/blog" element={<Blog/>}></Route>
-        <Route path="/faqs" element={<FAQ/>}></Route>
-        <Route path="/general-terms" element={<Term/>}></Route>  
-        <Route path="/payment-terms" element={<Payment/>}></Route>
-        <Route path="/shipping-policy" element={<Shipping/>}></Route>
-        <Route path="/warranty-policy" element={<Warranty/>}></Route>
-        <Route path="/return-policy" element={<Return/>}></Route>
-        <Route path="/sales" element={<Sale/>}></Route> 
-        <Route path="/payment-method" element={<Payment/>}></Route>
-        <Route path="/my-voucher" element={<Voucher/>}></Route>
-        <Route path="/promotions" element={<Promotion/>}></Route>
-        <Route path="/wish-list" element={<Wish/>}></Route>
-        <Route path="/address-book" element={<Address/>}></Route>
-        <Route path="/order-history" element={<Order/>}></Route>
-        <Route path="/profile" element={<Profile/>}></Route>
-        <Route path="/forgot-password" element={<ForgotPassword/>}></Route>
-        <Route path="/login" element={<Login/>}></Route>
-        <Route path="/register" element={<Register/>}></Route>
-        <Route path="/cart" element={<Cart/>}></Route>
-        <Route path="/checkout" element={<Checkout/>}></Route>
-        <Route path="/order-confirm" element={<OrderConfirm/>}></Route>
-        <Route path="/order-tracking" element={<OrderTracking/>}></Route>
-        <Route path="/blog-detail" element={<BlogDetail/>}></Route>
-        <Route path="/product-detail" element={<ProdDetail/>}></Route>
-        <Route path="/settings" element={<Setting/>}></Route>
+
+        {/* ⭐⭐⭐ ROUTE DANH MỤC (TĨNH và ĐỘNG) ⭐⭐⭐ */}
+        <Route path="/categories" element={<Categories />}></Route>
+        <Route path="/categories/:slug" element={<Categories />}></Route>
+        {/* ⭐️ ROUTE MỚI: BẮT ĐƯỜNG DẪN "XEM TẤT CẢ" VÀ DẪN ĐẾN TRANG SẢN PHẨM ⭐️ */}
+        {/* /categories/khuyen-mai/all --> Product Component */}
+        <Route path="/categories/:categorySlug/all" element={<Product />} />
+        {/* ⭐⭐⭐ END ROUTE DANH MỤC ⭐⭐⭐ */}
+
+        <Route path="/products" element={<Product />} />
+        <Route path="/404" element={<Nothing404 />}></Route>
+        <Route path="/about-us" element={<AboutUs />}></Route>
+        <Route path="/blog" element={<Blog />}></Route>
+        <Route path="/faqs" element={<FAQ />}></Route>
+        <Route path="/general-terms" element={<Term />}></Route>
+        <Route path="/payment-terms" element={<Payment />}></Route>
+        <Route path="/shipping-policy" element={<Shipping />}></Route>
+        <Route path="/warranty-policy" element={<Warranty />}></Route>
+        <Route path="/return-policy" element={<Return />}></Route>
+        <Route path="/sales" element={<Sale />}></Route>
+        <Route path="/payment-method" element={<Payment />}></Route>
+        <Route path="/my-voucher" element={<Voucher />}></Route>
+        <Route path="/promotions" element={<Promotion />}></Route>
+        <Route path="/wish-list" element={<Wish />}></Route>
+        <Route path="/address-book" element={<Address />}></Route>
+        <Route path="/order-history" element={<Order />}></Route>
+        <Route path="/profile" element={<Profile />}></Route>
+        <Route path="/forgot-password" element={<ForgotPassword />}></Route>
+        <Route path="/login" element={<Login />}></Route>
+        <Route path="/register" element={<Register />}></Route>
+  <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>}></Route>
+  <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>}></Route>
+        <Route path="/order-confirm" element={<OrderConfirm />}></Route>
+        <Route path="/order-tracking" element={<OrderTracking />}></Route>
+        <Route path="/blog-detail" element={<BlogDetail />}></Route>
+        <Route path="/product-detail/:slugName" element={<ProdDetail/> } />
+        <Route path="/settings" element={<Setting />}></Route>
         {/* Route Admin */}
         <Route path="/admin" element={<AdminIndex />} />
-        <Route path="/admin/dashboard" element={<Dashboard/>}></Route>
-        <Route path="/admin/users" element={<Users/>}></Route>
-        <Route path="/admin/orders" element={<Orders/>}></Route>
-        <Route path="/admin/vouchers" element={<Vouchers/>}></Route>
-        <Route path="/admin/blogs" element={<Blogs/>}></Route>
-        <Route path="/admin/blog-cates" element={<BlogCates/>}></Route>
-        <Route path="/admin/products" element={<Products/>}></Route>
-        <Route path="/admin/product-cates" element={<ProdCates/>}></Route>
-        <Route path="/admin/promotions" element={<Promotions/>}></Route>
-        <Route path="/admin/marketing" element={<Marketing/>}></Route>
-        <Route path="/admin/media" element={<Media/>}></Route>
-        <Route path="/admin/deals" element={<Deals/>}></Route>
-        <Route path="/admin/news" element={<News/>}></Route>
-        <Route path="/admin/analytics" element={<Analytics/>}></Route>
+  <Route path="/admin/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}></Route>
+  <Route path="/admin/users" element={<ProtectedRoute><Users /></ProtectedRoute>}></Route>
+  <Route path="/admin/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>}></Route>
+  <Route path="/admin/vouchers" element={<ProtectedRoute><Vouchers /></ProtectedRoute>}></Route>
+  <Route path="/admin/blogs" element={<ProtectedRoute><Blogs /></ProtectedRoute>}></Route>
+  <Route path="/admin/blog-cates" element={<ProtectedRoute><BlogCates /></ProtectedRoute>}></Route>
+  <Route path="/admin/products" element={<ProtectedRoute><Products /></ProtectedRoute>}></Route>
+  <Route path="/admin/product-cates" element={<ProtectedRoute><ProdCates /></ProtectedRoute>}></Route>
+  <Route path="/admin/promotions" element={<ProtectedRoute><Promotions /></ProtectedRoute>}></Route>
+  <Route path="/admin/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>}></Route>
+  <Route path="/admin/media" element={<ProtectedRoute><Media /></ProtectedRoute>}></Route>
+  <Route path="/admin/deals" element={<ProtectedRoute><Deals /></ProtectedRoute>}></Route>
+  <Route path="/admin/news" element={<ProtectedRoute><News /></ProtectedRoute>}></Route>
+  <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>}></Route>
 
-        <Route path="/admin/general" element={<General/>}></Route>
-        
+  <Route path="/admin/general" element={<ProtectedRoute><General /></ProtectedRoute>}></Route>
+
+        {/* Xử lý các đường dẫn không khớp */}
+        <Route path="*" element={<Nothing404 />} />
       </Routes>
     </BrowserRouter>
   );

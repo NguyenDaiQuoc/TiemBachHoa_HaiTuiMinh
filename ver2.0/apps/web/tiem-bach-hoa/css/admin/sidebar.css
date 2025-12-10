@@ -1,0 +1,122 @@
+/* ================================================= */
+/* 1. Vùng Sidebar Chính                 */
+/* ================================================= */
+.admin-sidebar {
+  width: 280px; /* Chiều rộng cố định */
+  background-color: #2c3e50; /* Màu nền tối, hiện đại */
+  color: white;
+  height: 100vh; /* Chiếm toàn bộ chiều cao màn hình */
+  position: fixed; /* Giữ cố định khi cuộn trang */
+  top: 0;
+  left: 0;
+  padding: 20px 0;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Đẩy header/menu lên trên và footer xuống dưới */
+  z-index: 1000;
+}
+
+/* ================================================= */
+/* 2. Header (Tiêu đề)                   */
+/* ================================================= */
+.admin-sidebar-header {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 0 20px;
+  letter-spacing: 1px;
+  cursor:pointer;
+}
+
+.admin-sidebar-header span {
+  color: #f39c12; /* Màu nhấn cho chữ ADMIN */
+  font-weight: 900;
+  margin-right: 5px;
+}
+
+.admin-sidebar a{
+  text-decoration: none;
+  color: white
+}
+/* ================================================= */
+/* 3. Menu Items (Các mục)               */
+/* ================================================= */
+.admin-sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1; /* Cho phép menu chiếm hết không gian còn lại */
+  overflow-y: auto; /* Cho phép cuộn nếu menu quá dài */
+}
+
+.admin-sidebar-menu li {
+  margin-bottom: 5px;
+}
+
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: #ecf0f1; /* Màu chữ nhạt */
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: background-color 0.2s, color 0.2s;
+  border-left: 5px solid transparent; /* Tạo không gian cho hiệu ứng active */
+}
+
+/* Hiệu ứng di chuột và mục đang hoạt động (active) */
+.sidebar-menu-item:hover,
+.sidebar-menu-item.active {
+  background-color: #34495e; /* Màu nền đậm hơn khi hover */
+  color: white;
+  cursor: pointer;
+}
+
+/* Giả định: Sử dụng class `active` cho mục đang chọn */
+.sidebar-menu-item.active {
+  border-left: 5px solid #f39c12; /* Màu nhấn khi active */
+  font-weight: 600;
+}
+
+.sidebar-menu-icon {
+  margin-right: 15px;
+  font-size: 1.2rem;
+  width: 20px; /* Đảm bảo căn chỉnh đều */
+  text-align: center;
+}
+
+/* ================================================= */
+/* 4. Footer (Đăng Xuất)                 */
+/* ================================================= */
+.admin-sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 20px;
+}
+
+.logout-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #e74c3c; /* Màu đỏ cho nút đăng xuất */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-button:hover {
+  background-color: #c0392b;
+}
+
+.logout-button span {
+  margin-right: 10px;
+  font-size: 1.1rem;
+}

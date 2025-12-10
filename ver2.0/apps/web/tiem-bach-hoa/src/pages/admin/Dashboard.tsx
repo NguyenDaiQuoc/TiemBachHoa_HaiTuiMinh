@@ -15,6 +15,9 @@ import {
 import { Line, Pie } from "react-chartjs-2";
 import "../../../css/admin/dashboard.css";
 
+// ⭐️ IMPORT SIDEBAR MỚI ⭐️
+import AdminSidebar from "../../components/admin/Sidebar"; 
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -45,7 +48,7 @@ function MetricCard({ title, value, change, isMoney = false }: MetricCardProps) 
     : "metric-change-negative";
 
   return (
-    <div className="metric-card">
+    <div className="dashboard-metric-card">
       <p className="metric-title">{title}</p>
       <h3 className="metric-value">
         {isMoney
@@ -78,8 +81,8 @@ function ChartPlaceholder({ title, type }: { title: string; type: "line" | "pie"
       ],
     };
     return (
-      <div className="chart-card">
-        <h3 className="chart-title">{title}</h3>
+      <div className="dashboard-chart-card">
+        <h3 className="dashboard-chart-title">{title}</h3>
         <Line data={data} />
       </div>
     );
@@ -103,51 +106,8 @@ function ChartPlaceholder({ title, type }: { title: string; type: "line" | "pie"
   }
 }
 
-// --- SIDEBAR ---
-function AdminSidebar() {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem("adminLoginInfo");
-    auth.signOut();
-    navigate("/admin");
-  };
-
-  const menuItems = [
-    { label: "Dashboard", icon: "🏠", path: "/dashboard" },
-    { label: "Quản Lý Đơn Hàng", icon: "📦", path: "/orders" },
-    { label: "Sản Phẩm", icon: "🏷️", path: "/products" },
-    { label: "Khách Hàng", icon: "👥", path: "/customers" },
-    { label: "Marketing", icon: "📢", path: "/marketing" },
-    { label: "Báo Cáo", icon: "📊", path: "/reports" },
-    { label: "Cấu Hình", icon: "⚙️", path: "/settings" },
-  ];
-
-  return (
-    <div className="sidebar">
-      <h1 className="sidebar-header"><span>ADMIN</span> Dashboard</h1>
-      <ul className="sidebar-menu">
-        {menuItems.map((item) => (
-          <li key={item.label}>
-            <a href={item.path} className="sidebar-menu-item">
-              <span className="sidebar-menu-icon">{item.icon}</span>
-              {item.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      <div className="sidebar-footer">
-        <button className="logout-button" onClick={handleLogout}>
-          <span>🚪</span> Đăng Xuất
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // --- DASHBOARD PAGE ---
-export default function AdminDashboardPage() {
+export default function Dashboard() { // Đã đổi tên thành Dashboard
   const navigate = useNavigate();
   const [adminName, setAdminName] = useState("Admin");
 
@@ -201,7 +161,8 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="dashboard-container">
-      <AdminSidebar />
+      {/* ⭐️ SỬ DỤNG COMPONENT SIDEBAR ĐÃ TÁCH ⭐️ */}
+      <AdminSidebar /> 
 
       <div className="dashboard-content">
         <header className="dashboard-header">
@@ -211,11 +172,11 @@ export default function AdminDashboardPage() {
           </span>
         </header>
 
-        <div className="kpi-grid">
+        <div className="dashboard-kpi-grid">
           {kpiData.map((d, i) => <MetricCard key={i} {...d} />)}
         </div>
 
-        <div className="charts-grid">
+        <div className="dashboard-charts-grid">
           <div className="charts-main">
             <ChartPlaceholder title="Biểu Đồ Doanh Thu 6 Tháng Gần Nhất" type="line" />
           </div>
@@ -243,7 +204,7 @@ export default function AdminDashboardPage() {
 
           <div className="orders-card">
             <h3 className="orders-title">5 Đơn Hàng Cần Xử Lý Gấp</h3>
-            <table className="orders-table">
+            <table className="dashboard-orders-table">
               <thead>
                 <tr>
                   <th>Mã ĐH</th>

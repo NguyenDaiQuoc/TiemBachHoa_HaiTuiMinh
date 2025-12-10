@@ -1,0 +1,214 @@
+/* AdminCategoryForm.css */
+
+/* 1. Định nghĩa Biến Màu (Variables) - Dựa trên tailwind.config.js cũ */
+:root {
+    --primary-dark: #4A6D56; /* moss */
+    --secondary-light: #F7F7F7; /* Giả định màu nền */
+    --accent-orange: #C75F4B; /* clay */
+    --text-primary: #3C3C3C; /* darkText */
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* 2. Style Chính (Container) */
+.category-form-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--secondary-light);
+    font-family: 'Inter', sans-serif; /* Sử dụng font bạn định nghĩa */
+}
+
+.category-form-container {
+    padding: 2rem; /* p-8 */
+    width: 100%;
+}
+
+/* 3. Style của Header */
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem; /* mb-6 */
+}
+
+.form-title {
+    font-size: 1.875rem; /* text-3xl */
+    font-weight: 800; /* font-extrabold */
+    color: var(--text-primary);
+}
+
+.header-buttons {
+    display: flex;
+    gap: 0.75rem; /* space-x-3 */
+}
+
+/* 4. Style của Button */
+.button-cancel {
+    padding: 0.5rem 1rem; /* px-4 py-2 */
+    border-radius: 0.5rem; /* rounded-lg */
+    font-weight: 600; /* font-semibold */
+    color: #4b5563; /* text-gray-700 */
+    background-color: #e5e7eb; /* bg-gray-200 */
+    transition: background-color 0.15s ease-in-out;
+}
+
+.button-cancel:hover {
+    background-color: #d1d5db; /* hover:bg-gray-300 */
+}
+
+.button-submit {
+    padding: 0.5rem 1rem; /* px-4 py-2 */
+    border-radius: 0.5rem; /* rounded-lg */
+    color: white;
+    font-weight: 600; /* font-semibold */
+    background-color: var(--accent-orange);
+    transition: opacity 0.15s ease-in-out;
+    display: flex;
+    align-items: center;
+}
+
+.button-submit:hover:not(:disabled) {
+    opacity: 0.9; /* hover:bg-opacity-90 */
+}
+
+.button-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.button-submit > span {
+    font-size: 1.25rem; /* text-xl */
+    margin-right: 0.25rem; /* mr-1 */
+}
+
+/* 5. Component FormContainer */
+.form-section-container {
+    background-color: white;
+    padding: 1.5rem; /* p-6 */
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: var(--shadow-md); /* shadow-md */
+    margin-top: 1.5rem; /* space-y-5 */
+    margin-bottom: 1.5rem; /* Thêm để tạo khoảng cách */
+}
+
+.form-section-title {
+    font-size: 1.5rem; /* text-2xl */
+    font-weight: 700; /* font-bold */
+    color: var(--text-primary);
+    border-bottom: 1px solid #e5e7eb; /* border-b */
+    padding-bottom: 0.75rem; /* pb-3 */
+}
+
+/* 6. Style của Input/Field */
+.form-field-group {
+    margin-bottom: 0.75rem; /* space-y-2 (đã chuyển thành margin) */
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 500; /* font-medium */
+    color: #4b5563; /* text-gray-700 */
+    margin-bottom: 0.25rem;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 0.75rem; /* p-3 */
+    border: 1px solid #d1d5db; /* border border-gray-300 */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-sizing: border-box;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 1px var(--primary-dark); /* focus:ring và focus:border */
+}
+
+.form-input[name="slug"] {
+    background-color: #f9fafb; /* bg-gray-50 */
+}
+
+.form-text-hint {
+    font-size: 0.75rem; /* text-xs */
+    color: #6b7280; /* text-gray-500 */
+}
+
+/* 7. Phần Hình ảnh và SEO */
+.form-grid-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* grid-cols-2 */
+    gap: 1.5rem; /* gap-6 */
+    margin-top: 1.5rem; /* mt-6 */
+}
+
+.form-sub-section {
+    background-color: white;
+    padding: 1.25rem; /* p-5 */
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: var(--shadow-md); /* shadow-md */
+    margin-bottom: 1rem;
+}
+
+.form-sub-title {
+    font-weight: 700; /* font-bold */
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.5rem; /* pb-2 */
+    margin-bottom: 1rem;
+}
+
+.icon-upload-area {
+    border: 2px dashed #d1d5db;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 8rem; /* min-h-32 */
+    background-color: #f9fafb; /* bg-gray-50 */
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.icon-upload-area:hover {
+    background-color: #f3f4f6; /* hover:bg-gray-100 */
+}
+
+.icon-preview {
+    max-width: 100%;
+    max-height: 6rem; /* max-h-24 */
+    object-fit: contain;
+}
+
+.icon-placeholder {
+    color: #6b7280; /* text-gray-500 */
+    font-size: 0.875rem; /* text-sm */
+}
+
+/* 8. Nút Lưu Cuối Cùng */
+.final-submit-group {
+    display: flex;
+    justify-content: flex-end; /* justify-end */
+    padding-top: 1.5rem; /* pt-6 */
+}
+
+.final-submit-button {
+    padding: 0.75rem 1.5rem; /* px-6 py-3 */
+    border-radius: 0.75rem; /* rounded-xl */
+    color: white;
+    font-weight: 600; /* font-semibold */
+    background-color: var(--accent-orange);
+    transition: opacity 0.15s ease-in-out;
+    box-shadow: var(--shadow-lg);
+}
+
+.final-submit-button:hover:not(:disabled) {
+    opacity: 0.9;
+}
