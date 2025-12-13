@@ -10,12 +10,22 @@ import { useNavigate } from 'react-router-dom';
 
 // Input component dùng chung
 function AuthInput({ label, placeholder, type = "text", required = false, value, onChange }: any) {
+  const inputId = `register-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div className="auth-input-group">
-      <label className="auth-label">
+      <label className="auth-label" htmlFor={inputId}>
         {label} {required && <span className="auth-required">*</span>}
       </label>
-      <input value={value} onChange={onChange} type={type} placeholder={placeholder} required={required} className="auth-input" />
+      <input 
+        id={inputId}
+        name={inputId}
+        value={value} 
+        onChange={onChange} 
+        type={type} 
+        placeholder={placeholder} 
+        required={required} 
+        className="auth-input" 
+      />
     </div>
   );
 }
@@ -67,8 +77,14 @@ function RegisterForm() {
       <AuthInput label="Xác nhận Mật Khẩu" placeholder="Nhập lại mật khẩu" type="password" required value={confirm} onChange={(e:any)=>setConfirm(e.target.value)} />
 
       <div className="auth-terms">
-        <input type="checkbox" required className="auth-checkbox" />
-        <label>
+        <input 
+          type="checkbox" 
+          id="register-terms" 
+          name="terms" 
+          required 
+          className="auth-checkbox" 
+        />
+        <label htmlFor="register-terms">
           Tôi đồng ý với <a href="#" className="auth-link">Điều khoản dịch vụ</a> và <a href="#" className="auth-link">Chính sách bảo mật</a>.
         </label>
       </div>

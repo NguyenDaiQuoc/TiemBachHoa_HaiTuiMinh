@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import { db } from "../firebase";
+import { collection, getDocs, query, orderBy, where, limit } from "firebase/firestore";
 
 // --- Kiểu dữ liệu cho props ---
 type ProductCardProps = {
@@ -232,18 +234,53 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
 export default function TiemBachHoaIndex() {
   const navigate = useNavigate();
 
-  const [products] = useState([
-    { name: "Nến thơm thư giãn", price: "180.000đ", oldPrice: "200.000đ", tag: "Mới", image: "https://picsum.photos/100" },
-    { name: "Bánh quy yến mạch", price: "150.000đ", oldPrice: "180.000đ", tag: "Hot", image: "https://picsum.photos/80" },
-    { name: "Khăn quấn organic", price: "150.000đ", tag: null, image: "https://picsum.photos/20" },
-  ]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
 
-  const [categories] = useState([
+  // default categories order (fallback)
+  const defaultCategories = [
     { name: "Hàng mới về", image: "https://picsum.photos/50" },
-    { name: "Đồ công nghệ", image: "https://picsum.photos/70" },
-    { name: "Chăm sóc cá nhân", image: "https://picsum.photos/30" },
-    { name: "Vệ sinh nhà cửa", image: "https://picsum.photos/90" },
-  ]);
+    { name: "Khuyến mãi sốc", image: "https://picsum.photos/60" },
+    { name: "Hàng 2nd", image: "https://picsum.photos/70" },
+    { name: "Đồ công nghệ", image: "https://picsum.photos/80" }
+  ];
+
+  // fetch products and categories from Firestore (products newest-first)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        // products: order by createdAt desc (newest first). Limit to 60 for home page.
+        const pq = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(60));
+        const ps = await getDocs(pq);
+        const loadedProducts = ps.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+        if (mounted) setProducts(loadedProducts);
+      } catch (e) {
+        console.warn('Failed to load products, falling back to empty list', e);
+        if (mounted) setProducts([]);
+      }
+
+      try {
+        // categories: attempt to load and then sort to keep defaults order first
+        const cq = query(collection(db, 'categories'), orderBy('order', 'asc'));
+        const cs = await getDocs(cq);
+        const loadedCats = cs.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+        if (loadedCats.length === 0) {
+          if (mounted) setCategories(defaultCategories);
+        } else {
+          // Ensure the four primary categories appear first (if present in DB)
+          const preferredNames = ["Hàng mới về", "Khuyến mãi sốc", "Hàng 2nd", "Đồ công nghệ"];
+          const preferred = preferredNames.map(name => loadedCats.find((c:any) => c.name === name)).filter(Boolean);
+          const others = loadedCats.filter((c:any) => !preferredNames.includes(c.name));
+          if (mounted) setCategories([...preferred, ...others]);
+        }
+      } catch (e) {
+        console.warn('Failed to load categories, using defaults', e);
+        if (mounted) setCategories(defaultCategories);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 //import for root page
@@ -50,6 +51,8 @@ import Deals from "./pages/admin/Deals";
 import News from "./pages/admin/News";
 import Analytics from "./pages/admin/Analytics";
 import General from "./pages/admin/General";
+import Inventory from "./pages/admin/Inventory";
+import Warehouse from "./pages/admin/Warehouse";
 // import Dashboard from "./pages/admin/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -95,24 +98,26 @@ export default function App() {
         <Route path="/order-confirm" element={<OrderConfirm />}></Route>
         <Route path="/order-tracking" element={<OrderTracking />}></Route>
         <Route path="/blog-detail" element={<BlogDetail />}></Route>
-        <Route path="/product-detail/:slugName" element={<ProdDetail/> } />
+        <Route path="/product-detail/:productSlug" element={<ProdDetail/> } />
         <Route path="/settings" element={<Setting />}></Route>
         {/* Route Admin */}
         <Route path="/admin" element={<AdminIndex />} />
-  <Route path="/admin/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}></Route>
-  <Route path="/admin/users" element={<ProtectedRoute><Users /></ProtectedRoute>}></Route>
-  <Route path="/admin/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>}></Route>
-  <Route path="/admin/vouchers" element={<ProtectedRoute><Vouchers /></ProtectedRoute>}></Route>
-  <Route path="/admin/blogs" element={<ProtectedRoute><Blogs /></ProtectedRoute>}></Route>
-  <Route path="/admin/blog-cates" element={<ProtectedRoute><BlogCates /></ProtectedRoute>}></Route>
-  <Route path="/admin/products" element={<ProtectedRoute><Products /></ProtectedRoute>}></Route>
-  <Route path="/admin/product-cates" element={<ProtectedRoute><ProdCates /></ProtectedRoute>}></Route>
-  <Route path="/admin/promotions" element={<ProtectedRoute><Promotions /></ProtectedRoute>}></Route>
-  <Route path="/admin/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>}></Route>
-  <Route path="/admin/media" element={<ProtectedRoute><Media /></ProtectedRoute>}></Route>
-  <Route path="/admin/deals" element={<ProtectedRoute><Deals /></ProtectedRoute>}></Route>
-  <Route path="/admin/news" element={<ProtectedRoute><News /></ProtectedRoute>}></Route>
-  <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>}></Route>
+  <Route path="/admin/dashboard" element={<ProtectedRoute requireAdmin><Dashboard /></ProtectedRoute>}></Route>
+  <Route path="/admin/inventory" element={<ProtectedRoute requireAdmin><Inventory /></ProtectedRoute>}></Route>
+  <Route path="/admin/warehouse" element={<ProtectedRoute requireAdmin><Warehouse /></ProtectedRoute>}></Route>
+  <Route path="/admin/users" element={<ProtectedRoute requireAdmin><Users /></ProtectedRoute>}></Route>
+  <Route path="/admin/orders" element={<ProtectedRoute requireAdmin><Orders /></ProtectedRoute>}></Route>
+  <Route path="/admin/vouchers" element={<ProtectedRoute requireAdmin><Vouchers /></ProtectedRoute>}></Route>
+  <Route path="/admin/blogs" element={<ProtectedRoute requireAdmin><Blogs /></ProtectedRoute>}></Route>
+  <Route path="/admin/blog-cates" element={<ProtectedRoute requireAdmin><BlogCates /></ProtectedRoute>}></Route>
+  <Route path="/admin/products" element={<ProtectedRoute requireAdmin><Products /></ProtectedRoute>}></Route>
+  <Route path="/admin/product-cates" element={<ProtectedRoute requireAdmin><ProdCates /></ProtectedRoute>}></Route>
+  <Route path="/admin/promotions" element={<ProtectedRoute requireAdmin><Promotions /></ProtectedRoute>}></Route>
+  <Route path="/admin/marketing" element={<ProtectedRoute requireAdmin><Marketing /></ProtectedRoute>}></Route>
+  <Route path="/admin/media" element={<ProtectedRoute requireAdmin><Media /></ProtectedRoute>}></Route>
+  <Route path="/admin/deals" element={<ProtectedRoute requireAdmin><Deals /></ProtectedRoute>}></Route>
+  <Route path="/admin/news" element={<ProtectedRoute requireAdmin><News /></ProtectedRoute>}></Route>
+  <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin><Analytics /></ProtectedRoute>}></Route>
 
   <Route path="/admin/general" element={<ProtectedRoute><General /></ProtectedRoute>}></Route>
 

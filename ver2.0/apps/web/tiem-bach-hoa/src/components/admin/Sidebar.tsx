@@ -1,14 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 // 1. IMPORT THÊM useLocation để lấy đường dẫn hiện tại
 import { useNavigate, useLocation } from "react-router-dom";
-import { auth } from "../../firebase";
+import { auth, db } from "../../firebase";
+import { doc, getDoc } from "firebase/firestore";
 import "../../../css/admin/sidebar.css";
+import "../../../css/admin/responsive.css"
+import { Toaster } from 'react-hot-toast';
+import AdminNotifications from './Notifications';
 
 // --- SIDEBAR COMPONENT ---
 export default function AdminSidebar() {
   const navigate = useNavigate();
   // 2. SỬ DỤNG useLocation để biết URL hiện tại
   const location = useLocation();
+  const [adminName, setAdminName] = useState<string | null>(null);
 
   const handleLogout = () => {
     // Xóa thông tin đăng nhập và đăng xuất khỏi Firebase
@@ -17,9 +22,39 @@ export default function AdminSidebar() {
     navigate("/admin");
   };
 
+  // useEffect(() => {
+  //   // try localStorage first
+  //   const saved = localStorage.getItem("adminLoginInfo");
+  //   if (saved) {
+  //     try {
+  //       const info = JSON.parse(saved);
+  //       if (info && info.name) {
+  //         setAdminName(info.name);
+  //         return;
+  //       }
+  //     } catch (e) { /* ignore */ }
+  //   }
+
+  //   // fallback: read from firestore admins/{uid}
+  //   const unsub = auth.onAuthStateChanged(async (u) => {
+  //     if (!u) return;
+  //     try {
+  //       const snap = await getDoc(doc(db, 'admins', u.uid));
+  //       if (snap.exists()) setAdminName((snap.data() as any).name || null);
+  //     } catch (err) {
+  //       // ignore
+  //     }
+  //   });
+  //   return () => unsub();
+  // }, []);
+
   // Các mục menu (Giữ nguyên)
   const menuItems = [
     { label: "Dashboard", icon: "🏠", path: "/admin/dashboard" },
+    // Quản lý Nhập Hàng - đặt lên trên cùng (dưới header)
+    { label: "Quản Lý Nhập Hàng", icon: "📥", path: "/admin/inventory" },
+    // Kho hàng (warehouse)
+    { label: "Kho Hàng", icon: "🏬", path: "/admin/warehouse" },
 
     // Quản lý Sản Phẩm
     { label: "Sản Phẩm", icon: "🏷️", path: "/admin/products" },
@@ -64,7 +99,15 @@ export default function AdminSidebar() {
 
   return (
     <div className="admin-sidebar">
-      <a href="/admin/dashboard"><h1 className="admin-sidebar-header"><span>ADMIN</span> Dashboard</h1></a>
+      <Toaster />
+      <AdminNotifications />
+      <div className="admin-sidebar-header">
+        <a href="/admin/dashboard"><h1><span>ADMIN</span> Dashboard</h1></a>
+        {/* <div className="admin-header-info">
+          {adminName ? <span className="admin-name">{adminName}</span> : <span className="admin-name">Admin</span>}
+          <button className="logout-small" onClick={handleLogout}>Đăng xuất</button>
+        </div> */}
+      </div>
       <ul className="admin-sidebar-menu">
         {menuItems.map((item) => (
           <li key={item.path}>

@@ -1,4 +1,5 @@
 import React from "react";
+import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/analytics.css";
 
 // --- Format tiền tệ ---
@@ -53,8 +54,10 @@ export default function AdminReportsPage() {
   ];
 
   return (
-    <div className="reports-wrapper">
-      <div className="reports-container">
+    <div className="admin-page">
+      <AdminSidebar />
+      <div className="admin-main">
+        <div className="reports-container">
         <header className="reports-header">
           <h1 className="reports-title">Báo Cáo & Phân Tích Tổng Hợp</h1>
         </header>
@@ -138,6 +141,7 @@ export default function AdminReportsPage() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

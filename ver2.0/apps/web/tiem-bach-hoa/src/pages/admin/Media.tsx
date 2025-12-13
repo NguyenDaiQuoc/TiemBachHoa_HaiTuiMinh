@@ -1,4 +1,5 @@
 import React from "react";
+import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/media.css";
 
 const mediaItems = [
@@ -34,8 +35,10 @@ const MediaCard = ({ item }) => {
 
 export default function AdminMediaPage() {
   return (
-    <div className="page-wrapper">
-      <div className="page-container">
+    <div className="admin-page">
+      <AdminSidebar />
+      <div className="admin-main">
+        <div className="page-container">
         <header className="page-header">
           <h1 className="page-title">Quản Lý Hình Ảnh & Media</h1>
           <button className="btn-upload">
@@ -81,6 +84,7 @@ export default function AdminMediaPage() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

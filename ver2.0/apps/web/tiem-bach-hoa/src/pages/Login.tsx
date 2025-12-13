@@ -7,15 +7,27 @@ import { useNavigate } from 'react-router-dom';
 import { auth, db, firebaseApiKey } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { showSuccess, showError } from '../utils/toast';
+import toast, { Toaster } from 'react-hot-toast';
 
 // Input component dùng chung
 function AuthInput({ label, placeholder, type = "text", required = false, value, onChange }: any) {
+  const inputId = `login-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div className="auth-input-group">
-      <label className="auth-label">
+      <label className="auth-label" htmlFor={inputId}>
         {label} {required && <span className="auth-required">*</span>}
       </label>
-      <input value={value} onChange={onChange} type={type} placeholder={placeholder} required={required} className="auth-input" />
+      <input 
+        id={inputId}
+        name={inputId}
+        value={value} 
+        onChange={onChange} 
+        type={type} 
+        placeholder={placeholder} 
+        required={required} 
+        className="auth-input" 
+      />
     </div>
   );
 }
@@ -107,7 +119,8 @@ function LoginForm() {
       // Log the request shape (without the password) to help debug network issues
       console.debug('Calling Firebase signInWithEmailAndPassword', { email: emailToUse, returnSecureToken: true });
       await signInWithEmailAndPassword(auth, emailToUse, pwdTrim);
-      navigate('/');
+      showSuccess('Đăng nhập thành công!');
+      setTimeout(() => navigate('/'), 500);
     } catch (err: any) {
       console.error('Login error:', err);
       // Special-case: detect network blocked errors seen in DevTools (blocked by extension)
@@ -157,7 +170,12 @@ function LoginForm() {
 
       <div className="auth-options">
         <label className="auth-checkbox-label">
-          <input type="checkbox" className="auth-checkbox" /> Ghi nhớ đăng nhập
+          <input 
+            type="checkbox" 
+            id="login-remember" 
+            name="remember" 
+            className="auth-checkbox" 
+          /> Ghi nhớ đăng nhập
         </label>
         <a href="#" className="auth-link">Quên mật khẩu?</a>
       </div>
@@ -166,13 +184,13 @@ function LoginForm() {
   {plainPasswordWarning && <div className="form-warn" style={{color:'#7a3'}}>{plainPasswordWarning}</div>}
 
       {/* Debug panel - show resolved email/pwd length and raw error code (dev only) */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+      {/* <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <button type="button" className="auth-btn" onClick={runDirectApiTest} style={{ background:'#4A5568' }}>Chạy kiểm tra API trực tiếp</button>
-      </div>
+      </div> */}
 
-      {debugInfo && (
+      {/* {debugInfo && (
         <pre style={{ fontSize: 12, marginTop: 8, background: '#fff8', padding: 8, textAlign: 'left', overflowX: 'auto' }}>{JSON.stringify(debugInfo, null, 2)}</pre>
-      )}
+      )} */}
 
       <button type="submit" className="auth-btn">Đăng Nhập</button>
     </form>
@@ -183,6 +201,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="auth-wrapper">
+      <Toaster />
       <Header />
       <div className="auth-content">
         <div className="auth-card">

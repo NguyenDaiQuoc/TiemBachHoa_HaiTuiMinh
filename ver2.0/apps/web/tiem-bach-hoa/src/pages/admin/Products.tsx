@@ -156,6 +156,23 @@ const ProductFormModal: React.FC<{
   // State để lưu trữ tên file/URL giả lập sau khi "upload"
   const [uploadedImages, setUploadedImages] = useState<string[]>(product.image);
   const [uploadedVideos, setUploadedVideos] = useState<string[]>(product.video);
+  const [warehouseOptions, setWarehouseOptions] = useState<Array<any>>([]);
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
+
+  // Load warehouse items for selection (to allow choosing existing warehouse product when creating product)
+  useEffect(() => {
+    const loadWarehouse = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'warehouse'));
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setWarehouseOptions(items.slice(0, 500));
+      } catch (err) {
+        console.error('Load warehouse options failed', err);
+        setWarehouseOptions([]);
+      }
+    };
+    loadWarehouse();
+  }, []);
 
   // Xử lý thay đổi input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -245,8 +262,30 @@ const ProductFormModal: React.FC<{
             {/* Cột 1: Thông tin cơ bản */}
             <fieldset>
               <legend>Thông Tin Cơ Bản & Giá</legend>
-              <label>Tên Sản Phẩm:</label>
-              <input type="text" name="name" value={formData.name} onChange={handleChange} required />
+              <label>Tên Sản Phẩm (chọn từ kho hoặc tạo mới):</label>
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                <select value={selectedWarehouseId} onChange={(e)=>{
+                  const id = e.target.value;
+                  setSelectedWarehouseId(id);
+                  if (!id) { setFormData(prev => ({...prev, name: ''})); return; }
+                  const w = warehouseOptions.find(x=> x.id === id || x.productId === id);
+                  if (w) {
+                    setFormData(prev => ({ ...prev, name: w.productName || prev.name }));
+                    setUploadedImages(w.image ? [w.image] : (w.images || []));
+                    // set a default variation stock if empty
+                    if (variationsState.length === 0) {
+                      setVariationsState([{ color:'', condition:'new', defect:'', dimension:'', discount:0, image: (w.image||''), material:'', newPrice: formData.newPriceInput || 0, oldPrice: formData.oldPriceInput || 0, size:'', skuID: Date.now(), stock: w.stock || 0, weight:0 }]);
+                    }
+                  }
+                }}>
+                  <option value="">-- Tạo mới --</option>
+                  {warehouseOptions.map(w => (
+                    <option key={w.id} value={w.id}>{w.productName} · Kho: {w.stock || 0}</option>
+                  ))}
+                </select>
+                <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Tên sản phẩm" required />
+              </div>
+              {selectedWarehouseId && <div style={{fontSize:12,color:'#666',marginTop:6}}>Đã chọn sản phẩm từ kho — số tồn: {warehouseOptions.find(x=>x.id===selectedWarehouseId)?.stock || 0}</div>}
 
               <label>Mô Tả:</label>
               <textarea name="description" value={formData.description} onChange={handleChange} />

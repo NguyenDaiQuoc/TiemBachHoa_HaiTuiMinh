@@ -1,8 +1,26 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { db, auth } from "../firebase";
+import { signInAnonymously } from 'firebase/auth';
+import { collection, doc, getDoc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, setDoc, addDoc } from "firebase/firestore";
 
 export default function FloatingButtons() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportName, setSupportName] = useState('');
+  const [supportPhone, setSupportPhone] = useState('');
+  const [supportMsg, setSupportMsg] = useState('');
+
+  // simple templates (can be expanded) — updated to be meaningful
+  const templates = [
+    { id: 'tpl_stock', title: 'Hỏi tồn kho', text: 'Cho mình hỏi sản phẩm [tên sản phẩm] còn hàng không?' },
+    { id: 'tpl_promo', title: 'Hỏi khuyến mãi', text: 'Có khuyến mãi cho sản phẩm [tên sản phẩm] không?' },
+    { id: 'tpl_support', title: 'Yêu cầu tư vấn', text: 'Mình cần tư vấn thêm, vui lòng liên hệ nhân viên tư vấn.' }
+  ];
 
   // Hiện nút Back to Top khi scroll qua Hero
   useEffect(() => {
@@ -16,6 +34,155 @@ export default function FloatingButtons() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // create or load a chat session id in localStorage so history persists for the visitor
+  useEffect(() => {
+    let sid = localStorage.getItem('chat_session_id');
+    if (!sid) {
+      sid = `session-${Date.now()}-${Math.floor(Math.random()*10000)}`;
+      localStorage.setItem('chat_session_id', sid);
+    }
+    setSessionId(sid);
+  }, []);
+
+  // listen to the single chat document for this session — ensure auth exists before listening
+  useEffect(() => {
+    if (!sessionId) return;
+    let unsub: (() => void) | null = null;
+
+    const startListen = async () => {
+      try {
+        if (!auth.currentUser) {
+          try { await signInAnonymously(auth); } catch (e) { /* ignore */ }
+        }
+        const docRef = doc(db, 'chats', sessionId);
+        unsub = onSnapshot(docRef, (snap) => {
+          if (!snap.exists()) {
+            setMessages([]);
+            return;
+          }
+          const data = snap.data() as any;
+          setMessages(Array.isArray(data.messages) ? data.messages : []);
+          // scroll to bottom
+          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+        }, (err) => {
+          console.error('chat doc listen failed', err);
+          setMessages([]);
+        });
+      } catch (e:any) {
+        console.error('startListen error', e?.message || e);
+      }
+    };
+
+    startListen();
+    return () => { if (unsub) unsub(); };
+  }, [sessionId]);
+
+  const sendMessage = async (text: string) => {
+    if (!text || !sessionId) return;
+    try {
+      // ensure we have an auth session; anonymous sign-in if not
+      if (!auth.currentUser) {
+        try { await signInAnonymously(auth); } catch (e) { /* ignore */ }
+      }
+      // append message into single `chats/{sessionId}` document (messages array)
+      const chatDoc = doc(db, 'chats', sessionId);
+      const msgId = `m-${Date.now()}-${Math.floor(Math.random()*100000)}`;
+      const messageObj = {
+        id: msgId,
+        role: 'customer',
+        message: text,
+        createdAt: serverTimestamp(),
+        unread: true
+      };
+
+      try {
+        const existing = await getDoc(chatDoc);
+        if (!existing.exists()) {
+          // create a new chat document tied to this auth.uid
+          await setDoc(chatDoc, {
+            userId: auth.currentUser ? auth.currentUser.uid : sessionId,
+            name: (auth.currentUser && (auth.currentUser as any).displayName) || 'Khách',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            messages: [messageObj],
+            hasUnread: true
+          });
+        } else {
+          await updateDoc(chatDoc, {
+            messages: arrayUnion(messageObj),
+            hasUnread: true,
+            updatedAt: serverTimestamp()
+          });
+        }
+      } catch (err:any) {
+        console.warn('Failed to write chats doc, falling back to chat_messages and create doc', err?.message || err);
+        // fallback: also write into legacy `chat_messages` collection so bot responder (cloud function) can still run
+        try {
+          await addDoc(collection(db, 'chat_messages'), {
+            role: 'customer',
+            message: text,
+            threadId: sessionId,
+            unread: true,
+            createdAt: serverTimestamp()
+          });
+        } catch (e:any) {
+          console.warn('Fallback addDoc failed', e?.message || e);
+        }
+      }
+      setInput('');
+    } catch (e:any) {
+      console.error('sendMessage failed', e);
+      alert('Gửi tin nhắn thất bại: ' + (e.message || ''));
+    }
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const t = input.trim();
+      if (t) sendMessage(t);
+    }
+  };
+
+  const sendTemplate = async (tpl: {id:string,title:string,text:string}) => {
+    // support template opens modal
+    if (tpl.id === 'tpl_support') {
+      setShowSupportModal(true);
+      return;
+    }
+    // allow filling placeholders via prompt
+    let text = tpl.text;
+    if (tpl.text.includes('[tên sản phẩm]')) {
+      const name = window.prompt('Nhập tên sản phẩm:', '');
+      if (!name) return;
+      text = text.replace('[tên sản phẩm]', name);
+    }
+    // send
+    await sendMessage(text);
+  };
+
+  const submitSupportRequest = async () => {
+    if (!supportName && !supportPhone && !supportMsg) return;
+    const composed = `Yêu cầu tư vấn: ${supportMsg} - ${supportName || ''} ${supportPhone || ''}`;
+    try {
+      await addDoc(collection(db, 'support_requests'), {
+        name: supportName,
+        phone: supportPhone,
+        message: supportMsg,
+        threadId: sessionId,
+        status: 'new',
+        createdAt: serverTimestamp()
+      });
+      // also send into chat thread for visibility
+      await sendMessage(composed + ' (YÊU CẦU_TƯ_VẤN)');
+      setShowSupportModal(false);
+      setSupportName(''); setSupportPhone(''); setSupportMsg('');
+    } catch (e:any) {
+      console.error('submitSupportRequest failed', e);
+      alert('Gửi yêu cầu thất bại: ' + (e.message || ''));
+    }
+  };
 
   return (
     <div className="floating-buttons">
@@ -66,23 +233,57 @@ export default function FloatingButtons() {
         </div>
 
         {isChatOpen && (
-          <div className="chatbot-window">
-            <div className="chatbot-header">
-              <span>Chat với Hai Tụi Mình</span>
-              <button onClick={() => setIsChatOpen(false)}>✖</button>
-            </div>
+              <div className="chatbot-window">
+                <div className="chatbot-header">
+                  <span>Chat với Hai Tụi Mình</span>
+                  <button onClick={() => setIsChatOpen(false)}>✖</button>
+                </div>
 
-            <div className="chatbot-body">
-              <div className="chatbot-message bot">
-                Xin chào 👋 Bạn muốn tìm sản phẩm nào ạ?
+                <div className="chatbot-body">
+                  <div style={{maxHeight: '40vh', overflow: 'auto', paddingRight: 8}}>
+                    {messages.length === 0 && (
+                      <div className="chatbot-message bot">Xin chào 👋 Bạn muốn tìm sản phẩm nào ạ?</div>
+                    )}
+                    {messages.map(m => (
+                      <div key={m.id} className={`chatbot-message ${m.role === 'bot' ? 'bot' : m.role === 'admin' ? 'admin' : 'user'}`} style={{whiteSpace:'pre-wrap'}}>
+                        {m.message}
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* templates area */}
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>
+                    {templates.map(t => (
+                      <button key={t.id} onClick={() => sendTemplate(t)} style={{padding:'6px 8px',borderRadius:6,border:'1px solid #ddd',background:'#fff'}}>{t.title}</button>
+                    ))}
+                  </div>
+
+                  {/* support modal */}
+                  {showSupportModal && (
+                    <div style={{position:'fixed',left:0,top:0,right:0,bottom:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:99999}}>
+                      <div style={{background:'#fff',padding:16,borderRadius:8,width:320,boxShadow:'0 8px 30px rgba(0,0,0,.3)'}}>
+                        <h4 style={{marginTop:0}}>Yêu cầu tư vấn</h4>
+                        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                          <input placeholder="Họ và tên" value={supportName} onChange={e=>setSupportName(e.target.value)} style={{padding:8,borderRadius:6,border:'1px solid #ddd'}} />
+                          <input placeholder="Số điện thoại" value={supportPhone} onChange={e=>setSupportPhone(e.target.value)} style={{padding:8,borderRadius:6,border:'1px solid #ddd'}} />
+                          <textarea placeholder="Nội dung" value={supportMsg} onChange={e=>setSupportMsg(e.target.value)} style={{padding:8,borderRadius:6,border:'1px solid #ddd'}} />
+                          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+                            <button onClick={()=>setShowSupportModal(false)} style={{padding:'6px 10px',borderRadius:6}}>Hủy</button>
+                            <button onClick={submitSupportRequest} style={{padding:'6px 10px',borderRadius:6,background:'#C75F4B',color:'#fff',border:'none'}}>Gửi yêu cầu</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+
+                <div className="chatbot-input-wrapper">
+                  <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={onKeyDown} className="chatbot-input" placeholder="Nhập tin nhắn..." />
+                  <button className="chatbot-send" onClick={() => { const t = input.trim(); if (t) sendMessage(t); }}>Gửi</button>
+                </div>
               </div>
-            </div>
-
-            <div className="chatbot-input-wrapper">
-              <input className="chatbot-input" placeholder="Nhập tin nhắn..." />
-              <button className="chatbot-send">Gửi</button>
-            </div>
-          </div>
         )}
       </div>
     </div>

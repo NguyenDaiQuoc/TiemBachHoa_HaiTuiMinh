@@ -1,4 +1,5 @@
 import React from "react";
+import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/marketing.css";
 
 const formatCurrency = (amount) => Number(amount).toLocaleString('vi-VN') + ' VNĐ';
@@ -42,8 +43,10 @@ export default function AdminMarketingPage() {
   const activeTab = "coupons";
 
   return (
-    <div className="page-wrapper">
-      <div className="page-container">
+    <div className="admin-page">
+      <AdminSidebar />
+      <div className="admin-main">
+        <div className="page-container">
         <header className="page-header">
           <h1 className="page-title">Quản Lý Marketing & Khuyến Mãi</h1>
         </header>
@@ -99,6 +102,7 @@ export default function AdminMarketingPage() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

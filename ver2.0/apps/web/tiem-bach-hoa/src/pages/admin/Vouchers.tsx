@@ -1,4 +1,5 @@
 import React from "react";
+import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/vouchers.css";
 
 // Format tiền tệ
@@ -44,8 +45,10 @@ export default function AdminVoucherPage() {
   };
 
   return (
-    <div className="page-wrapper">
-      <main className="content">
+    <div className="admin-page">
+      <AdminSidebar />
+      <div className="admin-main">
+        <main className="content">
         <header className="content-header">
           <h1 className="content-title">Quản Lý Voucher & Mã Giảm Giá</h1>
           <button className="btn-create">
@@ -117,7 +120,8 @@ export default function AdminVoucherPage() {
             </div>
           </div>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

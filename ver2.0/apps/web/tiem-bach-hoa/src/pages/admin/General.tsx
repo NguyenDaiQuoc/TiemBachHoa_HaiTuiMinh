@@ -1,4 +1,5 @@
 import React from "react";
+import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/general.css";
 
 const SettingsContainer = ({ title, description, children }) => (
@@ -46,7 +47,7 @@ export default function AdminSettingsPage() {
     switch (activeSection) {
       case 'general':
         return (
-          <SettingsContainer 
+          <SettingsContainer
             title="Thông Tin Chung Cửa Hàng"
             description="Cập nhật tên, logo, email liên hệ và múi giờ mặc định."
           >
@@ -58,7 +59,7 @@ export default function AdminSettingsPage() {
         );
       case 'seo':
         return (
-          <SettingsContainer 
+          <SettingsContainer
             title="Cài Đặt SEO"
             description="Thiết lập các thẻ meta và cấu hình chung cho SEO website."
           >
@@ -69,7 +70,7 @@ export default function AdminSettingsPage() {
         );
       case 'payment':
         return (
-          <SettingsContainer 
+          <SettingsContainer
             title="Cổng Thanh Toán & Tiền Tệ"
             description="Quản lý các phương thức thanh toán và đơn vị tiền tệ chính thức."
           >
@@ -84,26 +85,29 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="page-wrapper">
-      <div className="page-container">
-        <header className="page-header">
-          <h1 className="page-title">Quản Lý Cấu Hình Chung</h1>
-        </header>
+    <div className="admin-page">
+      <AdminSidebar />
+      <div className="admin-main">
+        <div className="page-container">
+          <header className="page-header">
+            <h1 className="page-title">Quản Lý Cấu Hình Chung</h1>
+          </header>
 
-        <div className="settings-layout">
-          <div className="settings-menu">
-            {menuItems.map(item => (
-              <button key={item.key} className={`menu-item ${item.key === activeSection ? 'active' : ''}`}>
-                <span className="menu-icon">{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-          </div>
+          <div className="settings-layout">
+            <div className="settings-menu">
+              {menuItems.map(item => (
+                <button key={item.key} className={`menu-item ${item.key === activeSection ? 'active' : ''}`}>
+                  <span className="menu-icon">{item.icon}</span>
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-          <div className="settings-content-wrapper">
-            {renderSettingsContent()}
-            <div className="save-btn-container">
-              <button className="save-btn">Lưu Thay Đổi Cấu Hình</button>
+            <div className="settings-content-wrapper">
+              {renderSettingsContent()}
+              <div className="save-btn-container">
+                <button className="save-btn">Lưu Thay Đổi Cấu Hình</button>
+              </div>
             </div>
           </div>
         </div>
@@ -111,3 +115,4 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+

@@ -1,4 +1,5 @@
 import React from "react";
+import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/orders.css";
 
 // Format tiền tệ
@@ -43,8 +44,10 @@ export default function AdminOrderPage() {
   };
 
   return (
-    <div className="page-wrapper">
-      <main className="content">
+    <div className="admin-page">
+      <AdminSidebar />
+      <div className="admin-main">
+        <main className="content">
         <header className="content-header">
           <h1 className="content-title">Quản Lý Đơn Hàng</h1>
         </header>
@@ -105,7 +108,8 @@ export default function AdminOrderPage() {
             <button>Sau</button>
           </div>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/news.css";
 
 const newsItems = [
@@ -38,8 +39,10 @@ export default function AdminNewsPage() {
   };
 
   return (
-    <div className="page-wrapper">
-      <div className="page-container">
+    <div className="admin-page">
+      <AdminSidebar />
+      <div className="admin-main">
+        <div className="page-container">
         <header className="page-header">
           <h1 className="page-title">Quản Lý Tin Tức & Thông Báo</h1>
           <button className="btn-create">
@@ -112,6 +115,7 @@ export default function AdminNewsPage() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

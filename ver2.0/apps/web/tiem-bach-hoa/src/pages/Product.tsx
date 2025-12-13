@@ -2,6 +2,9 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 // Đảm bảo đường dẫn CSS của bạn đúng
 import "../../css/product.css";
+import { addToCart } from '../utils/cart';
+import { showSuccess, showError, showInfo } from '../utils/toast';
+import { auth } from '../firebase';
 // Đảm bảo các component này có sẵn (Giả định bạn đã tạo)
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -56,6 +59,14 @@ interface ProductData {
   description: string;
   // ⭐ CẬP NHẬT: Thêm trường slug ⭐
   slug: string;
+  variations?: Array<{
+    color: string;
+    size: string;
+    image: string;
+    newPrice: number;
+    oldPrice: number;
+    stock: number;
+  }>;
 }
 
 // Interface Dữ liệu Danh Mục (Giữ nguyên)
@@ -217,7 +228,7 @@ function ProductCard({
 }: ProductData & {
   isWished: boolean;
   handleToggleWishlist: (productId: string) => void;
-  handleAddToCart: (product: ProductData) => void;
+  handleAddToCart: (product: ProductData, event?: React.MouseEvent) => void;
   handleBuyNow: (product: ProductData) => void;
   navigate: (path: string) => void;
 }) {
@@ -275,7 +286,7 @@ function ProductCard({
           className="add-to-cart-btn"
           onClick={(e) => {
             e.stopPropagation();
-            handleAddToCart(baseProductData);
+            handleAddToCart(baseProductData, e);
           }}
           title="Thêm vào giỏ hàng"
         >
@@ -459,9 +470,54 @@ export default function ProductListingPage() {
     setWishlist(newWishlist);
   };
 
-  const handleAddToCart = (product: ProductData) => {
-    console.log(`Đã thêm ${product.name} vào giỏ hàng`);
-    // Logic thêm vào giỏ hàng thực tế
+  const handleAddToCart = async (product: ProductData, event?: React.MouseEvent) => {
+    if (!auth.currentUser) {
+      showInfo('Vui lòng đăng nhập để thêm vào giỏ hàng');
+      setTimeout(() => navigate('/login'), 1500);
+      return;
+    }
+
+    // Animation effect
+    if (event) {
+      const target = event.currentTarget as HTMLElement;
+      const img = target.closest('.product-card')?.querySelector('img');
+      if (img) {
+        const clone = img.cloneNode(true) as HTMLElement;
+        clone.style.position = 'fixed';
+        clone.style.zIndex = '9999';
+        clone.style.width = '80px';
+        clone.style.height = '80px';
+        clone.style.objectFit = 'cover';
+        clone.style.borderRadius = '8px';
+        
+        const rect = img.getBoundingClientRect();
+        clone.style.left = rect.left + 'px';
+        clone.style.top = rect.top + 'px';
+        clone.classList.add('fly-to-cart');
+        
+        document.body.appendChild(clone);
+        setTimeout(() => clone.remove(), 800);
+      }
+    }
+
+    // Use first variation if available, otherwise use base product
+    const variation = product.variations && product.variations.length > 0 ? product.variations[0] : null;
+    
+    try {
+      await addToCart({
+        productId: product.id,
+        name: product.name,
+        price: variation ? variation.newPrice : product.newPrice,
+        qty: 1,
+        image: variation ? variation.image : (product.image || ''),
+        variation: variation ? `${variation.color} / ${variation.size}` : '',
+        slug: product.slug,
+      });
+      showSuccess(`Đã thêm ${product.name} vào giỏ hàng!`);
+    } catch (error) {
+      console.error('Add to cart error:', error);
+      showError('Không thể thêm vào giỏ hàng. Vui lòng thử lại.');
+    }
   };
 
   // LOGIC MUA NGAY: Thêm vào giỏ và chuyển hướng đến trang checkout

@@ -5,6 +5,9 @@ import { onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { showSuccess } from '../utils/toast';
+import { Toaster } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 // (Header helper components)
 
@@ -80,6 +83,7 @@ function AnnouncementMarquee() {
 // Component Chính: Header
 // ----------------------------------------------------------------------
 export default function Header() {
+  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
@@ -167,7 +171,7 @@ export default function Header() {
 
   return (
     <div className="main-header-wrapper">
-
+      <Toaster />
       {/* 1. Dòng Social Links */}
       <TopSocialBar />
 
@@ -226,6 +230,8 @@ export default function Header() {
               <span className="search-icon">🔍</span>
               <input
                 type="text"
+                id="header-search"
+                name="search"
                 placeholder="Tìm kiếm sản phẩm..."
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
@@ -243,7 +249,7 @@ export default function Header() {
               {isUserDropdownOpen && (
                 <div className="user-dropdown">
                   <div className="user-dropdown-list">
-                    {!currentUser ? (
+                    {(!currentUser || currentUser.isAnonymous) ? (
                       <>
                         <a href="/login">Đăng nhập</a>
                         <a href="/register">Đăng ký</a>
@@ -264,7 +270,12 @@ export default function Header() {
                         <a href="/wishlist">❤️ Danh mục yêu thích</a>
                         <a href="/orders">Đơn mua hàng</a>
                         <a href="/coupons">Mã giảm giá</a>
-                        <a className="user-logout" href="#" onClick={(e) => { e.preventDefault(); auth.signOut(); }}>Đăng xuất</a>
+                        <a className="user-logout" href="#" onClick={(e) => { 
+                          e.preventDefault(); 
+                          auth.signOut(); 
+                          showSuccess('Đăng xuất thành công!');
+                          setTimeout(() => window.location.reload(), 800);
+                        }}>Đăng xuất</a>
                       </>
                     )}
                   </div>
@@ -331,7 +342,10 @@ export default function Header() {
                       </span>
                     </div>
 
-                    <button className="cart-checkout-button">
+                    <button 
+                      className="cart-checkout-button"
+                      onClick={() => navigate('/cart')}
+                    >
                       Xem Giỏ Hàng & Thanh Toán
                     </button>
                   </div>

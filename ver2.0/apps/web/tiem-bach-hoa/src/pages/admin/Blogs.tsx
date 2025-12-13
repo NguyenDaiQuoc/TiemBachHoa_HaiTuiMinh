@@ -1,4 +1,5 @@
 import React from "react";
+import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/blogs.css";
 
 const blogPosts = [
@@ -37,79 +38,81 @@ export default function AdminBlogPage() {
     'Bản Nháp': 'status-draft',
     'Chờ Duyệt': 'status-pending',
   };
-
   return (
-    <div className="blog-wrapper">
-      <div className="blog-container">
+    <div className="admin-page">
+      <AdminSidebar />
+      <div className="admin-main">
+        <div className="blog-container">
 
-        <header className="blog-header">
-          <h1 className="blog-title">Quản Lý Bài Viết Blog</h1>
-          <button className="btn-add"><span className="btn-icon">✏️</span> Viết Bài Mới</button>
-        </header>
+          <header className="blog-header">
+            <h1 className="blog-title">Quản Lý Bài Viết Blog</h1>
+            <button className="btn-add"><span className="btn-icon">✏️</span> Viết Bài Mới</button>
+          </header>
 
-        <BlogMetrics />
+          <BlogMetrics />
 
-        <div className="filter-bar">
-          <input type="text" placeholder="Tìm kiếm theo Tiêu đề, Tác giả..." className="filter-input" />
-          <select className="filter-select">
-            <option>Lọc theo Trạng Thái</option>
-            <option>Đã Xuất Bản</option>
-            <option>Bản Nháp</option>
-            <option>Chờ Duyệt</option>
-          </select>
-          <select className="filter-select">
-            <option>Lọc theo Danh Mục</option>
-            <option>Công Thức</option>
-            <option>Mẹo Vặt</option>
-            <option>Tin Tức</option>
-          </select>
-          <button className="btn-apply">Áp Dụng</button>
-        </div>
+          <div className="filter-bar">
+            <input type="text" placeholder="Tìm kiếm theo Tiêu đề, Tác giả..." className="filter-input" />
+            <select className="filter-select">
+              <option>Lọc theo Trạng Thái</option>
+              <option>Đã Xuất Bản</option>
+              <option>Bản Nháp</option>
+              <option>Chờ Duyệt</option>
+            </select>
+            <select className="filter-select">
+              <option>Lọc theo Danh Mục</option>
+              <option>Công Thức</option>
+              <option>Mẹo Vặt</option>
+              <option>Tin Tức</option>
+            </select>
+            <button className="btn-apply">Áp Dụng</button>
+          </div>
 
-        <div className="table-card">
-          <table className="blog-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Tiêu Đề</th>
-                <th>Danh Mục</th>
-                <th>Tác Giả</th>
-                <th>Ngày Xuất Bản</th>
-                <th>Lượt Xem</th>
-                <th>Trạng Thái</th>
-                <th>Hành Động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {blogPosts.map(post => (
-                <tr key={post.id}>
-                  <td>{post.id}</td>
-                  <td className="post-title">{post.title}</td>
-                  <td>{post.category}</td>
-                  <td>{post.author}</td>
-                  <td>{post.date}</td>
-                  <td>{post.views.toLocaleString('vi-VN')}</td>
-                  <td><span className={`status-badge ${statusColors[post.status]}`}>{post.status}</span></td>
-                  <td>
-                    <button className="action-edit">Sửa</button>
-                    <button className="action-delete">Xóa</button>
-                  </td>
+          <div className="table-card">
+            <table className="blog-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tiêu Đề</th>
+                  <th>Danh Mục</th>
+                  <th>Tác Giả</th>
+                  <th>Ngày Xuất Bản</th>
+                  <th>Lượt Xem</th>
+                  <th>Trạng Thái</th>
+                  <th>Hành Động</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {blogPosts.map(post => (
+                  <tr key={post.id}>
+                    <td>{post.id}</td>
+                    <td className="post-title">{post.title}</td>
+                    <td>{post.category}</td>
+                    <td>{post.author}</td>
+                    <td>{post.date}</td>
+                    <td>{post.views.toLocaleString('vi-VN')}</td>
+                    <td><span className={`status-badge ${statusColors[post.status]}`}>{post.status}</span></td>
+                    <td>
+                      <button className="action-edit">Sửa</button>
+                      <button className="action-delete">Xóa</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          <div className="table-pagination">
-            <span>Hiển thị 1 - 20 trong tổng số 48 bài viết</span>
-            <div className="pagination-buttons">
-              <button>Trước</button>
-              <span className="page-current">1</span>
-              <button>2</button>
-              <button>Sau</button>
+            <div className="table-pagination">
+              <span>Hiển thị 1 - 20 trong tổng số 48 bài viết</span>
+              <div className="pagination-buttons">
+                <button>Trước</button>
+                <span className="page-current">1</span>
+                <button>2</button>
+                <button>Sau</button>
+              </div>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );

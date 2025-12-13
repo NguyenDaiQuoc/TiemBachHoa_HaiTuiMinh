@@ -1243,7 +1243,8 @@
 .chatbot-window {
   position: fixed;
   bottom: 90px;
-  right: 20px;
+  /* place the chat window left of the floating buttons (which sit at right:20px) */
+  right: 90px;
   width: 330px;
   height: 420px;
   background: #ffffff;
@@ -1293,6 +1294,13 @@
   background: #fafafa;
   padding: 10px;
   overflow-y: auto;
+}
+
+/* Ensure the inner messages container stacks messages vertically so align-self works */
+.chatbot-body > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .chatbot-message {

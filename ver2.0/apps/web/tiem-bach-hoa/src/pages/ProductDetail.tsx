@@ -4,6 +4,10 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 import "../../css/product-detail.css";
+import { addToCart } from '../utils/cart';
+import { showSuccess, showError, showInfo } from '../utils/toast';
+import { Toaster } from 'react-hot-toast';
+import { auth } from '../firebase';
 
 // ⭐️ IMPORT DB VÀ THƯ VIỆN FIREBASE ⭐️
 import { db } from '../firebase';
@@ -12,6 +16,8 @@ import {
   query,
   where,
   getDocs,
+  orderBy,
+  limit,
   Timestamp,
 } from 'firebase/firestore';
 import type { DocumentData } from 'firebase/firestore';
@@ -91,20 +97,45 @@ const fetchProductDetail = async (
 ) => {
   setLoading(true);
   try {
+    console.log('🔍 DEBUG: db object:', db);
+    console.log('🔍 DEBUG: Searching for slug:', productSlug);
+    
     const productsRef = collection(db, "products");
-    const q = query(productsRef, where("slug", "==", productSlug));
+    console.log('🔍 DEBUG: Collection ref path:', productsRef.path);
+    
+    const slugToSearch = productSlug.trim();
+    const q = query(productsRef, where("slug", "==", slugToSearch));
     const querySnapshot = await getDocs(q);
 
+    console.log('✅ Query result - Found:', querySnapshot.size, 'docs');
+
     if (querySnapshot.empty) {
-      console.error(`Không tìm thấy sản phẩm với slug: ${productSlug}`);
+      // Thử query với collection tên "product" (số ít)
+      console.warn('⚠️ Trying with collection name "product" instead...');
+      const altRef = collection(db, "product");
+      const altQ = query(altRef, where("slug", "==", slugToSearch));
+      const altSnapshot = await getDocs(altQ);
+      
+      console.log('✅ Alternative query result - Found:', altSnapshot.size, 'docs');
+      
+      if (!altSnapshot.empty) {
+        const doc = altSnapshot.docs[0];
+        console.log('✅ Product data (from "product"):', doc.data());
+        const productData = mapProductFromFirestore(doc.id, doc.data());
+        setProductDetail(productData);
+        return;
+      }
+      
+      console.error(`❌ Không tìm thấy sản phẩm với slug: ${slugToSearch}`);
       setProductDetail(null);
     } else {
       const doc = querySnapshot.docs[0];
+      console.log('✅ Product data (from "products"):', doc.data());
       const productData = mapProductFromFirestore(doc.id, doc.data());
       setProductDetail(productData);
     }
   } catch (error) {
-    console.error(`Lỗi khi fetch chi tiết sản phẩm ${productSlug}:`, error);
+    console.error(`❌ Lỗi khi fetch chi tiết sản phẩm ${productSlug}:`, error);
     setProductDetail(null);
   } finally {
     setLoading(false);
@@ -152,12 +183,21 @@ export default function ProductDetailPage() {
 
   // ⭐ State: Quản lý biến thể đang được chọn - Dùng skuID để nhận dạng ⭐
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<ProductData[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // --- useEffect để fetch data ---
   useEffect(() => {
+    console.log('🔵 ProductDetail useEffect triggered');
+    console.log('🔵 productSlug from URL:', productSlug);
+    console.log('🔵 Firebase db object:', db);
+    
     if (productSlug) {
+      console.log('🔵 Calling fetchProductDetail with slug:', productSlug);
       fetchProductDetail(productSlug, setProductDetail, setLoading);
     } else {
+      console.log('⚠️ No productSlug found in URL params');
       setLoading(false);
       setProductDetail(null);
     }
@@ -171,6 +211,62 @@ export default function ProductDetailPage() {
       setQuantity(1); // Reset số lượng
     }
   }, [productDetail, selectedVariation]);
+
+  // Khi productDetail thay đổi, load reviews và related products
+  useEffect(() => {
+    const loadExtras = async () => {
+      if (!productDetail) return;
+
+      try {
+        // Fetch reviews for this product
+        const reviewsRef = collection(db, 'reviews');
+        const reviewsQ = query(reviewsRef, where('productID', '==', productDetail.id), orderBy('createdAt', 'desc'));
+        const reviewsSnap = await getDocs(reviewsQ);
+        const revs: any[] = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setReviews(revs);
+      } catch (err) {
+        console.error('Error loading reviews:', err);
+        setReviews([]);
+      }
+
+      try {
+        // Related products: same top-level category (categorySlugs[0])
+        const cat = (productDetail.categorySlugs && productDetail.categorySlugs[0]) || null;
+        if (cat) {
+          const productsRef = collection(db, 'products');
+          const relatedQ = query(productsRef, where('categorySlugs', 'array-contains', cat), limit(6));
+          const relatedSnap = await getDocs(relatedQ);
+          const related = relatedSnap.docs
+            .map(d => mapProductFromFirestore(d.id, d.data()))
+            .filter(p => p.id !== productDetail.id);
+          setRelatedProducts(related);
+        } else {
+          setRelatedProducts([]);
+        }
+      } catch (err) {
+        console.error('Error loading related products:', err);
+        setRelatedProducts([]);
+      }
+
+      // Check admin doc for current user to show inventory management button
+      try {
+        const u = auth.currentUser;
+        if (u) {
+          const adminDoc = await getDocs(collection(db, 'admins'));
+          // simple check: if any admin doc has id == uid
+          const found = adminDoc.docs.some(d => d.id === u.uid);
+          setIsAdmin(found);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (err) {
+        console.error('Error checking admin status:', err);
+        setIsAdmin(false);
+      }
+    };
+
+    loadExtras();
+  }, [productDetail]);
 
 
   // ⭐ Logic tính toán giá, tồn kho dựa trên Biến thể được chọn ⭐
@@ -214,6 +310,11 @@ export default function ProductDetailPage() {
   // Gán dữ liệu sản phẩm sau khi tải thành công
   const { name, description, categorySlugs, variations } = productDetail;
 
+  // Rating summary computed from reviews
+  const ratingCount = reviews.length;
+  const avgRating = ratingCount > 0 ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / ratingCount) : 0;
+  const ratingStars = avgRating > 0 ? '⭐'.repeat(Math.max(1, Math.round(avgRating))) : '⭐️⭐️⭐️⭐️⭐️';
+
   // --- Render Tab Content ---
   const renderTabContent = () => {
     switch (activeTab) {
@@ -232,8 +333,27 @@ export default function ProductDetailPage() {
       case "Đánh Giá Khách Hàng":
         return (
           <div className="tab-content tab-border">
-            <p className="font-semibold mb-2">⭐️⭐️⭐️⭐️⭐️ 4.9/5 (256 Đánh Giá)</p>
-            <p className="text-sm text-gray-600">"Màu **{selectedVariation?.color || ''}** rất đẹp và chất liệu **{selectedVariation?.material || ''}** dày dặn." - Khách hàng</p>
+            <p className="font-semibold mb-2">{ratingStars} {avgRating.toFixed(1)}/5 ({ratingCount} đánh giá)</p>
+
+            {reviews.length === 0 ? (
+              <p className="text-sm text-gray-600">Chưa có đánh giá cho sản phẩm này.</p>
+            ) : (
+              <div className="reviews-list">
+                {reviews.map(r => {
+                  const created = r.createdAt && (r.createdAt.toDate ? r.createdAt.toDate() : new Date(r.createdAt));
+                  return (
+                    <div key={r.id} className="review-item">
+                      <div className="review-header">
+                        <strong>{r.userID || 'Khách'}</strong>
+                        <span className="review-rating">{'⭐'.repeat(r.rating || 0)}</span>
+                        <span className="review-date">{created ? created.toLocaleString() : ''}</span>
+                      </div>
+                      <div className="review-body">{r.comment || r.text || r.message || ''}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       default:
@@ -282,8 +402,8 @@ export default function ProductDetailPage() {
             <h1 className="product-detail-title">{name}</h1>
 
             <div className="product-detail-rating">
-              <span className="stars">⭐️⭐️⭐️⭐️⭐️</span>
-              <span className="reviews">({productDetail.ratingCount} đánh giá)</span>
+              <span className="stars">{ratingStars}</span>
+              <span className="reviews">({ratingCount} đánh giá)</span>
             </div>
 
             <div className="price-section">
@@ -338,15 +458,42 @@ export default function ProductDetailPage() {
               <div className="quantity">
                 <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={isOutOfStock}>-</button>
                 <span>{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} disabled={isOutOfStock}>+</button>
+                <button onClick={() => setQuantity(Math.min(selectedVariation?.stock || 999, quantity + 1))} disabled={isOutOfStock}>+</button>
               </div>
 
               <PrimaryButton
                 className="btn-buy"
-                onClick={() => { console.log(`Thêm ${quantity} x ${name} (${selectedVariation?.color} / ${selectedVariation?.size}) vào giỏ hàng`); }}
+                onClick={async () => {
+                  if (!auth.currentUser) {
+                    showInfo('Vui lòng đăng nhập để thêm vào giỏ hàng');
+                    setTimeout(() => navigate('/login'), 1500);
+                    return;
+                  }
+                  
+                  if (!selectedVariation) {
+                    showError('Vui lòng chọn biến thể sản phẩm');
+                    return;
+                  }
+
+                  try {
+                    await addToCart({
+                      productId: productDetail?.id || '',
+                      name: productDetail?.name || '',
+                      price: displayPrice,
+                      qty: quantity,
+                      image: displayImage,
+                      variation: `${selectedVariation.color} / ${selectedVariation.size}`,
+                      slug: productDetail?.slug || '',
+                    });
+                    showSuccess(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
+                  } catch (error) {
+                    console.error('Add to cart error:', error);
+                    showError('Không thể thêm vào giỏ hàng. Vui lòng thử lại.');
+                  }
+                }}
                 disabled={isOutOfStock}
               >
-                {isOutOfStock ? "Hết hàng" : "Thêm vào giỏ hàng"}
+                {isOutOfStock ? "Hết hàng" : "🛒 Thêm vào giỏ hàng"}
               </PrimaryButton>
             </div>
 
@@ -362,16 +509,31 @@ export default function ProductDetailPage() {
           {renderTabContent()}
         </div>
 
-        {/* Sản phẩm liên quan (Giữ nguyên) */}
-        <h2 className="related-title">Sản Phẩm Khác Bạn Có Thể Thích</h2>
-        <div className="related-products">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="related-item">Sản phẩm {i}</div>
-          ))}
-        </div>
+        {/* Sản phẩm liên quan */}
+        {relatedProducts.length > 0 && (
+          <>
+            <h2 className="related-title">Sản Phẩm Khác Bạn Có Thể Thích</h2>
+            <div className="related-products">
+              {relatedProducts.map(p => (
+                <div key={p.id} className="related-item" onClick={() => navigate(`/product-detail/${p.slug}`)} style={{cursor:'pointer'}}>
+                  <img src={p.image[0]} alt={p.name} />
+                  <div className="related-name">{p.name}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Admin quick link: Quản lý nhập hàng (nằm trên đầu trang khi admin) */}
+        {isAdmin && (
+          <div style={{marginTop: 12}}>
+            <button className="btn-primary" onClick={() => navigate('/admin/inventory')}>Quản lý nhập hàng</button>
+          </div>
+        )}
 
       </div>
 
+      <Toaster />
       <FloatingButtons />
       <Footer />
     </div>

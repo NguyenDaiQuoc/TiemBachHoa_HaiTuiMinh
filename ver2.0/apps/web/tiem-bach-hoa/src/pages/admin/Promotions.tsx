@@ -1,4 +1,5 @@
 import React from "react";
+import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/promotions.css";
 
 // Format tiền tệ
@@ -43,8 +44,10 @@ export default function AdminPromotionPage() {
   };
 
   return (
-    <div className="page-wrapper">
-      <main className="content">
+    <div className="admin-page">
+      <AdminSidebar />
+      <div className="admin-main">
+        <main className="content">
         <header className="content-header">
           <h1 className="content-title">Quản Lý Chương Trình Ưu Đãi</h1>
           <button className="btn-add-promotion">✨ Tạo CT Ưu Đãi Mới</button>
@@ -99,7 +102,8 @@ export default function AdminPromotionPage() {
             * Lưu ý: Mục "Doanh Số Ưu Đãi" chỉ tính doanh thu trực tiếp từ sản phẩm được giảm giá.
           </div>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
