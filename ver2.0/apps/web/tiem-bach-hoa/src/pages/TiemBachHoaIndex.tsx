@@ -1,52 +1,226 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
-import { db } from "../firebase";
+import LoginWarning from "../components/LoginWarning";
+import { db, auth } from "../firebase";
 import { collection, getDocs, query, orderBy, where, limit } from "firebase/firestore";
+import { addToCart } from "../utils/cart";
+import { showSuccess, showError } from "../utils/toast";
 
 // --- Kiểu dữ liệu cho props ---
 type ProductCardProps = {
+  id: string;
   image: string;
   name: string;
   price: string;
   oldPrice?: string;
   tag?: string | null;
+  onShowLoginWarning?: () => void;
 };
 
 type CategoryCardProps = {
-  image: string;
+  icon: string;
   name: string;
 };
 
 // --- Component Card Sản Phẩm ---
-function ProductCard({ image, name, price, oldPrice, tag }: ProductCardProps) {
+function ProductCard({ id, image, name, price, oldPrice, tag, onShowLoginWarning }: ProductCardProps) {
+  const navigate = useNavigate();
   const isSale = oldPrice !== undefined;
+  
+  // Xử lý image có thể là string hoặc array
+  let imageUrl = '';
+  if (image) {
+    if (Array.isArray(image) && image.length > 0) {
+      imageUrl = image[0];
+    } else if (typeof image === 'string') {
+      imageUrl = image;
+    }
+  }
+
+  // Parse giá từ string sang number (loại bỏ 'đ' và dấu phẩy)
+  const priceNum = typeof price === 'string' ? parseFloat(price.replace(/[^đd.,\d]/g, '').replace(/,/g, '')) : (typeof price === 'number' ? price : 0);
+  
+  // Format giá để hiển thị
+  const formatPrice = (p: string | number) => {
+    if (typeof p === 'number') {
+      return p.toLocaleString('vi-VN') + ' đ';
+    }
+    return p;
+  };
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    console.log('handleAddToCart called');
+    console.log('auth.currentUser:', auth.currentUser);
+    console.log('isAnonymous:', auth.currentUser?.isAnonymous);
+    
+    if (!auth.currentUser || auth.currentUser.isAnonymous) {
+      console.log('Showing login warning');
+      if (onShowLoginWarning) {
+        onShowLoginWarning();
+      } else {
+        console.error('onShowLoginWarning is not defined!');
+      }
+      return;
+    }
+
+    try {
+      await addToCart({
+        productId: id,
+        name: name,
+        price: priceNum,
+        qty: 1,
+        image: imageUrl
+      });
+      showSuccess('Đã thêm vào giỏ hàng');
+    } catch (error: any) {
+      showError('Thêm giỏ hàng thất bại: ' + (error.message || ''));
+    }
+  };
+
+  const handleBuyNow = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!auth.currentUser || auth.currentUser.isAnonymous) {
+      if (onShowLoginWarning) onShowLoginWarning();
+      return;
+    }
+
+    try {
+      await addToCart({
+        productId: id,
+        name: name,
+        price: priceNum,
+        qty: 1,
+        image: imageUrl
+      });
+      navigate('/cart');
+    } catch (error: any) {
+      showError('Có lỗi xảy ra: ' + (error.message || ''));
+    }
+  };
 
   return (
-    <div className="home-product-card cursor-pointer fade-in-section">
-      <div className="home-product-image-wrapper">
+    <div className="home-product-card cursor-pointer">
+      <div className="home-product-image-wrapper" onClick={() => navigate('/products')}>
         <div className="home-product-image-container">
-          <img src={image} alt={name} className="home-product-image" />
+          {imageUrl ? (
+            <img 
+              src={imageUrl} 
+              alt={name} 
+              className="home-product-image"
+              loading="lazy"
+            />
+          ) : (
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: '#ccc'}}>
+              📷
+            </div>
+          )}
         </div>
         {tag && <span className="home-product-tag">{tag}</span>}
       </div>
-      <span className="home-product-name">{name}</span>
+      <span className="home-product-name" onClick={() => navigate('/products')}>{name}</span>
       <div className="home-product-price-row">
-        <span className="home-product-price">{price}</span>
-        {isSale && <span className="home-product-old-price">{oldPrice}</span>}
+        <span className="home-product-price">{formatPrice(price)}</span>
+        {isSale && oldPrice && <span className="home-product-old-price">{formatPrice(oldPrice)}</span>}
+      </div>
+      
+      {/* Nút Giỏ hàng và Mua ngay */}
+      <div style={{display: 'flex', gap: '8px', marginTop: '12px'}}>
+        <button 
+          onClick={handleAddToCart}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #C75F4B',
+            background: '#fff',
+            color: '#C75F4B',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#C75F4B';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#fff';
+            e.currentTarget.style.color = '#C75F4B';
+          }}
+        >
+          🛒 Giỏ hàng
+        </button>
+        <button 
+          onClick={handleBuyNow}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: 'none',
+            background: '#C75F4B',
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#a84d3d';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#C75F4B';
+          }}
+        >
+          Mua ngay
+        </button>
       </div>
     </div>
   );
 }
 
 // --- Component Card Danh mục ---
-function CategoryCard({ image, name }: CategoryCardProps) {
+function CategoryCard({ icon, name }: CategoryCardProps) {
+  // Kiểm tra xem icon có phải là URL ảnh không
+  const isImagePath = (iconString: string): boolean => {
+    if (!iconString) return false;
+    const cleanString = iconString.toLowerCase();
+    return /\.(png|jpe?g|svg|gif|webp|ico)(\?|$)/i.test(cleanString) || 
+           iconString.startsWith('http://') || 
+           iconString.startsWith('https://') ||
+           iconString.startsWith('/');
+  };
+  
+  const defaultIcons: Record<string, string> = {
+    "Hàng mới về": "🆕",
+    "Khuyến mãi sốc": "🔥",
+    "Hàng 2nd": "♻️",
+    "Đồ công nghệ": "💻"
+  };
+  
+  const displayIcon = icon || defaultIcons[name] || '📦';
+  const isImage = isImagePath(displayIcon);
+  
   return (
-    <div className="category-card cursor-pointer fade-in-section">
+    <div className="category-card cursor-pointer">
       <div className="category-image-wrapper">
-        <img src={image} alt={name} className="category-image" />
+        {isImage ? (
+          <img 
+            src={displayIcon} 
+            alt={name} 
+            className="category-image"
+          />
+        ) : (
+          <div className="category-icon" style={{fontSize: '4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%'}}>
+            {displayIcon}
+          </div>
+        )}
       </div>
       <span className="category-name">{name}</span>
     </div>
@@ -234,37 +408,119 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
 export default function TiemBachHoaIndex() {
   const navigate = useNavigate();
 
-  const [products, setProducts] = useState<any[]>([]);
+  const [newProducts, setNewProducts] = useState<any[]>([]);
+  const [saleProducts, setSaleProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Debug: log khi showLoginWarning thay đổi
+  useEffect(() => {
+    console.log('showLoginWarning changed to:', showLoginWarning);
+    console.trace('Stack trace:');
+  }, [showLoginWarning]);
 
   // default categories order (fallback)
   const defaultCategories = [
-    { name: "Hàng mới về", image: "https://picsum.photos/50" },
-    { name: "Khuyến mãi sốc", image: "https://picsum.photos/60" },
-    { name: "Hàng 2nd", image: "https://picsum.photos/70" },
-    { name: "Đồ công nghệ", image: "https://picsum.photos/80" }
+    { name: "Hàng mới về", icon: "🆕" },
+    { name: "Khuyến mãi sốc", icon: "🔥" },
+    { name: "Hàng 2nd", icon: "♻️" },
+    { name: "Đồ công nghệ", icon: "💻" }
   ];
 
-  // fetch products and categories from Firestore (products newest-first)
+  // fetch products and categories from Firestore
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        // products: order by createdAt desc (newest first). Limit to 60 for home page.
-        const pq = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(60));
-        const ps = await getDocs(pq);
-        const loadedProducts = ps.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-        if (mounted) setProducts(loadedProducts);
+        // Lấy sản phẩm mới: sắp xếp theo createdAt desc, limit 4
+        const newProductsQuery = query(
+          collection(db, 'products'), 
+          orderBy('createdAt', 'desc'), 
+          limit(4)
+        );
+        const newProductsSnapshot = await getDocs(newProductsQuery);
+        const loadedNewProducts = newProductsSnapshot.docs.map(d => {
+          const data = d.data() as any;
+          // Lấy image - có thể là array hoặc string
+          let imageUrl = '';
+          if (Array.isArray(data.image) && data.image.length > 0) {
+            imageUrl = data.image[0];
+          } else if (typeof data.image === 'string') {
+            imageUrl = data.image;
+          } else {
+            imageUrl = data.imageUrl || data.thumbnail || data.images?.[0] || '';
+          }
+          
+          return {
+            id: d.id,
+            image: imageUrl,
+            name: data.name || data.productName || data.title || 'Sản phẩm',
+            price: data.newPrice || data.price || data.currentPrice || 0,
+            oldPrice: data.oldPrice || data.originalPrice || undefined,
+            tag: 'Mới'
+          };
+        });
+        console.log('Loaded new products:', loadedNewProducts);
+        if (mounted) setNewProducts(loadedNewProducts);
       } catch (e) {
-        console.warn('Failed to load products, falling back to empty list', e);
-        if (mounted) setProducts([]);
+        console.warn('Failed to load new products', e);
+        if (mounted) setNewProducts([]);
+      }
+
+      try {
+        // Lấy sản phẩm giảm giá: lấy tất cả sản phẩm mới, filter ở client side để tránh cần composite index
+        const saleProductsQuery = query(
+          collection(db, 'products'),
+          orderBy('createdAt', 'desc'),
+          limit(20) // Lấy nhiều hơn để filter
+        );
+        const saleProductsSnapshot = await getDocs(saleProductsQuery);
+        const allProducts = saleProductsSnapshot.docs.map(d => {
+          const data = d.data() as any;
+          // Lấy image - có thể là array hoặc string
+          let imageUrl = '';
+          if (Array.isArray(data.image) && data.image.length > 0) {
+            imageUrl = data.image[0];
+          } else if (typeof data.image === 'string') {
+            imageUrl = data.image;
+          } else {
+            imageUrl = data.imageUrl || data.thumbnail || data.images?.[0] || '';
+          }
+          
+          return {
+            id: d.id,
+            image: imageUrl,
+            name: data.name || data.productName || data.title || 'Sản phẩm',
+            price: data.newPrice || data.price || data.currentPrice || 0,
+            oldPrice: data.oldPrice || data.originalPrice || undefined,
+            tag: 'Sale',
+            hasOldPrice: !!(data.oldPrice || data.originalPrice)
+          };
+        });
+        // Filter chỉ lấy sản phẩm có oldPrice, limit 4
+        const loadedSaleProducts = allProducts.filter(p => p.hasOldPrice).slice(0, 4);
+        console.log('Loaded sale products:', loadedSaleProducts);
+        if (mounted) setSaleProducts(loadedSaleProducts);
+      } catch (e) {
+        console.warn('Failed to load sale products', e);
+        if (mounted) setSaleProducts([]);
       }
 
       try {
         // categories: attempt to load and then sort to keep defaults order first
         const cq = query(collection(db, 'categories'), orderBy('order', 'asc'));
         const cs = await getDocs(cq);
-        const loadedCats = cs.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+        const loadedCats = cs.docs.map(d => {
+          const data = d.data() as any;
+          return {
+            id: d.id,
+            name: data.name || data.categoryName || data.title || 'Danh mục',
+            icon: data.icon || data.image || data.imageUrl || data.thumbnail || ''
+          };
+        });
+        console.log('Loaded categories:', loadedCats);
         if (loadedCats.length === 0) {
           if (mounted) setCategories(defaultCategories);
         } else {
@@ -280,6 +536,15 @@ export default function TiemBachHoaIndex() {
       }
     })();
     return () => { mounted = false; };
+  }, []);
+
+  // Kiễm tra đăng nhập khi component mount
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -341,11 +606,17 @@ export default function TiemBachHoaIndex() {
         </div>
         <div className="home-product-wrapper">
           <div className="home-product-grid">
-            {products.map((p, index) => (
-              <div key={index} onClick={() => navigate("/products")}>
-                <ProductCard {...p} />
+            {saleProducts.length === 0 ? (
+              <div style={{gridColumn: '1/-1', textAlign: 'center', padding: '20px', color: '#666'}}>
+                Chưa có sản phẩm giảm giá
               </div>
-            ))}
+            ) : (
+              saleProducts.map((p, index) => (
+                <div key={p.id || index}>
+                  <ProductCard id={p.id} {...p} onShowLoginWarning={() => setShowLoginWarning(true)} />
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -361,11 +632,17 @@ export default function TiemBachHoaIndex() {
         </div>
         <div className="home-product-wrapper">
           <div className="home-product-grid">
-            {products.map((p, index) => (
-              <div key={index} onClick={() => navigate("/products")}>
-                <ProductCard {...p} />
+            {newProducts.length === 0 ? (
+              <div style={{gridColumn: '1/-1', textAlign: 'center', padding: '20px', color: '#666'}}>
+                Chưa có sản phẩm mới
               </div>
-            ))}
+            ) : (
+              newProducts.map((p, index) => (
+                <div key={p.id || index}>
+                  <ProductCard id={p.id} {...p} onShowLoginWarning={() => setShowLoginWarning(true)} />
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -392,6 +669,13 @@ export default function TiemBachHoaIndex() {
 
       <FloatingButtons />
       <Footer />
+      <Toaster />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </div>
   );
 }

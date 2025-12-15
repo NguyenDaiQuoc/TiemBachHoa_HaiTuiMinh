@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, serverTimestamp, arrayUnion, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { showSuccess, showError } from '../../utils/toast';
 
@@ -29,87 +29,85 @@ export default function AdminNotifications() {
         let unsubOrders: (() => void) | null = null;
         let unsubChats: (() => void) | null = null;
 
-    // (loading state omitted)
-        try {
-            // Low stock listener (stock <= 5)
-            const q1 = query(collection(db, 'warehouse'), where('stock', '<=', 5), orderBy('stock', 'asc'));
-            unsubWarehouse = onSnapshot(q1, (snap) => {
-                const items: NotificationItem[] = snap.docs.map(d => ({
-                    id: `w-${d.id}`,
-                    type: 'low_stock',
-                    title: (d.data() as any).productName || d.id,
-                    body: `Tồn: ${(d.data() as any).stock ?? 0}`,
-                    meta: { docId: d.id, ...d.data() }
-                }));
+        // Warehouse listener - sử dụng getDocs thay vì onSnapshot để tránh lỗi internal assertion
+        const fetchLowStock = async () => {
+            try {
+                const q1 = query(collection(db, 'warehouse'), orderBy('stock', 'asc'), limit(20));
+                const snap = await getDocs(q1);
+                const items: NotificationItem[] = snap.docs
+                    .filter(d => ((d.data() as any).stock ?? 0) <= 5)
+                    .map(d => ({
+                        id: `w-${d.id}`,
+                        type: 'low_stock',
+                        title: (d.data() as any).productName || d.id,
+                        body: `Tồn: ${(d.data() as any).stock ?? 0}`,
+                        meta: { docId: d.id, ...d.data() }
+                    }));
                 setLowStock(items);
-            }, (err) => {
-                console.error('Low stock snapshot failed', err);
-                // permissions error likely
-                showError('Không thể lắng nghe kho: ' + (err.message || 'Permission denied'));
+            } catch (e: any) {
+                console.warn('Low stock fetch failed', e);
                 setLowStock([]);
-            });
-        } catch (e: any) {
-            console.warn('Low stock subscription failed', e);
-            setLowStock([]);
-        }
+            }
+        };
+        fetchLowStock();
+        const warehouseInterval = setInterval(fetchLowStock, 30000); // Refresh every 30s
 
-        try {
-            // New orders (attempt: orders with status === 'new' or created recently)
-            const q2 = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-            unsubOrders = onSnapshot(q2, (snap) => {
+        // Orders listener - sử dụng getDocs
+        const fetchOrders = async () => {
+            try {
+                const q2 = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(20));
+                const snap = await getDocs(q2);
                 const now = Date.now();
-                const items: NotificationItem[] = snap.docs.slice(0, 20).map(d => ({
+                const items: NotificationItem[] = snap.docs.map(d => ({
                     id: `o-${d.id}`,
                     type: 'order',
                     title: `Đơn hàng ${d.id}`,
                     body: JSON.stringify((d.data() as any).items || {}).slice(0, 200),
                     meta: { docId: d.id, ...d.data() }
                 }));
-                // Only include recent/new-ish (last 48h)
+                // Only include recent orders (last 48h)
                 setOrders(items.filter(i => {
                     const c = i.meta?.createdAt;
                     if (!c) return true;
                     const t = (c && c.toDate) ? c.toDate().getTime() : (typeof c === 'number' ? c : 0);
                     return (now - t) < 1000 * 60 * 60 * 24 * 2;
                 }));
-            }, (err) => {
-                console.error('Orders snapshot failed', err);
-                showError('Không thể lắng nghe đơn hàng: ' + (err.message || 'Permission denied'));
+            } catch (e: any) {
+                console.warn('Orders fetch failed', e);
                 setOrders([]);
-            });
-        } catch (e: any) {
-            console.warn('Orders subscription failed', e);
-            setOrders([]);
-        }
+            }
+        };
+        fetchOrders();
+        const ordersInterval = setInterval(fetchOrders, 30000); // Refresh every 30s
 
-        try {
-            // Chats: listen to per-user chats where hasUnread === true
-            const q3 = query(collection(db, 'chats'), where('hasUnread', '==', true), orderBy('updatedAt', 'desc'));
-            unsubChats = onSnapshot(q3, (snap) => {
-                const items: NotificationItem[] = snap.docs.map(d => ({
-                    id: `c-${d.id}`,
-                    type: 'chat',
-                    title: (d.data() as any).name || `Khách ${d.id}`,
-                    body: ((d.data() as any).messages || []).slice(-1)[0]?.message || '',
-                    meta: { docId: d.id, ...d.data() }
-                }));
+        // Chats listener - sử dụng getDocs
+        const fetchChats = async () => {
+            try {
+                const q3 = query(collection(db, 'chats'), orderBy('updatedAt', 'desc'), limit(20));
+                const snap = await getDocs(q3);
+                const items: NotificationItem[] = snap.docs
+                    .filter(d => (d.data() as any).hasUnread === true)
+                    .map(d => ({
+                        id: `c-${d.id}`,
+                        type: 'chat',
+                        title: (d.data() as any).name || `Khách ${d.id}`,
+                        body: ((d.data() as any).messages || []).slice(-1)[0]?.message || '',
+                        meta: { docId: d.id, ...d.data() }
+                    }));
                 setChats(items);
-            }, (err) => {
-                console.error('Chat snapshot failed', err);
-                showError('Không thể lắng nghe chat: ' + (err.message || 'Permission denied'));
+            } catch (e: any) {
+                console.warn('Chats fetch failed', e);
                 setChats([]);
-            });
-        } catch (e: any) {
-            console.warn('Chat subscription failed', e);
-            setChats([]);
-        }
+            }
+        };
+        fetchChats();
+        const chatsInterval = setInterval(fetchChats, 30000); // Refresh every 30s
 
-    // (loading state omitted)
 
         return () => {
-            if (unsubWarehouse) unsubWarehouse();
-            if (unsubOrders) unsubOrders();
-            if (unsubChats) unsubChats();
+            clearInterval(warehouseInterval);
+            clearInterval(ordersInterval);
+            clearInterval(chatsInterval);
         };
     }, []);
 
@@ -173,22 +171,27 @@ export default function AdminNotifications() {
                 setThreadMessages([]);
                 return;
             }
-            let unsub: (() => void) | null = null;
-            try {
-                const chatRef = doc(db, 'chats', selectedThreadId);
-                unsub = onSnapshot(chatRef, (snap) => {
-                    if (!snap.exists()) { setThreadMessages([]); return; }
-                    const data = snap.data() as any;
+            
+            const fetchThread = async () => {
+                try {
+                    const chatRef = doc(db, 'chats', selectedThreadId);
+                    const snap = await getDocs(query(collection(db, 'chats')));
+                    const chatDoc = snap.docs.find(d => d.id === selectedThreadId);
+                    if (!chatDoc || !chatDoc.exists()) { 
+                        setThreadMessages([]); 
+                        return; 
+                    }
+                    const data = chatDoc.data() as any;
                     setThreadMessages(Array.isArray(data.messages) ? data.messages : []);
-                }, (err) => {
-                    console.error('Thread snapshot failed', err);
-                    showError('Không thể mở cuộc trò chuyện: ' + (err.message || 'Permission denied'));
+                } catch (e: any) {
+                    console.warn('Thread fetch failed', e);
                     setThreadMessages([]);
-                });
-            } catch (e) {
-                setThreadMessages([]);
-            }
-            return () => { if (unsub) unsub(); };
+                }
+            };
+            
+            fetchThread();
+            const threadInterval = setInterval(fetchThread, 5000); // Refresh every 5s
+            return () => clearInterval(threadInterval);
         }, [selectedThreadId]);
 
         const sendMessage = async () => {

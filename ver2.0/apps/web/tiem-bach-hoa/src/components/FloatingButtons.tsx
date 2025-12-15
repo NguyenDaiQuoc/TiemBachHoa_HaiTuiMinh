@@ -53,7 +53,10 @@ export default function FloatingButtons() {
     const startListen = async () => {
       try {
         if (!auth.currentUser) {
-          try { await signInAnonymously(auth); } catch (e) { /* ignore */ }
+          try { await signInAnonymously(auth); } catch (e) { 
+            console.warn('Anonymous sign-in failed, chat may not work', e);
+            return;
+          }
         }
         const docRef = doc(db, 'chats', sessionId);
         unsub = onSnapshot(docRef, (snap) => {
@@ -66,11 +69,13 @@ export default function FloatingButtons() {
           // scroll to bottom
           setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
         }, (err) => {
-          console.error('chat doc listen failed', err);
+          console.warn('chat doc listen failed - permissions issue:', err.message);
           setMessages([]);
+          // Don't throw error, just silently fail
         });
       } catch (e:any) {
-        console.error('startListen error', e?.message || e);
+        console.warn('startListen error', e?.message || e);
+        setMessages([]);
       }
     };
 
@@ -116,19 +121,8 @@ export default function FloatingButtons() {
           });
         }
       } catch (err:any) {
-        console.warn('Failed to write chats doc, falling back to chat_messages and create doc', err?.message || err);
-        // fallback: also write into legacy `chat_messages` collection so bot responder (cloud function) can still run
-        try {
-          await addDoc(collection(db, 'chat_messages'), {
-            role: 'customer',
-            message: text,
-            threadId: sessionId,
-            unread: true,
-            createdAt: serverTimestamp()
-          });
-        } catch (e:any) {
-          console.warn('Fallback addDoc failed', e?.message || e);
-        }
+        console.warn('Failed to write chats doc - permissions issue, chat may not work properly');
+        // Không fallback nữa, chỉ log warning
       }
       setInput('');
     } catch (e:any) {

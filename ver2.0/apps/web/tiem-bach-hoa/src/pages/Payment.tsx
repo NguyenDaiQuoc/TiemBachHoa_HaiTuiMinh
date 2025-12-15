@@ -1,6 +1,10 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import LoginWarning from "../components/LoginWarning";
+import { auth } from "../firebase";
 import "../../css/payment.css";
 
 // Hàm lấy Icon theo loại thẻ
@@ -47,6 +51,15 @@ function PaymentCard({ method, isDefault }) {
 
 // --- Component Chính ---
 export default function PaymentMethodsPage() {
+  const navigate = useNavigate();
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      setShowLoginWarning(true);
+    }
+  }, []);
   const paymentMethods = [
     { id: 1, name: 'Thẻ Visa - Nguyễn V. A', type: 'Visa', last4: '4567', expiry: '12/28', isDefault: true },
     { id: 2, name: 'Ví Điện Tử MoMo', type: 'Momo', last4: '090xxxxxxx', expiry: 'N/A', isDefault: false },
@@ -84,6 +97,12 @@ export default function PaymentMethodsPage() {
 
       <FloatingButtons />
       <Footer />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để quản lý phương thức thanh toán"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </div>
   );
 }

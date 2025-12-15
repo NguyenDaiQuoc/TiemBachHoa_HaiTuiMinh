@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import LoginWarning from "../components/LoginWarning";
 // import SalesFloatingButton from "../components/SalesFloatingButton";
 import "../../css/cart.css";
 import { auth, db } from "../firebase";
@@ -67,6 +68,7 @@ export default function CartPage() {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
 
   // Subscribe to cart from Firestore
   useEffect(() => {
@@ -74,6 +76,7 @@ export default function CartPage() {
     if (!user) {
       setLoading(false);
       setCartItems([]);
+      setShowLoginWarning(true);
       return;
     }
 
@@ -252,6 +255,12 @@ export default function CartPage() {
       </div>
 
       <Footer />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để xem giỏ hàng của bạn"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </>
   );
 }

@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import LoginWarning from "../components/LoginWarning";
+import { auth } from "../firebase";
 import "../../css/profile.css";
 
 // --- Sidebar ---
@@ -60,7 +63,16 @@ function PersonalInfoContent() {
 
 // --- Component chính ---
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('info');
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      setShowLoginWarning(true);
+    }
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -90,6 +102,12 @@ export default function ProfilePage() {
 
       <FloatingButtons />
       <Footer />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để xem thông tin cá nhân"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </div>
   );
 }

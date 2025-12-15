@@ -1,11 +1,24 @@
 // React CheckoutPage (CSS removed from JSX)
 // Import Header, Footer, FloatingButtons normally
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import LoginWarning from "../components/LoginWarning";
+import { auth } from "../firebase";
 import "../../css/checkout.css"
 
 export default function CheckoutPage() {
+  const navigate = useNavigate();
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      setShowLoginWarning(true);
+    }
+  }, []);
   const cartItems = [
     { id: 1, name: "Nến Thơm Vỏ Cam Quế", price: 180000, quantity: 2 },
     { id: 2, name: "Bánh quy Yến mạch", price: 150000, quantity: 1 },
@@ -131,6 +144,12 @@ export default function CheckoutPage() {
 
       <FloatingButtons />
       <Footer />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để tiến hành thanh toán"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </div>
   );
 }

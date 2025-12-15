@@ -1,10 +1,22 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../css/wishlist.css";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import LoginWarning from "../components/LoginWarning";
+import { auth } from "../firebase";
 
 export default function WishlistPage() {
+  const navigate = useNavigate();
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      setShowLoginWarning(true);
+    }
+  }, []);
   const wishlistItems = [
     { id: 1, name: "Nến Thơm Organic Vỏ Cam Quế", price: 250000, stock: 15 },
     { id: 2, name: "Bộ Muỗng Gỗ Sồi Tối Giản", price: 180000, stock: 0 },

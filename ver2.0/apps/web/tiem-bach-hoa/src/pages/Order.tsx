@@ -1,6 +1,10 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import LoginWarning from "../components/LoginWarning";
+import { auth } from "../firebase";
 import "../../css/order-history.css";
 
 // Format tiền tệ
@@ -17,6 +21,15 @@ const getStatusColor = (status) => {
 };
 
 export default function OrderHistoryPage() {
+  const navigate = useNavigate();
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      setShowLoginWarning(true);
+    }
+  }, []);
   const orders = [
     { id: 'NH20251111', date: '11/11/2025', total: 710000, status: 'Đang Giao Hàng', items: [{ name: 'Nến Thơm Organic', quantity: 2 }] },
     { id: 'NH20251025', date: '25/10/2025', total: 545000, status: 'Đã Hoàn Thành', items: [{ name: 'Hộp trà hoa cúc', quantity: 1 }, { name: 'Bánh quy', quantity: 1 }] },
@@ -88,6 +101,12 @@ export default function OrderHistoryPage() {
 
       <FloatingButtons />
       <Footer />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để xem lịch sử đơn hàng"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </div>
   );
 }
