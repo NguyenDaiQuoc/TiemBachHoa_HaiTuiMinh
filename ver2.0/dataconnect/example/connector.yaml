@@ -1,0 +1,8 @@
+connectorId: example
+generate:
+  javascriptSdk:
+    - outputDir: ..\..\apps\web\tiem-bach-hoa\src\dataconnect-generated
+      package: "@dataconnect/generated"
+      packageJsonDir: ..\..\apps\web\tiem-bach-hoa
+      react: true
+      angular: false

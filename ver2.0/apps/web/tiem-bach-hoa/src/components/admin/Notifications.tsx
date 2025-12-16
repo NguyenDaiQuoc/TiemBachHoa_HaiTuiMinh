@@ -65,12 +65,15 @@ export default function AdminNotifications() {
                     body: JSON.stringify((d.data() as any).items || {}).slice(0, 200),
                     meta: { docId: d.id, ...d.data() }
                 }));
-                // Only include recent orders (last 48h)
+                // Only include recent orders (last 48h) AND ensure these are user-placed orders (have customer info)
                 setOrders(items.filter(i => {
-                    const c = i.meta?.createdAt;
-                    if (!c) return true;
+                    const data = i.meta || {};
+                    const c = data.createdAt;
                     const t = (c && c.toDate) ? c.toDate().getTime() : (typeof c === 'number' ? c : 0);
-                    return (now - t) < 1000 * 60 * 60 * 24 * 2;
+                    const recent = !c || (now - t) < 1000 * 60 * 60 * 24 * 2;
+                    // Heuristic: consider it a user-placed order if it has items and any customer identifier
+                    const hasCustomer = Array.isArray(data.items) && data.items.length > 0 && (data.userId || data.customerId || data.customerName || data.shippingAddress || data.phone);
+                    return recent && hasCustomer;
                 }));
             } catch (e: any) {
                 console.warn('Orders fetch failed', e);

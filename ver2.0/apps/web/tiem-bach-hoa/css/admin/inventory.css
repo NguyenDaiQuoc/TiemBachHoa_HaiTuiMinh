@@ -100,6 +100,85 @@
   cursor: pointer;
 }
 
+/* Action buttons (table row) */
+.btn-view {
+  background: #eef7ff;
+  color: #0b74ff;
+  border: 1px solid rgba(11,116,255,0.12);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  min-width: 84px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+.btn-view:hover { background: #e1f0ff; }
+
+.btn-edit {
+  background: #fff8ea;
+  color: #c78500;
+  border: 1px solid rgba(199,133,0,0.12);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  min-width: 84px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+.btn-edit:hover { background: #fff3d6; }
+
+.btn-delete, .btn-danger {
+  background: #ffecec;
+  color: #c70000;
+  border: 1px solid rgba(199,0,0,0.08);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  min-width: 84px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+.btn-delete:hover, .btn-danger:hover { background: #ffd6d6; }
+
+/* History modal specific */
+.history-list { display:flex; flex-direction:column; gap:8px; }
+.history-item { display:flex; gap:12px; align-items:center; padding:10px; border:1px solid #f0f0f0; border-radius:8px; }
+.history-meta { flex:1; }
+.history-actions { display:flex; gap:8px; }
+
+/* Two-row action layout: top row (view/edit), bottom row (delete full-width) */
+.action-rows { display:flex; flex-direction:column; align-items:flex-start; }
+.action-row { width:100%; display:flex; }
+.action-row-top { gap:8px; }
+.action-row-bottom { margin-top:6px; }
+.action-row-bottom .btn-delete { width: 100%; }
+
+/* Make history action buttons use same sizing as row action buttons */
+.history-actions .btn-view,
+.history-actions .btn-edit,
+.history-actions .btn-delete {
+  min-width: 84px;
+  height: 34px;
+  padding: 6px 10px;
+}
+
+/* Tweak table action cell so buttons align nicely */
+.po-table td .btn {
+  vertical-align: middle;
+}
+
+/* Ensure consistent margins between action buttons */
+.po-table td .btn + .btn { margin-left: 8px; }
+
 /* admin-purchase.css – CSS gọn, nhóm theo layout, spacing, component */
 
 /* Layout tổng */

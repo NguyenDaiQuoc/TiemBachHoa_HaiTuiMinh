@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import AdminSidebar from '../../components/admin/Sidebar';
 import '../../../css/admin/inventory.css';
 import { showSuccess, showError } from '../../utils/toast';
+import ImageLightbox from '../../components/ImageLightbox';
 
 type WarehouseItem = {
   id: string;
@@ -19,6 +20,9 @@ type WarehouseItem = {
 
 export default function WarehousePage(): JSX.Element {
   const [items, setItems] = useState<WarehouseItem[]>([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxStart, setLightboxStart] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [search, setSearch] = useState<string>('');
   const [filterLowStock, setFilterLowStock] = useState<boolean>(false);
@@ -224,7 +228,11 @@ export default function WarehousePage(): JSX.Element {
                 <tr key={it.id}>
                   <td>{it.productId || it.id}</td>
                   <td style={{display:'flex',gap:8,alignItems:'center'}}>
-                    {it.image ? <img src={it.image} alt={it.productName} style={{width:48,height:48,objectFit:'cover',borderRadius:6}} /> : null}
+                    <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                      {( (it.images && Array.isArray(it.images) && it.images.length > 0) ? it.images : (it.image ? [it.image] : []) ).slice(0,3).map((u:string, i:number) => (
+                        <img key={i} src={u} alt={`${it.productName}-${i}`} style={{width:48,height:48,objectFit:'cover',borderRadius:6,cursor:'pointer'}} onClick={()=>{ setLightboxImages((it.images && Array.isArray(it.images) && it.images.length>0)? it.images : (it.image ? [it.image] : [])); setLightboxStart(i); setLightboxOpen(true); }} />
+                      ))}
+                    </div>
                     <div>
                       <div style={{fontWeight:600}}>{it.productName}</div>
                     </div>
@@ -238,6 +246,10 @@ export default function WarehousePage(): JSX.Element {
             </tbody>
           </table>
         </div>
+
+        {lightboxOpen && (
+          <ImageLightbox images={lightboxImages} startIndex={lightboxStart} onClose={() => setLightboxOpen(false)} />
+        )}
 
       </main>
     </div>

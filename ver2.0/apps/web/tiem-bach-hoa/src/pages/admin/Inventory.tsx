@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, doc, updateDoc, serverTimestamp, increment, setDoc, deleteDoc, query, where } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth, storage } from '../../firebase';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import AdminSidebar from '../../components/admin/Sidebar';
 import '../../../css/admin/inventory.css';
 import { showSuccess, showError } from '../../utils/toast';
 import { useNavigate } from 'react-router-dom';
+import ImageLightbox from '../../components/ImageLightbox';
 
 export default function InventoryPage() {
   const navigate = useNavigate();
@@ -29,6 +31,21 @@ export default function InventoryPage() {
   const [showForm, setShowForm] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('Tất cả');
+
+  // derived filtered list for realtime filtering
+  const [manualFilterTick, setManualFilterTick] = useState<number>(0);
+  const filteredEntries = React.useMemo(() => {
+    const q = (searchQuery||'').trim().toLowerCase();
+    return entries.filter((en:any) => {
+      if (q) {
+        return (String(en.productName || '').toLowerCase().includes(q) || String(en.supplier || '').toLowerCase().includes(q) || String(en.invoiceNumber || '').toLowerCase().includes(q) || String(en.productId || '').includes(q));
+      }
+      if (selectedStatus && selectedStatus !== 'Tất cả') {
+        return (en.status || 'Đã nhận hàng') === selectedStatus;
+      }
+      return true;
+    });
+  }, [entries, searchQuery, selectedStatus, manualFilterTick]);
   // New: purchase order and line items
   const [poSupplier, setPoSupplier] = useState<string>('');
   const [poDate, setPoDate] = useState<string>('');
@@ -37,14 +54,32 @@ export default function InventoryPage() {
   const [editMode, setEditMode] = useState<boolean>(false);
   const [originalLineItems, setOriginalLineItems] = useState<Array<any>>([]);
   const [currentInvoice, setCurrentInvoice] = useState<string>('');
+  // Invoice-level image (file selected) and preview/url
+  const [poImageFile, setPoImageFile] = useState<File | undefined>(undefined);
+  const [poImageUrl, setPoImageUrl] = useState<string>('');
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  // files for the currently-being-entered product (before adding to lineItems)
+  const [currentFiles, setCurrentFiles] = useState<File[]>([]);
+  // per-file upload progress map (keyed by unique id or filename)
+  const [fileUploadProgress, setFileUploadProgress] = useState<Record<string, number>>({});
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxStart, setLightboxStart] = useState<number>(0);
+  // Invoice detail viewer state
+  const [viewInvoiceOpen, setViewInvoiceOpen] = useState(false);
+  const [viewInvoiceNumber, setViewInvoiceNumber] = useState<string>('');
+  const [viewInvoiceItems, setViewInvoiceItems] = useState<any[]>([]);
+  const [viewInvoiceMeta, setViewInvoiceMeta] = useState<any>(null);
+  const [historyOpen, setHistoryOpen] = useState<boolean>(false);
 
   useEffect(() => {
     // load recent inventory entries
     const load = async () => {
       setLoading(true);
       try {
-        const snap = await getDocs(collection(db, 'inventory_in'));
-        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snap = await getDocs(collection(db, 'inventory_in'));
+  const items = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
         setEntries(items.sort((a,b) => (b.createdAt?.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt?.toMillis ? a.createdAt.toMillis() : 0)));
       } catch (err: any) {
         console.error('Load inventory entries error', err);
@@ -113,10 +148,17 @@ export default function InventoryPage() {
     // product can be selected from warehouse (selectedProduct) or a new-name entered in productNameInput
     if ((!selectedProduct) && (!productNameInput || productNameInput.trim().length === 0)) return showError('Chọn sản phẩm từ kho hoặc nhập tên sản phẩm mới');
     if (!quantity || quantity <= 0) return showError('Số lượng phải > 0');
+    const initialImages = selectedProduct
+      ? (Array.isArray(selectedProduct.image) ? selectedProduct.image : (selectedProduct.image ? [selectedProduct.image] : []))
+      : [];
+
     const item = {
       productId: selectedProduct ? selectedProduct.id : null,
       productName: selectedProduct ? (selectedProduct.name || selectedProduct.productName) : productNameInput,
-      image: selectedProduct ? ((selectedProduct.image && selectedProduct.image[0]) || '') : '',
+      // support multiple images per line; if product from warehouse, preserve its images
+      images: initialImages,
+      // optional local File objects when user picks image(s) for this line before submit
+  files: currentFiles || [] as File[],
       qty: Number(quantity) || 0,
       unitPrice: Number(unitPrice) || 0,
       totalPrice: (Number(unitPrice) || 0) * (Number(quantity) || 0),
@@ -130,6 +172,7 @@ export default function InventoryPage() {
     setQuantity(1);
     setUnitPrice(0);
     setProductNameInput('');
+    setCurrentFiles([]);
   };
 
   const updateLineItem = (index:number, patch:Partial<any>) => {
@@ -146,14 +189,16 @@ export default function InventoryPage() {
       const q = query(collection(db, 'inventory_in'), where('invoiceNumber', '==', invoiceNum));
       const snap = await getDocs(q);
       if (snap.empty) return showError('Không tìm thấy phiếu nhập');
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
       // prepare original line items (keep doc ids for update/delete)
       setOriginalLineItems(docs.map((d:any) => ({ docId: d.id, productId: d.productId, qty: Number(d.qty) || 0 })));
-      setLineItems(docs.map((d:any) => ({ docId: d.id, productId: d.productId, productName: d.productName, image: d.image || '', qty: Number(d.qty)||0, unitPrice: Number(d.unitPrice)||0, totalPrice: Number(d.totalPrice)||0 })));
-      setPoSupplier(docs[0].supplier || '');
-      setPoDate(docs[0].date || '');
-      setInvoiceNumber(invoiceNum);
-      setPoNotes(docs[0].notes || '');
+  setLineItems(docs.map((d:any) => ({ docId: d.id, productId: d.productId, productName: d.productName, images: (d.images && Array.isArray(d.images)) ? d.images : (d.image ? [d.image] : []), files: [], qty: Number(d.qty)||0, unitPrice: Number(d.unitPrice)||0, totalPrice: Number(d.totalPrice)||0, isNewProduct: !d.productId })));
+  setPoSupplier(docs[0].supplier || '');
+  setPoDate(docs[0].date || '');
+  setInvoiceNumber(invoiceNum);
+  setPoNotes(docs[0].notes || '');
+  // load invoice-level image if present on the first line
+  setPoImageUrl(docs[0].invoiceImage || '');
       setEditMode(true);
       setCurrentInvoice(invoiceNum);
       setShowForm(true);
@@ -192,12 +237,36 @@ export default function InventoryPage() {
       }
       showSuccess('Đã xóa phiếu nhập và cập nhật tồn kho');
       // reload
-      const reload = await getDocs(collection(db, 'inventory_in'));
-      const items = reload.docs.map(dd => ({ id: dd.id, ...dd.data() }));
+  const reload = await getDocs(collection(db, 'inventory_in'));
+  const items = reload.docs.map(dd => ({ id: dd.id, ...(dd.data() as any) }));
       setEntries(items.sort((a:any,b:any) => (b.createdAt?.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt?.toMillis ? a.createdAt.toMillis() : 0)));
     } catch (err:any) {
       console.error('Delete invoice error', err);
       showError('Lỗi khi xóa phiếu');
+    }
+  };
+
+  // Open read-only invoice viewer (show header + all line items)
+  const openViewInvoice = async (invoiceNum:string) => {
+    try {
+      const q = query(collection(db, 'inventory_in'), where('invoiceNumber', '==', invoiceNum));
+      const snap = await getDocs(q);
+      if (snap.empty) return showError('Không tìm thấy phiếu nhập');
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setViewInvoiceItems(docs);
+      setViewInvoiceNumber(invoiceNum);
+      // derive meta from first doc (supplier, date, notes, invoiceImage)
+      const first = docs[0] || null;
+      setViewInvoiceMeta(first ? {
+        supplier: first.supplier || '',
+        date: first.date || first.createdAt || '',
+        notes: first.notes || '',
+        invoiceImage: first.invoiceImage || ''
+      } : null);
+      setViewInvoiceOpen(true);
+    } catch (err:any) {
+      console.error('Open view invoice error', err);
+      showError('Không thể mở chi tiết phiếu');
     }
   };
 
@@ -212,7 +281,8 @@ export default function InventoryPage() {
       const single = {
         productId: selectedProduct ? selectedProduct.id : null,
         productName: selectedProduct ? (selectedProduct.name || selectedProduct.productName) : productNameInput,
-        image: (selectedProduct && selectedProduct.image && selectedProduct.image[0]) || '',
+        images: (selectedProduct && selectedProduct.image && selectedProduct.image[0]) ? [selectedProduct.image[0]] : [],
+        files: [],
         qty: Number(quantity)||0,
         unitPrice: Number(unitPrice)||0,
         totalPrice: (Number(unitPrice)||0)*(Number(quantity)||0),
@@ -230,6 +300,74 @@ export default function InventoryPage() {
 
     try {
       const uid = auth.currentUser?.uid || 'system';
+
+      // Prepare uploads: invoice image + per-line files; perform parallel uploads with progress
+      const liCopy = lineItems.map((it:any) => ({ ...it }));
+      const uploadEntries: Array<{file: File, lineIndex: number | null, isInvoice?: boolean}> = [];
+      if (poImageFile) uploadEntries.push({ file: poImageFile as File, lineIndex: null, isInvoice: true });
+      liCopy.forEach((it:any, idx:number) => {
+        if (it.files && Array.isArray(it.files) && it.files.length > 0) {
+          for (const f of it.files) uploadEntries.push({ file: f, lineIndex: idx });
+        }
+      });
+
+      let invoiceImageUrl = poImageUrl || '';
+      if (uploadEntries.length > 0) {
+        setUploading(true);
+        setUploadProgress(0);
+        try {
+          const totalBytes = uploadEntries.reduce((s, e) => s + (e.file.size || 0), 0) || 1;
+          const perEntryLast = new Array<number>(uploadEntries.length).fill(0);
+          let uploadedBytes = 0;
+
+          const uploadPromises = uploadEntries.map((entry, idx) => new Promise<{url:string, entry:any}>( (resolve, reject) => {
+            const safeName = entry.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const path = entry.isInvoice ? `inventory_images/${finalInvoice}/invoice_${Date.now()}_${safeName}` : `inventory_images/${finalInvoice}/${Date.now()}_${idx}_${safeName}`;
+            const sRef = storageRef(storage, path);
+            const task = uploadBytesResumable(sRef, entry.file);
+            const progressKey = entry.isInvoice ? `invoice-${idx}-${entry.file.name}` : `line-${entry.lineIndex}-${idx}-${entry.file.name}`;
+            task.on('state_changed', (snap) => {
+              // per-entry aggregate for overall progress
+              perEntryLast[idx] = snap.bytesTransferred;
+              uploadedBytes = perEntryLast.reduce((a,b)=>a+b,0);
+              setUploadProgress(Math.round((uploadedBytes / totalBytes) * 100));
+              // per-file progress (percentage)
+              try {
+                const pct = snap.totalBytes ? Math.round((snap.bytesTransferred / snap.totalBytes) * 100) : 0;
+                setFileUploadProgress(prev => ({ ...prev, [progressKey]: pct, [entry.file.name]: pct }));
+              } catch (e) { /* ignore */ }
+            }, (err) => {
+              console.warn('Upload failed', err);
+              reject(err);
+            }, async () => {
+              try {
+                const url = await getDownloadURL(task.snapshot.ref);
+                resolve({ url, entry });
+              } catch (err) { reject(err); }
+            });
+          }));
+
+          const results = await Promise.all(uploadPromises);
+          // apply URLs to liCopy / invoiceImageUrl
+          for (const r of results) {
+            if (r.entry.isInvoice) {
+              invoiceImageUrl = r.url;
+              setPoImageUrl(invoiceImageUrl);
+            } else if (typeof r.entry.lineIndex === 'number') {
+              const li = liCopy[r.entry.lineIndex];
+              if (!li.images) li.images = [];
+              li.images.push(r.url);
+            }
+          }
+        } catch (err) {
+          console.warn('One or more uploads failed', err);
+        } finally {
+          setUploading(false);
+          setUploadProgress(0);
+        }
+      }
+      // update state so UI shows uploaded previews/urls
+      setLineItems(liCopy as any);
 
       if (editMode) {
         // Update existing invoice: compare originalLineItems and current lineItems
@@ -260,7 +398,9 @@ export default function InventoryPage() {
             notes: poNotes || notes || '',
             productId: it.productId || null,
             productName: it.productName,
-            image: it.image || '',
+            images: it.images || [],
+            image: (it.images && it.images[0]) ? it.images[0] : (it.image || ''),
+            invoiceImage: (typeof invoiceImageUrl !== 'undefined') ? invoiceImageUrl : (poImageUrl || ''),
             qty: Number(it.qty) || 0,
             unitPrice: Number(it.unitPrice) || 0,
             totalPrice: Number(it.totalPrice) || ((Number(it.unitPrice)||0)*(Number(it.qty)||0)),
@@ -282,14 +422,67 @@ export default function InventoryPage() {
               try { const whRef = doc(db, 'warehouse', it.productId); await setDoc(whRef, { stock: increment(delta), lastUpdated: serverTimestamp() }, { merge: true }); } catch(e){console.warn(e)}
             }
           } else {
-            // new line: create doc and increment stock
+            // new line: create inventory entry and add/update warehouse only
             try {
-              await addDoc(collection(db, 'inventory_in'), { ...payload, createdAt: serverTimestamp() });
+              let warehouseId: string | null = null;
+
+              // If the line references an existing productId (from products), we'll try to update that product stock later.
+              // If there is no productId (manual entry), create a warehouse doc and reference it via warehouseId.
+              if (!it.productId) {
+                try {
+                  const newWhRef = doc(collection(db, 'warehouse'));
+                  await setDoc(newWhRef, {
+                    productId: newWhRef.id,
+                    productName: it.productName,
+                    images: it.images || [],
+                    image: (it.images && it.images[0]) ? it.images[0] : (it.image || ''),
+                    stock: Number(it.qty) || 0,
+                    lastPurchasePrice: Number(it.unitPrice) || 0,
+                    lastUpdated: serverTimestamp(),
+                    createdFromInvoice: finalInvoice,
+                  }, { merge: true });
+                  warehouseId = newWhRef.id;
+                } catch (err) {
+                  console.warn('Failed to create warehouse doc for new line', err);
+                }
+              }
+
+              const invPayload: any = { ...payload };
+              // If this item was linked to an existing product, keep productId; otherwise clear productId and set warehouseId
+              if (!it.productId) {
+                invPayload.productId = null;
+                invPayload.warehouseId = warehouseId;
+              } else {
+                invPayload.productId = it.productId;
+              }
+
+              await addDoc(collection(db, 'inventory_in'), invPayload);
             } catch (err) { console.warn('Failed to create inventory doc', err); }
-            if (it.productId) {
-              try { const prodRef = doc(db, 'products', it.productId); await updateDoc(prodRef, { stock: increment(Number(it.qty) || 0) }); } catch(e){console.warn(e)}
-              try { const whRef = doc(db, 'warehouse', it.productId); await setDoc(whRef, { productId: it.productId, productName: it.productName, image: it.image || '', stock: increment(Number(it.qty) || 0), lastPurchasePrice: Number(it.unitPrice)||0, lastUpdated: serverTimestamp() }, { merge: true }); } catch(e){console.warn(e)}
-            }
+
+            // Update product stock (only if productId points to products collection)
+            try {
+              if (it.productId) {
+                const prodRef = doc(db, 'products', it.productId);
+                await updateDoc(prodRef, { stock: increment(Number(it.qty) || 0), lastPurchasePrice: Number(it.unitPrice) || 0 });
+              }
+            } catch (e) { console.warn(e); }
+
+            // Upsert into warehouse: if we had a productId (existing), use that id as warehouse doc id; otherwise we already created warehouse above
+            try {
+              if (it.productId) {
+                const whRef = doc(db, 'warehouse', it.productId);
+                await setDoc(whRef, {
+                  productId: it.productId,
+                  productName: it.productName,
+                  images: it.images || [],
+                  image: (it.images && it.images[0]) ? it.images[0] : (it.image || ''),
+                  invoiceImage: (typeof invoiceImageUrl !== 'undefined') ? invoiceImageUrl : (poImageUrl || ''),
+                  stock: increment(Number(it.qty) || 0),
+                  lastPurchasePrice: Number(it.unitPrice) || 0,
+                  lastUpdated: serverTimestamp(),
+                }, { merge: true });
+              }
+            } catch (err) { console.warn(err); }
           }
         }
 
@@ -297,25 +490,52 @@ export default function InventoryPage() {
       } else {
         // Create new invoice (original behavior)
         for (const it of lineItems) {
+          // If this is a manual/new product (no productId), create a warehouse doc instead of adding to products
+          let warehouseId: string | null = null;
+          if (!it.productId) {
+            try {
+              const newWhRef = doc(collection(db, 'warehouse'));
+              await setDoc(newWhRef, {
+                productId: newWhRef.id,
+                productName: it.productName,
+                images: it.images || [],
+                image: (it.images && it.images[0]) ? it.images[0] : (it.image || ''),
+                stock: Number(it.qty) || 0,
+                lastPurchasePrice: Number(it.unitPrice) || 0,
+                lastUpdated: serverTimestamp(),
+                createdFromInvoice: finalInvoice,
+              }, { merge: true });
+              warehouseId = newWhRef.id;
+            } catch (err) {
+              console.warn('Failed to create warehouse doc for new line', err);
+            }
+          }
+
           const payload = {
             createdAt: serverTimestamp(),
             date: poDate || date || new Date().toISOString(),
             supplier: poSupplier || supplier,
             invoiceNumber: finalInvoice,
             notes: poNotes || notes || '',
-            productId: it.productId,
+            productId: it.productId || null,
             productName: it.productName,
-            image: it.image || '',
+            images: it.images || [],
+            image: (it.images && it.images[0]) ? it.images[0] : (it.image || ''),
+            invoiceImage: (typeof invoiceImageUrl !== 'undefined') ? invoiceImageUrl : (poImageUrl || ''),
             qty: Number(it.qty) || 0,
             unitPrice: Number(it.unitPrice) || 0,
             totalPrice: Number(it.totalPrice) || ((Number(it.unitPrice)||0)*(Number(it.qty)||0)),
             adminId: uid,
           };
 
+          // if we created a warehouse doc, attach its id to the inventory record
+          if (!it.productId && warehouseId) payload.warehouseId = warehouseId;
+
           // write inventory entry
           await addDoc(collection(db, 'inventory_in'), payload);
 
           // update product stock using increment and record latest purchase price
+          // update product stock only if item references a real product id
           try {
             if (it.productId) {
               const prodRef = doc(db, 'products', it.productId);
@@ -328,14 +548,16 @@ export default function InventoryPage() {
             console.warn('Failed to update product stock', err);
           }
 
-          // upsert into warehouse collection
+          // upsert into warehouse collection: if productId exists, use it as warehouse id; otherwise we already created the warehouse doc
           try {
             if (it.productId) {
               const whRef = doc(db, 'warehouse', it.productId);
               await setDoc(whRef, {
                 productId: it.productId,
                 productName: it.productName,
-                image: it.image || '',
+                images: it.images || [],
+                image: (it.images && it.images[0]) ? it.images[0] : (it.image || ''),
+                invoiceImage: (typeof invoiceImageUrl !== 'undefined') ? invoiceImageUrl : (poImageUrl || ''),
                 stock: increment(Number(it.qty) || 0),
                 lastPurchasePrice: Number(it.unitPrice) || 0,
                 lastUpdated: serverTimestamp(),
@@ -350,14 +572,15 @@ export default function InventoryPage() {
       }
 
       // reload entries
-      const snap = await getDocs(collection(db, 'inventory_in'));
-      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snap = await getDocs(collection(db, 'inventory_in'));
+  const items = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
       setEntries(items.sort((a,b) => (b.createdAt?.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt?.toMillis ? a.createdAt.toMillis() : 0)));
 
       // reset form and PO
-      setSupplier(''); setSelectedProduct(null); setQuantity(1); setDate(''); setUnitPrice(0); setInvoiceNumber(''); setNotes('');
-      setPoSupplier(''); setPoDate(''); setPoNotes(''); setLineItems([]);
-      setEditMode(false); setOriginalLineItems([]); setCurrentInvoice('');
+  setSupplier(''); setSelectedProduct(null); setQuantity(1); setDate(''); setUnitPrice(0); setInvoiceNumber(''); setNotes('');
+  setPoSupplier(''); setPoDate(''); setPoNotes(''); setLineItems([]);
+  setPoImageFile(undefined); setPoImageUrl('');
+  setEditMode(false); setOriginalLineItems([]); setCurrentInvoice('');
     } catch (err:any) {
       console.error('Submit inventory error', err);
       showError(err.message || 'Lỗi khi nhập hàng');
@@ -399,12 +622,63 @@ export default function InventoryPage() {
             <option value="Đã hủy">Đã hủy</option>
           </select>
 
-          <button className="btn btn-dark">Áp Dụng Lọc</button>
+          <button className="btn btn-dark" onClick={() => { setManualFilterTick(Date.now()); }}>Áp Dụng Lọc</button>
 
-          <div className="toolbar-extra">
-            <button className="btn btn-light">Xem Lịch sử Nhập Kho</button>
-          </div>
+            <div className="toolbar-extra">
+              <button className="btn btn-light" onClick={() => setHistoryOpen(true)}>Xem Lịch sử Nhập Kho</button>
+            </div>
         </div>
+
+          {/* History modal (grouped by invoice number) */}
+          {historyOpen && (
+            <div className="modal-overlay" onClick={() => setHistoryOpen(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" style={{maxWidth:900}}>
+                <div className="modal-header">
+                  <h3>Lịch sử nhập kho</h3>
+                  <button aria-label="Đóng" className="modal-close" onClick={() => setHistoryOpen(false)}>✕</button>
+                </div>
+                <div style={{padding:12}}>
+                  <div className="history-list">
+                    {(() => {
+                      // group entries by invoiceNumber (uses filteredEntries for realtime behavior)
+                      const map:any = {};
+                      for (const e of filteredEntries) {
+                        const key = e.invoiceNumber || '(không có)';
+                        if (!map[key]) map[key] = { invoiceNumber: key, supplier: e.supplier || '', date: e.date || e.createdAt || '', totalQty: 0, totalAmount: 0, count: 0 };
+                        map[key].totalQty += Number(e.qty) || 0;
+                        map[key].totalAmount += Number(e.totalPrice) || 0;
+                        map[key].count += 1;
+                      }
+                      const arr = Object.values(map).sort((a:any,b:any) => {
+                        const da = a.date && a.date.toDate ? a.date.toDate().getTime() : (Date.parse(String(a.date)) || 0);
+                        const db = b.date && b.date.toDate ? b.date.toDate().getTime() : (Date.parse(String(b.date)) || 0);
+                        return db - da;
+                      });
+                      if (arr.length === 0) return <div>Không có lịch sử nhập kho</div>;
+                      return arr.map((inv:any) => (
+                        <div key={inv.invoiceNumber} className="history-item">
+                          <div className="history-meta">
+                            <div style={{fontWeight:700}}>{inv.invoiceNumber}</div>
+                            <div style={{fontSize:13,color:'#555'}}>Nhà cung cấp: {inv.supplier || '—'}</div>
+                            <div style={{fontSize:13,color:'#555'}}>Dòng: {inv.count} · Tổng SL: {inv.totalQty} · Tổng tiền: {Number(inv.totalAmount || 0).toLocaleString('vi-VN')} ₫</div>
+                          </div>
+                          <div className="history-actions action-rows">
+                            <div className="action-row action-row-top">
+                              <button className="btn btn-view" onClick={() => { setHistoryOpen(false); openViewInvoice(inv.invoiceNumber); }}>Xem</button>
+                              <button className="btn btn-edit" onClick={() => { setHistoryOpen(false); openEditInvoice(inv.invoiceNumber); }}>Sửa</button>
+                            </div>
+                            <div className="action-row action-row-bottom">
+                              <button className="btn btn-delete" onClick={() => { setHistoryOpen(false); deleteInvoice(inv.invoiceNumber); }}>Xóa</button>
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
         {/* Modal overlay form (opens as overlay) */}
         {showForm && (
@@ -426,6 +700,20 @@ export default function InventoryPage() {
 
                     <label>Số hóa đơn / Số phiếu (tùy chọn)</label>
                     <input type="text" value={invoiceNumber} onChange={e=>setInvoiceNumber(e.target.value)} placeholder="Nếu để trống sẽ tự sinh" />
+
+                    <label>Hình ảnh đơn nhập (ảnh hóa đơn)</label>
+                    <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                      {poImageUrl ? (
+                        <img src={poImageUrl} alt="invoice" style={{width:88,height:64,objectFit:'cover',borderRadius:6}} />
+                      ) : poImageFile ? (
+                        <img src={URL.createObjectURL(poImageFile)} alt="invoice-preview" style={{width:88,height:64,objectFit:'cover',borderRadius:6}} />
+                      ) : null}
+                      <input type="file" accept="image/*" onChange={e=>{
+                        const f = e.target.files && e.target.files[0];
+                        setPoImageFile(f || undefined);
+                        if (!f) return; // don't create preview URL here beyond the file object
+                      }} />
+                    </div>
 
                     <label>Ghi chú phiếu</label>
                     <textarea value={poNotes || notes} onChange={e=>{ setPoNotes(e.target.value); setNotes(e.target.value); }} placeholder="Ghi chú chung cho phiếu nhập" />
@@ -463,6 +751,29 @@ export default function InventoryPage() {
                       </div>
                     )}
 
+                    {/* If user is entering a manual product name (not picking from warehouse), allow attaching product images here */}
+                    {!selectedProduct && (
+                      <div style={{marginTop:8}}>
+                        <label>Hình ảnh sản phẩm (nếu có)</label>
+                        <div style={{display:'flex',gap:8,alignItems:'center',marginTop:6}}>
+                          <div style={{display:'flex',gap:6}}>
+                            {currentFiles && currentFiles.length > 0 && currentFiles.map((f, i) => (
+                              <div key={`cf-${i}`} style={{position:'relative'}}>
+                                <img src={URL.createObjectURL(f)} alt={f.name} style={{width:64,height:64,objectFit:'cover',borderRadius:6}} />
+                                <div style={{position:'absolute',left:0,right:0,bottom:0,height:6,background:'#eee'}}>
+                                  <div style={{width:`${fileUploadProgress[f.name] ?? 0}%`,height:'100%',background:'#4caf50'}} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <input type="file" accept="image/*" multiple onChange={e=>{
+                            const files = e.target.files ? Array.from(e.target.files) : [];
+                            setCurrentFiles(files);
+                          }} />
+                        </div>
+                      </div>
+                    )}
+
                     <div className="line-inputs">
                       <label>Số lượng</label>
                       <input type="number" min={1} value={quantity} onChange={e=>setQuantity(Number(e.target.value))} />
@@ -477,7 +788,7 @@ export default function InventoryPage() {
                       <h4>Chi tiết phiếu</h4>
                       {lineItems.length === 0 ? <div>Chưa có dòng nào</div> : (
                         <table className="line-items-table">
-                          <thead><tr><th>Sản phẩm</th><th>Số lượng</th><th>Giá</th><th>Tổng</th><th></th></tr></thead>
+                          <thead><tr><th>Sản phẩm</th><th>Số lượng</th><th>Giá</th><th>Tổng</th><th>Hình</th><th></th></tr></thead>
                           <tbody>
                             {lineItems.map((it, idx) => (
                               <tr key={idx}>
@@ -485,6 +796,18 @@ export default function InventoryPage() {
                                 <td><input type="number" min={1} value={it.qty} onChange={e=>updateLineItem(idx, { qty: Number(e.target.value) })} /></td>
                                 <td><input type="number" min={0} value={it.unitPrice} onChange={e=>updateLineItem(idx, { unitPrice: Number(e.target.value) })} /></td>
                                 <td>{(Number(it.totalPrice)||0).toLocaleString('vi-VN')} ₫</td>
+                                <td style={{display:'flex',flexDirection:'column',gap:6}}>
+                                  {/* Show previews: local files first, then stored images */}
+                                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                                    {it.files && it.files.length > 0 && it.files.map((f:File, fi:number) => (
+                                      <img key={`f-${fi}`} src={URL.createObjectURL(f)} alt={`preview-${fi}`} style={{width:64,height:64,objectFit:'cover',borderRadius:6,cursor:'pointer'}} onClick={()=>{ setLightboxImages(it.files.map((ff:File)=>URL.createObjectURL(ff))); setLightboxStart(fi); setLightboxOpen(true); }} />
+                                    ))}
+                                    {(!it.files || it.files.length === 0) && it.images && it.images.length > 0 && it.images.map((u:string, ui:number) => (
+                                      <img key={`u-${ui}`} src={u} alt={`img-${ui}`} style={{width:64,height:64,objectFit:'cover',borderRadius:6,cursor:'pointer'}} onClick={()=>{ setLightboxImages(it.images||[]); setLightboxStart(ui); setLightboxOpen(true); }} />
+                                    ))}
+                                  </div>
+                                  {/* previews only in the line list; image uploads happen in the product entry form before adding the line */}
+                                </td>
                                 <td><button type="button" className="btn-ghost" onClick={()=>removeLineItem(idx)}>Xóa</button></td>
                               </tr>
                             ))}
@@ -496,8 +819,18 @@ export default function InventoryPage() {
                 </div>
 
                 <div className="modal-actions" style={{marginTop:12, display:'flex', gap:8, justifyContent:'flex-end'}}>
-                  <button type="submit" className="btn-primary">Ghi nhận nhập kho</button>
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
+                    {uploading ? (
+                      <div style={{width:240}}>
+                        <div style={{height:8, background:'#eee', borderRadius:4, overflow:'hidden'}}>
+                          <div style={{width:`${uploadProgress}%`, height:'100%', background:'#4caf50'}} />
+                        </div>
+                        <div style={{fontSize:12, color:'#666', marginTop:6}}>{uploadProgress}% đang tải lên...</div>
+                      </div>
+                    ) : null}
+                    <button type="submit" className="btn-primary" disabled={uploading}>Ghi nhận nhập kho</button>
                   <button type="button" className="btn-ghost" onClick={()=>{ setShowForm(false); setLineItems([]); }}>Hủy</button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -555,17 +888,7 @@ export default function InventoryPage() {
               </tr>
             </thead>
             <tbody>
-              {entries
-                .filter((en:any) => {
-                  const q = (searchQuery||'').trim().toLowerCase();
-                  if (q) {
-                    return (String(en.productName || '').toLowerCase().includes(q) || String(en.supplier || '').toLowerCase().includes(q) || String(en.invoiceNumber || '').toLowerCase().includes(q) || String(en.productId || '').includes(q));
-                  }
-                  if (selectedStatus && selectedStatus !== 'Tất cả') {
-                    return (en.status || 'Đã nhận hàng') === selectedStatus;
-                  }
-                  return true;
-                })
+              {filteredEntries
                 .map((en:any) => (
                   <tr key={en.id}>
                     <td>{en.date || (en.createdAt?.toDate ? en.createdAt.toDate().toLocaleString() : '')}</td>
@@ -575,16 +898,83 @@ export default function InventoryPage() {
                     <td>{en.qty}</td>
                     <td>{en.unitPrice ? (Number(en.unitPrice).toLocaleString('vi-VN') + ' ₫') : ''}</td>
                     <td>{en.totalPrice ? (Number(en.totalPrice).toLocaleString('vi-VN') + ' ₫') : ''}</td>
-                    <td>{en.image ? <img src={en.image} alt={en.productName} style={{width:60}} /> : ''}</td>
                     <td>
-                      <button className="btn" onClick={()=>openEditInvoice(en.invoiceNumber)}>Sửa phiếu</button>
-                      <button className="btn btn-danger" onClick={()=>deleteInvoice(en.invoiceNumber)} style={{marginLeft:8}}>Xóa phiếu</button>
+                      {(en.images && en.images.length > 0) || en.image ? (
+                        <img src={((en.images && en.images[0]) || en.image)} alt={en.productName} style={{width:60,cursor:'pointer'}} onClick={()=>{ const imgs = (en.images && en.images.length>0) ? en.images : (en.image ? [en.image] : []); setLightboxImages(imgs); setLightboxStart(0); setLightboxOpen(true); }} />
+                      ) : ''}
+                    </td>
+                    <td>
+                      <div className="action-rows">
+                        <div className="action-row action-row-top">
+                          <button className="btn btn-view" onClick={()=>openViewInvoice(en.invoiceNumber)}>Xem phiếu</button>
+                          <button className="btn btn-edit" onClick={()=>openEditInvoice(en.invoiceNumber)} style={{marginLeft:8}}>Sửa phiếu</button>
+                        </div>
+                        <div className="action-row action-row-bottom">
+                          <button className="btn btn-delete" onClick={()=>deleteInvoice(en.invoiceNumber)} style={{marginTop:8, width: '100%'}}>Xóa phiếu</button>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ))}
             </tbody>
           </table>
         </div>
+
+        {/* Invoice view modal (read-only) */}
+        {viewInvoiceOpen && (
+          <div className="modal-overlay" onClick={() => setViewInvoiceOpen(false)}>
+            <div className="modal-content" onClick={(e)=>e.stopPropagation()} role="dialog" aria-modal="true" style={{maxWidth:1000}}>
+              <div className="modal-header">
+                <h3>Chi tiết phiếu: {viewInvoiceNumber}</h3>
+                <button aria-label="Đóng" className="modal-close" onClick={()=>setViewInvoiceOpen(false)}>✕</button>
+              </div>
+              <div style={{padding:12}}>
+                {viewInvoiceMeta && (
+                  <div style={{display:'flex',gap:12,alignItems:'flex-start',marginBottom:12}}>
+                    <div style={{flex:1}}>
+                      <div><strong>Nhà cung cấp:</strong> {viewInvoiceMeta.supplier}</div>
+                      <div><strong>Ngày:</strong> {viewInvoiceMeta.date && viewInvoiceMeta.date.toDate ? viewInvoiceMeta.date.toDate().toLocaleString() : String(viewInvoiceMeta.date || '')}</div>
+                      <div><strong>Ghi chú:</strong> {viewInvoiceMeta.notes}</div>
+                    </div>
+                    <div style={{width:220}}>
+                      {viewInvoiceMeta.invoiceImage ? <img src={viewInvoiceMeta.invoiceImage} alt="invoice" style={{width:200,height:140,objectFit:'cover',borderRadius:6,cursor:'pointer'}} onClick={()=>{ setLightboxImages([viewInvoiceMeta.invoiceImage]); setLightboxStart(0); setLightboxOpen(true); }} /> : null}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <table className="po-table inv-table" style={{width:'100%'}}>
+                    <thead>
+                      <tr><th>#</th><th>Sản phẩm</th><th>Số lượng</th><th>Giá</th><th>Tổng</th><th>Hình</th></tr>
+                    </thead>
+                    <tbody>
+                      {viewInvoiceItems.map((it:any, i:number) => (
+                        <tr key={it.id || i}>
+                          <td>{i+1}</td>
+                          <td>{it.productName}</td>
+                          <td>{it.qty}</td>
+                          <td>{it.unitPrice ? (Number(it.unitPrice).toLocaleString('vi-VN') + ' ₫') : ''}</td>
+                          <td>{it.totalPrice ? (Number(it.totalPrice).toLocaleString('vi-VN') + ' ₫') : ''}</td>
+                          <td>
+                            <div style={{display:'flex',gap:6}}>
+                              {(it.images && it.images.length > 0 ? it.images : (it.image ? [it.image] : [])).map((u:string, ui:number) => (
+                                <img key={ui} src={u} alt={`img-${ui}`} style={{width:64,height:64,objectFit:'cover',borderRadius:6,cursor:'pointer'}} onClick={()=>{ setLightboxImages(it.images && it.images.length>0 ? it.images : (it.image ? [it.image] : [])); setLightboxStart(ui); setLightboxOpen(true); }} />
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {lightboxOpen && (
+          <ImageLightbox images={lightboxImages} startIndex={lightboxStart} onClose={() => setLightboxOpen(false)} />
+        )}
 
         {/* Pagination placeholder */}
         <div className="po-pagination">
