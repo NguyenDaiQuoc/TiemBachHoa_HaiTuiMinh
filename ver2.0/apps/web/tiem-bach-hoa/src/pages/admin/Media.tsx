@@ -3,11 +3,11 @@ import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/media.css";
 
 const mediaItems = [
-  { id: 1, name: 'nen_thom_lavender.jpg', type: 'Image', size: '150KB', date: '10/11/2025', url: 'https://via.placeholder.com/150/92c952' },
-  { id: 2, name: 'muong_go_set.png', type: 'Image', size: '250KB', date: '08/11/2025', url: 'https://via.placeholder.com/150/771796' },
-  { id: 3, name: 'huong_dan_sudung.mp4', type: 'Video', size: '5.2MB', date: '05/11/2025', url: 'https://via.placeholder.com/150/24f355' },
-  { id: 4, name: 'bao_cao_quy_4.pdf', type: 'Document', size: '1.1MB', date: '01/11/2025', url: 'https://via.placeholder.com/150/d32776' },
-  { id: 5, name: 'binh_gom_trang.jpg', type: 'Image', size: '320KB', date: '25/10/2025', url: 'https://via.placeholder.com/150/a86d26' },
+  { id: 1, name: 'nen_thom_lavender.jpg', type: 'Image', size: '150KB', date: '10/11/2025', url: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Crect fill="%2392c952" width="150" height="150"/%3E%3C/svg%3E' },
+  { id: 2, name: 'muong_go_set.png', type: 'Image', size: '250KB', date: '08/11/2025', url: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Crect fill="%23771796" width="150" height="150"/%3E%3C/svg%3E' },
+  { id: 3, name: 'huong_dan_sudung.mp4', type: 'Video', size: '5.2MB', date: '05/11/2025', url: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Crect fill="%2324f355" width="150" height="150"/%3E%3C/svg%3E' },
+  { id: 4, name: 'bao_cao_quy_4.pdf', type: 'Document', size: '1.1MB', date: '01/11/2025', url: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Crect fill="%23d32776" width="150" height="150"/%3E%3C/svg%3E' },
+  { id: 5, name: 'binh_gom_trang.jpg', type: 'Image', size: '320KB', date: '25/10/2025', url: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Crect fill="%23a86d26" width="150" height="150"/%3E%3C/svg%3E' },
 ];
 
 const MediaCard = ({ item }) => {

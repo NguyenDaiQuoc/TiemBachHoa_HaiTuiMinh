@@ -165,8 +165,7 @@ export default function FloatingButtons() {
           });
         }
       } catch (err:any) {
-        console.warn('Failed to write chats doc - permissions issue, chat may not work properly');
-        // Không fallback nữa, chỉ log warning
+        // Silently fail if chat permissions not available
       }
       setInput('');
     } catch (e:any) {

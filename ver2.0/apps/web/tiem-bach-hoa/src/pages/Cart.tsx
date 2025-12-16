@@ -21,7 +21,7 @@ function CartItem({ item, onQuantityChange, onRemove }: any) {
   return (
     <div className="cart-item">
       <div className="cart-item-image">
-        <img src={image || "https://via.placeholder.com/100"} alt={name} />
+        <img src={image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23E0E0E0' width='100' height='100'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='12' dy='10.5' font-weight='bold' x='50%25' y='50%25' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E"} alt={name} />
       </div>
 
       <div className="cart-item-info">
