@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -94,6 +94,7 @@ const fetchProductDetail = async (
   productSlug: string,
   setProductDetail: (data: ProductData | null) => void,
   setLoading: (loading: boolean) => void,
+  setPermissionDenied?: (v:boolean)=>void,
 ) => {
   setLoading(true);
   try {
@@ -110,22 +111,8 @@ const fetchProductDetail = async (
     console.log('✅ Query result - Found:', querySnapshot.size, 'docs');
 
     if (querySnapshot.empty) {
-      // Thử query với collection tên "product" (số ít)
-      console.warn('⚠️ Trying with collection name "product" instead...');
-      const altRef = collection(db, "product");
-      const altQ = query(altRef, where("slug", "==", slugToSearch));
-      const altSnapshot = await getDocs(altQ);
-      
-      console.log('✅ Alternative query result - Found:', altSnapshot.size, 'docs');
-      
-      if (!altSnapshot.empty) {
-        const doc = altSnapshot.docs[0];
-        console.log('✅ Product data (from "product"):', doc.data());
-        const productData = mapProductFromFirestore(doc.id, doc.data());
-        setProductDetail(productData);
-        return;
-      }
-      
+      // No product found in 'products' collection. Do not attempt a lookup on a different
+      // collection name because Firestore rules may intentionally not expose it (causes permission errors).
       console.error(`❌ Không tìm thấy sản phẩm với slug: ${slugToSearch}`);
       setProductDetail(null);
     } else {
@@ -136,6 +123,10 @@ const fetchProductDetail = async (
     }
   } catch (error) {
     console.error(`❌ Lỗi khi fetch chi tiết sản phẩm ${productSlug}:`, error);
+    // If permission error, notify caller so UI can show helpful message
+    const e: any = error;
+    const msg = e && (e.code === 'permission-denied' || (e.message && typeof e.message === 'string' && e.message.toLowerCase().includes('permission')));
+    if (msg && setPermissionDenied) setPermissionDenied(true);
     setProductDetail(null);
   } finally {
     setLoading(false);
@@ -186,6 +177,7 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<ProductData[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   // --- useEffect để fetch data ---
   useEffect(() => {
@@ -195,7 +187,8 @@ export default function ProductDetailPage() {
     
     if (productSlug) {
       console.log('🔵 Calling fetchProductDetail with slug:', productSlug);
-      fetchProductDetail(productSlug, setProductDetail, setLoading);
+      setPermissionDenied(false);
+      fetchProductDetail(productSlug, setProductDetail, setLoading, setPermissionDenied);
     } else {
       console.log('⚠️ No productSlug found in URL params');
       setLoading(false);
@@ -203,14 +196,22 @@ export default function ProductDetailPage() {
     }
   }, [productSlug]);
 
-  // ⭐ useEffect: Cài đặt biến thể mặc định (Biến thể 1) sau khi fetch thành công ⭐
+  // ⭐ useEffect: Cài đặt biến thể mặc định (Biến thể 1) sau khi fetch thành công
+  // Always reset selected variation when productDetail changes so images/prices update correctly
   useEffect(() => {
-    if (productDetail && productDetail.variations.length > 0 && !selectedVariation) {
-      // Mặc định chọn biến thể đầu tiên (biến thể 1)
-      setSelectedVariation(productDetail.variations[0]);
-      setQuantity(1); // Reset số lượng
+    if (productDetail) {
+      if (productDetail.variations && productDetail.variations.length > 0) {
+        setSelectedVariation(productDetail.variations[0]);
+      } else {
+        setSelectedVariation(null);
+      }
+      setQuantity(1); // Reset số lượng on each product load
+    } else {
+      setSelectedVariation(null);
+      setQuantity(1);
     }
-  }, [productDetail, selectedVariation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productDetail]);
 
   // Khi productDetail thay đổi, load reviews và related products
   useEffect(() => {
@@ -220,29 +221,78 @@ export default function ProductDetailPage() {
       try {
         // Fetch reviews for this product
         const reviewsRef = collection(db, 'reviews');
-        const reviewsQ = query(reviewsRef, where('productID', '==', productDetail.id), orderBy('createdAt', 'desc'));
-        const reviewsSnap = await getDocs(reviewsQ);
-        const revs: any[] = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setReviews(revs);
+        // Attempt server-side ordered query first (fast when index exists)
+        try {
+          const reviewsQ = query(reviewsRef, where('productID', '==', productDetail.id), orderBy('createdAt', 'desc'));
+          const reviewsSnap = await getDocs(reviewsQ);
+          const revs: any[] = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          setReviews(revs);
+        } catch (rqErr: any) {
+          // If Firestore complains about missing index, fall back to a simple query and sort client-side
+          const msg = rqErr && (rqErr.message || '').toString().toLowerCase();
+          if (msg.includes('requires an index') || msg.includes('index')) {
+            console.warn('Reviews query requires an index, falling back to unordered fetch and client-side sort.');
+          } else {
+            console.warn('Reviews ordered query failed, falling back to unordered fetch:', rqErr);
+          }
+
+          // Fallback: fetch reviews for product without orderBy (less efficient) then sort locally
+          try {
+            const fallbackQ = query(reviewsRef, where('productID', '==', productDetail.id));
+            const fallbackSnap = await getDocs(fallbackQ);
+            const revs = fallbackSnap.docs
+              .map(d => ({ id: d.id, ...d.data() }))
+              .sort((a, b) => {
+                const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+                const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+                return tb - ta;
+              });
+            setReviews(revs);
+          } catch (fallbackErr) {
+            console.error('Fallback reviews fetch failed:', fallbackErr);
+            setReviews([]);
+          }
+        }
       } catch (err) {
         console.error('Error loading reviews:', err);
         setReviews([]);
       }
 
       try {
-        // Related products: same top-level category (categorySlugs[0])
-        const cat = (productDetail.categorySlugs && productDetail.categorySlugs[0]) || null;
-        if (cat) {
-          const productsRef = collection(db, 'products');
-          const relatedQ = query(productsRef, where('categorySlugs', 'array-contains', cat), limit(6));
-          const relatedSnap = await getDocs(relatedQ);
-          const related = relatedSnap.docs
-            .map(d => mapProductFromFirestore(d.id, d.data()))
-            .filter(p => p.id !== productDetail.id);
-          setRelatedProducts(related);
-        } else {
-          setRelatedProducts([]);
+        // Related products: query each category slug and accumulate unique results.
+        // This improves chance of finding enough related items and ensures same-category matches.
+        const cats = productDetail.categorySlugs || [];
+        const productsRef = collection(db, 'products');
+        const accumulator: Record<string, ProductData> = {};
+
+        for (let i = 0; i < Math.min(cats.length, 4); i++) {
+          const cat = cats[i];
+          try {
+            const q = query(productsRef, where('categorySlugs', 'array-contains', cat), limit(8));
+            const snap = await getDocs(q);
+            snap.docs.forEach(d => {
+              if (d.id === productDetail.id) return;
+              const p = mapProductFromFirestore(d.id, d.data());
+              // ensure shares at least one slug
+              if ((p.categorySlugs || []).some(s => cats.includes(s))) {
+                accumulator[p.id] = p;
+              }
+            });
+          } catch (qErr) {
+            console.warn('Related products query failed for category', cat, qErr);
+            // continue with other categories
+          }
         }
+
+        // Convert accumulator to array, shuffle and take up to 6 items
+        const allRelated = Object.values(accumulator);
+        // simple shuffle
+        for (let i = allRelated.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [allRelated[i], allRelated[j]] = [allRelated[j], allRelated[i]];
+        }
+
+        setRelatedProducts(allRelated.slice(0, 6));
       } catch (err) {
         console.error('Error loading related products:', err);
         setRelatedProducts([]);
@@ -250,23 +300,64 @@ export default function ProductDetailPage() {
 
       // Check admin doc for current user to show inventory management button
       try {
+        // Prefer checking admin via custom claims in the ID token instead of reading the 'admins' collection
+        // which may be restricted by security rules. This avoids permission errors in the client.
         const u = auth.currentUser;
         if (u) {
-          const adminDoc = await getDocs(collection(db, 'admins'));
-          // simple check: if any admin doc has id == uid
-          const found = adminDoc.docs.some(d => d.id === u.uid);
-          setIsAdmin(found);
+          const idTokenResult = await u.getIdTokenResult(true);
+          const claims: any = idTokenResult.claims || {};
+          const adminClaim = (claims.admin === true) || (claims.isAdmin === true) || (claims.role === 'admin');
+          setIsAdmin(!!adminClaim);
         } else {
           setIsAdmin(false);
         }
       } catch (err) {
-        console.error('Error checking admin status:', err);
+        console.error('Error checking admin status (token claims):', err);
         setIsAdmin(false);
       }
     };
 
     loadExtras();
   }, [productDetail]);
+
+  // Related products carousel refs / state
+  const relatedContainerRef = useRef<HTMLDivElement | null>(null);
+  const [relatedIndex, setRelatedIndex] = useState(0);
+
+  const scrollRelatedTo = (index: number) => {
+    const container = relatedContainerRef.current;
+    if (!container) return;
+    const children = container.children;
+    if (!children || children.length === 0) return;
+    const child = children[Math.max(0, Math.min(index, children.length - 1))] as HTMLElement;
+    if (child) {
+      child.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  };
+
+  const nextRelated = () => {
+    if (relatedProducts.length === 0) return;
+    const next = (relatedIndex + 1) % relatedProducts.length;
+    setRelatedIndex(next);
+    scrollRelatedTo(next);
+  };
+
+  const prevRelated = () => {
+    if (relatedProducts.length === 0) return;
+    const prev = (relatedIndex - 1 + relatedProducts.length) % relatedProducts.length;
+    setRelatedIndex(prev);
+    scrollRelatedTo(prev);
+  };
+
+  // Auto-advance related products every 4s
+  useEffect(() => {
+    if (relatedProducts.length <= 1) return;
+    const t = setInterval(() => {
+      nextRelated();
+    }, 4000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relatedProducts, relatedIndex]);
 
 
   // ⭐ Logic tính toán giá, tồn kho dựa trên Biến thể được chọn ⭐
@@ -293,13 +384,30 @@ export default function ProductDetailPage() {
 
   if (!productDetail) {
     const productNameFromSlug = productSlug || "Sản phẩm";
+    if (permissionDenied) {
+      return (
+        <div className="product-detail-wrapper">
+          <Header />
+          <div className="product-detail-content" style={{ textAlign: 'center', padding: '100px 20px' }}>
+            <h1 className="product-detail-title">Quyền truy cập bị từ chối</h1>
+            <p>Hiện tại bạn không có quyền xem dữ liệu sản phẩm. Vui lòng đăng nhập hoặc liên hệ quản trị viên.</p>
+            <div style={{ marginTop: 16 }}>
+              <PrimaryButton onClick={() => navigate('/login')}>Đăng nhập</PrimaryButton>
+              <PrimaryButton className="ml-3" onClick={() => navigate('/')}>Về trang chủ</PrimaryButton>
+            </div>
+          </div>
+          <Footer />
+        </div>
+      );
+    }
+
     return (
       <div className="product-detail-wrapper">
         <Header />
         <div className="product-detail-content" style={{ textAlign: 'center', padding: '100px 20px' }}>
           <h1 className="product-detail-title">🚨 Không tìm thấy sản phẩm 🚨</h1>
           <p>Mã sản phẩm **"{productNameFromSlug}"** không được tìm thấy trong hệ thống.</p>
-          <PrimaryButton className="mt-5" onClick={() => navigate('/categories/all/all')}>Quay lại trang sản phẩm</PrimaryButton>
+          <PrimaryButton className="mt-5" onClick={() => navigate('/products')}>Quay lại trang sản phẩm</PrimaryButton>
         </div>
         <Footer />
       </div>
@@ -513,14 +621,28 @@ export default function ProductDetailPage() {
         {relatedProducts.length > 0 && (
           <>
             <h2 className="related-title">Sản Phẩm Khác Bạn Có Thể Thích</h2>
-            <div className="related-products">
-              {relatedProducts.map(p => (
-                <div key={p.id} className="related-item" onClick={() => navigate(`/product-detail/${p.slug}`)} style={{cursor:'pointer'}}>
-                  <img src={p.image[0]} alt={p.name} />
-                  <div className="related-name">{p.name}</div>
+                <div className="related-carousel" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button aria-label="previous" className="carousel-btn" onClick={prevRelated} style={{padding:8}}>‹</button>
+                  <div
+                    className="related-products"
+                    ref={relatedContainerRef}
+                    style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '8px 0' }}
+                  >
+                    {relatedProducts.map((p, idx) => (
+                      <div
+                        key={p.id}
+                        className="related-item"
+                        onClick={() => navigate(`/product-detail/${p.slug}`)}
+                        style={{ cursor: 'pointer', minWidth: 180, scrollSnapAlign: 'center' }}
+                        data-rel-index={idx}
+                      >
+                        <img src={p.image[0]} alt={p.name} />
+                        <div className="related-name">{p.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <button aria-label="next" className="carousel-btn" onClick={nextRelated} style={{padding:8}}>›</button>
                 </div>
-              ))}
-            </div>
           </>
         )}
 

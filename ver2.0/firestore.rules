@@ -2,8 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper: Check admin status using EITHER Custom Claim OR Admin Ledger.
+    // Helper: Check admin status using either a custom claim or an admin ledger document.
     function isAdmin() {
       return request.auth != null && (
         (request.auth.token != null && request.auth.token.admin == true) ||
@@ -11,94 +10,90 @@ service cloud.firestore {
       );
     }
 
-    // --- Core Authentication / User Management ---
+    // -----------------------------
+    // Core collections and policies
+    // -----------------------------
 
-    // Admins: Only the user associated with the admin doc can manage it.
+    // Admins document ledger: a user may only read/write their own admin doc.
     match /admins/{adminId} {
-      allow read, write: if request.auth != null && request.auth.uid == adminId;
+      allow read: if request.auth != null && request.auth.uid == adminId;
+      allow write: if isAdmin() && request.auth != null && request.auth.uid == adminId;
     }
 
-    // Users: Public read for login lookups. Users can manage their own profile.
+    // Users: public read (for profile display), write only by the user.
     match /users/{userId} {
-      allow read: if true; // Public read for account lookups.
+      allow read: if true;
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // --- Chat / Support ---
-
-    // Chats: Only the owning user or admins can manage the chat document.
-    match /chats/{chatId} {
-      // Create: Must be authenticated and doc's userId must match the requester.
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      // Read: Admins or any authenticated user.
-      allow read: if isAdmin() || (request.auth != null);
-      // Update/Delete: Admins or the owning user.
-      allow update, delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
-    }
-
-    // Support Requests: Customers can create. Only admins can manage.
-    match /support_requests/{reqId} {
-      allow create: if request.auth != null; // Must be logged in to create.
-      allow read, update, delete: if isAdmin(); // Only admins can manage existing requests.
-    }
-
-    // --- Product / E-commerce ---
-
-    // Categories: Public read. Writes restricted to admins for consistency.
+    // Categories: public read, admin write
     match /categories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Products: Public read for listing. Writes restricted to admins.
+    // Products: public read, admin write. Keep product data publicly viewable.
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Reviews: Public read. Authenticated users can write.
+    // Deals / Promotions: public read, admin write
+    match /deals/{dealId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Reviews: public read, authenticated users can create.
     match /reviews/{reviewId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create: if request.auth != null; // must be logged in to post a review
+      allow update, delete: if isAdmin() || (request.auth != null && resource.data.userID == request.auth.uid);
     }
 
-    // Cart: Only the authenticated owner can manage their cart (cartId must match uid).
+    // Cart: each user owns their cart document; cartId should equal uid
     match /cart/{cartId} {
-      // Create: Must be authenticated and cartId matches user uid.
       allow create: if request.auth != null && request.auth.uid == cartId;
-      // Read/Write: Must be authenticated and document's ID/userID matches current user.
-      allow read, update, delete: if request.auth != null &&
-        (resource.data.userID == request.auth.uid || cartId == request.auth.uid);
+      allow read, update, delete: if request.auth != null && (cartId == request.auth.uid || resource.data.userID == request.auth.uid);
     }
 
-    // Orders: Users can create/read/manage their own orders. Admins can manage all.
+    // Orders: creation requires matching userId; reads/writes allowed to owner or admin
     match /orders/{orderId} {
-      // Create: Must be authenticated and order.userID must match the requester.
       allow create: if request.auth != null && request.resource.data.userID == request.auth.uid;
-
-      // Read/Update/Delete: Owner or Admin.
       allow read, update, delete: if isAdmin() || (request.auth != null && resource.data.userID == request.auth.uid);
     }
 
-    // --- Inventory / Warehouse ---
-
-    // Warehouse: Admin-only writes. Authenticated reads.
-    match /warehouse/{doc} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
-    }
-
-    // Inventory Inbound Entries: Admin-only writes. Authenticated reads.
-    // Naming convention unified to /inventory_in/{doc}
-    match /inventory_in/{doc} {
+    // Warehouse and Inventory management: reads by authenticated users, writes by admins
+    match /warehouse/{docId} {
       allow read: if request.auth != null;
       allow create, update, delete: if isAdmin();
     }
 
-    // --- General Fallback ---
+    match /inventory_in/{docId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
 
-    // Deny all operations on any collection not explicitly defined above.
+    // Vouchers / marketing collections: public read, admin writes
+    match /vouchers/{vouchId} { allow read: if true; allow create, update, delete: if isAdmin(); }
+    match /email_campaigns/{cId} { allow read: if isAdmin(); allow create, update, delete: if isAdmin(); }
+    match /banners/{bId} { allow read: if true; allow create, update, delete: if isAdmin(); }
+
+    // Support requests: any authenticated user can create; admin can manage
+    match /support_requests/{reqId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Chats: authenticated users and admins. Owners can update their chat.
+    match /chats/{chatId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null || isAdmin();
+      allow update, delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+    }
+
+    // Default deny: explicit whitelist above
     match /{document=**} {
       allow read, write: if false;
     }

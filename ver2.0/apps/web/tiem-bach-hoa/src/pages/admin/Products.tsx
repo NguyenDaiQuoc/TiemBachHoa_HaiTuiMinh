@@ -4,6 +4,8 @@ import { db, storage, auth } from "../../firebase";
 import {
   collection,
   getDocs,
+  query,
+  where,
   deleteDoc,
   doc,
   addDoc,
@@ -111,6 +113,21 @@ const getStatusClass = (status: ProductData['status']) => {
 // ===========================================
 // 2. COMPONENT VariationForm (Biến thể)
 // ===========================================
+
+// Utility: convert a product name into a URL-friendly slug
+const slugify = (input: string) => {
+  if (!input) return '';
+  // Normalize unicode (remove diacritics), to lower case
+  let s = input.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  s = s.toLowerCase();
+  // Replace any non-alphanumeric character with hyphen
+  s = s.replace(/[^a-z0-9]+/g, '-');
+  // Trim hyphens from ends
+  s = s.replace(/^-+|-+$/g, '');
+  // Collapse multiple hyphens
+  s = s.replace(/-+/g, '-');
+  return s;
+}
 
 const VariationForm: React.FC<{
   variation: Variation;
@@ -602,8 +619,13 @@ export default function AdminProductsPage() {
     const videoArray = formData.video; // Đã là mảng URL/tên file
 
     // Chuẩn bị đối tượng dữ liệu để gửi lên Firestore
+    // Ensure slug uniqueness before saving
+    const baseSlug = slugify(formData.name || '');
+    const finalSlug = await generateUniqueSlug(baseSlug, formData.id);
+
     const firestoreData = {
       name: formData.name,
+      slug: finalSlug,
       description: formData.description,
       categorySlugs: formData.categorySlugs,
       tag: formData.tag,
@@ -854,4 +876,46 @@ export default function AdminProductsPage() {
       )}
     </div>
   );
+}
+
+// Generate a unique slug by checking existing slugs in 'products'.
+// If a collision is found, append -1, -2, ... until unique.
+const generateUniqueSlug = async (base: string, excludeId?: string) => {
+  const baseSlug = slugify(base);
+  if (!baseSlug) return baseSlug;
+
+  try {
+    const productsRef = collection(db, 'products');
+    // Range query to get slugs that start with baseSlug
+    const start = baseSlug;
+    const end = baseSlug + '\uf8ff';
+    const q = query(productsRef, where('slug', '>=', start), where('slug', '<=', end));
+    const snap = await getDocs(q);
+    const existing = snap.docs.map(d => ({ id: d.id, slug: (d.data() as any).slug || '' }));
+
+    // If no existing slugs, return baseSlug
+    if (existing.length === 0) return baseSlug;
+
+    // Build a set of slugs to check
+    const set = new Set(existing.map(e => e.slug));
+    // If existing only contains the current document's slug, it's fine
+    if (excludeId) {
+      const other = existing.filter(e => e.id !== excludeId);
+      if (other.length === 0) return baseSlug;
+    } else {
+      if (!set.has(baseSlug)) return baseSlug;
+    }
+
+    // Try suffixes
+    for (let i = 1; i < 1000; i++) {
+      const candidate = `${baseSlug}-${i}`;
+      if (!set.has(candidate)) return candidate;
+    }
+
+    // Fallback (very unlikely)
+    return `${baseSlug}-${Date.now()}`;
+  } catch (err) {
+    console.error('generateUniqueSlug error', err);
+    return base;
+  }
 }

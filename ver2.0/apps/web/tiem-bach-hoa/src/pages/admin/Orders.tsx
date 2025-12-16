@@ -1,14 +1,40 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/orders.css";
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '../../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Format tiền tệ
-const formatCurrency = (amount) => Number(amount).toLocaleString('vi-VN') + ' VNĐ';
+const formatCurrency = (amount: any) => Number(amount).toLocaleString('vi-VN') + ' VNĐ';
 
-// --- Component Tóm Tắt Đơn Hàng ---
-function OrderMetrics() {
-  const totalOrdersToday = 52;
-  const pendingOrders = 15;
+// --- Component Tóm Tắt Đơn Hàng (derived from orders) ---
+function OrderMetrics({ orders }: { orders: any[] }) {
+  const todayStart = new Date();
+  todayStart.setHours(0,0,0,0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23,59,59,999);
+
+  const toDate = (o: any) => {
+    if (!o) return null;
+    const v = o.createdAt;
+    if (!v) return null;
+    try {
+      if (v.seconds) return new Date(v.seconds * 1000);
+      return new Date(v);
+    } catch {
+      return null;
+    }
+  };
+
+  const totalOrdersToday = orders.filter(o => {
+    const d = toDate(o);
+    return d && d >= todayStart && d <= todayEnd;
+  }).length;
+
+  const pendingOrders = orders.filter(o => (o.status || '').toString() === 'Chờ Xử Lý').length;
+
+  const inTransit = orders.filter(o => (o.status || '').toString() === 'Đang Vận Chuyển').length;
 
   return (
     <div className="metrics-grid">
@@ -22,19 +48,59 @@ function OrderMetrics() {
       </div>
       <div className="metric-card processing">
         <p className="metric-title">Đơn Đang Vận Chuyển</p>
-        <h3 className="metric-value">67</h3>
+        <h3 className="metric-value">{inTransit}</h3>
       </div>
     </div>
   );
 }
 
 export default function AdminOrderPage() {
-  const orders = [
-    { id: 'DH202511001', customer: 'Nguyễn Văn A', date: '11/11/2025', total: 450000, payment: 'COD', status: 'Chờ Xử Lý' },
-    { id: 'DH202511002', customer: 'Trần Thị B', date: '11/11/2025', total: 820000, payment: 'Chuyển Khoản', status: 'Đã Thanh Toán' },
-    { id: 'DH202511003', customer: 'Lê Văn C', date: '10/11/2025', total: 150000, payment: 'Momo', status: 'Đã Giao Hàng' },
-    { id: 'DH202511004', customer: 'Phạm Thị D', date: '09/11/2025', total: 500000, payment: 'COD', status: 'Đã Hủy' },
-  ];
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [search, setSearch] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('Tất cả');
+
+  useEffect(() => {
+    setLoading(true);
+    let unsub: (() => void) | null = null;
+
+    const startListener = () => {
+      // listen to orders collection in real-time, newest first
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      unsub = onSnapshot(q, (snap) => {
+        const docs: any[] = [];
+        snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+        setOrders(docs);
+        setLoading(false);
+      }, (err) => {
+        console.error('orders listener', err);
+        setLoading(false);
+      });
+    };
+
+    // Wait for auth state before starting listener to avoid permission errors
+    const off = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        startListener();
+      } else {
+        // not signed in - clear orders and stop loading
+        setOrders([]);
+        setLoading(false);
+        if (unsub) { unsub(); unsub = null; }
+      }
+    });
+
+    return () => {
+      if (unsub) unsub();
+      off();
+    };
+  }, []);
+
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 20;
+
+  const openOrder = (o:any) => setSelectedOrder(o);
 
   const statusClass = {
     'Chờ Xử Lý': 'status-pending',
@@ -52,19 +118,17 @@ export default function AdminOrderPage() {
           <h1 className="content-title">Quản Lý Đơn Hàng</h1>
         </header>
 
-        <OrderMetrics />
+  <OrderMetrics orders={orders} />
 
         <div className="toolbar">
-          <input type="text" placeholder="Tìm theo Mã Đơn Hàng, Tên Khách Hàng..." />
-          <select>
-            <option>Lọc theo Trạng Thái</option>
-            <option>Chờ Xử Lý</option>
-            <option>Đã Thanh Toán</option>
-            <option>Đang Vận Chuyển</option>
-            <option>Đã Hủy</option>
+          <input value={search} onChange={e=>setSearch(e.target.value)} type="text" placeholder="Tìm theo Mã Đơn Hàng, Tên Khách Hàng..." />
+          <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
+            <option value="Tất cả">Lọc theo Trạng Thái</option>
+            <option value="Chờ Xử Lý">Chờ Xử Lý</option>
+            <option value="Đã Thanh Toán">Đã Thanh Toán</option>
+            <option value="Đang Vận Chuyển">Đang Vận Chuyển</option>
+            <option value="Đã Hủy">Đã Hủy</option>
           </select>
-          <button className="btn-apply">Áp Dụng</button>
-          <button className="btn-add">Thêm Đơn Hàng</button>
         </div>
 
         <div className="table-container">
@@ -81,34 +145,92 @@ export default function AdminOrderPage() {
               </tr>
             </thead>
             <tbody>
-              {orders.map(order => (
-                <tr key={order.id}>
-                  <td>{order.id}</td>
-                  <td>{order.customer}</td>
-                  <td>{order.date}</td>
-                  <td className="total">{formatCurrency(order.total)}</td>
-                  <td>{order.payment}</td>
-                  <td><span className={`status ${statusClass[order.status]}`}>{order.status}</span></td>
-                  <td className="actions">
-                    <button className="edit-btn">Xem/Sửa</button>
-                    <button className="delete-btn">Hủy</button>
-                  </td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan={7} style={{textAlign:'center'}}>Đang tải đơn hàng...</td></tr>
+              ) : (
+                (() => {
+                  const filtered = orders.filter(o => {
+                    if (statusFilter && statusFilter !== 'Tất cả' && (o.status || '') !== statusFilter) return false;
+                    if (!search) return true;
+                    const q = search.trim().toLowerCase();
+                    return String(o.id || '').toLowerCase().includes(q) || String(o.customerName || o.customer || '').toLowerCase().includes(q) || String(o.phone || '').includes(q);
+                  });
+                  const start = (currentPage - 1) * pageSize;
+                  const pageItems = filtered.slice(start, start + pageSize);
+                  return pageItems.map(order => (
+                    <tr key={order.id}>
+                      <td>{order.id}</td>
+                      <td>{order.customerName || order.customer || order.userName || ''}</td>
+                      <td>{order.createdAt ? new Date(order.createdAt.seconds ? order.createdAt.seconds * 1000 : order.createdAt).toLocaleString() : ''}</td>
+                      <td className="total">{formatCurrency(order.total || order.amount || 0)}</td>
+                      <td>{order.paymentMethod || order.payment || '---'}</td>
+                      <td><span className={`status ${(statusClass as any)[order.status || '']}`}>{order.status || 'Chờ Xử Lý'}</span></td>
+                      <td className="actions">
+                        <button className="edit-btn" onClick={()=>openOrder(order)}>Xem</button>
+                      </td>
+                    </tr>
+                  ));
+                })()
+              )}
             </tbody>
           </table>
         </div>
 
         <div className="pagination">
-          <span>Hiển thị 1 - 20 trong tổng số 1,250 đơn hàng</span>
-          <div className="pages">
-            <button>Trước</button>
-            <button className="current">1</button>
-            <button>2</button>
-            <button>Sau</button>
-          </div>
+          {(() => {
+            const filtered = orders.filter(o => {
+              if (statusFilter && statusFilter !== 'Tất cả' && (o.status || '') !== statusFilter) return false;
+              if (!search) return true;
+              const q = search.trim().toLowerCase();
+              return String(o.id || '').toLowerCase().includes(q) || String(o.customerName || o.customer || '').toLowerCase().includes(q) || String(o.phone || '').includes(q);
+            });
+            const total = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, total);
+            return (
+              <>
+                <span>Hiển thị {start} - {end} trong tổng số {total} đơn hàng</span>
+                <div className="pages">
+                  <button onClick={()=>setCurrentPage(Math.max(1, currentPage-1))} disabled={currentPage===1}>Trước</button>
+                  {Array.from({length: totalPages}, (_,i)=>i+1).map(p=> (
+                    <button key={p} onClick={()=>setCurrentPage(p)} className={p===currentPage?'current':''}>{p}</button>
+                  ))}
+                  <button onClick={()=>setCurrentPage(Math.min(totalPages, currentPage+1))} disabled={currentPage===totalPages}>Sau</button>
+                </div>
+              </>
+            )
+          })()}
         </div>
         </main>
+        {selectedOrder ? (
+          <div className="modal-overlay" onClick={()=>setSelectedOrder(null)}>
+            <div className="modal-card" onClick={e=>e.stopPropagation()}>
+              <h3>Đơn {selectedOrder.id}</h3>
+              <div><strong>Khách:</strong> {selectedOrder.customerName || selectedOrder.customer}</div>
+              <div><strong>Tổng:</strong> {formatCurrency(selectedOrder.total || selectedOrder.amount || 0)}</div>
+              <div className="order-details" style={{marginTop:12}}>
+                <div><strong>Số điện thoại:</strong> {selectedOrder.phone || selectedOrder.mobile || '---'}</div>
+                <div><strong>Địa chỉ giao hàng:</strong> {selectedOrder.address || selectedOrder.shippingAddress || selectedOrder.deliveryAddress || '---'}</div>
+                <div><strong>Phương thức thanh toán:</strong> {selectedOrder.paymentMethod || selectedOrder.payment || '---'}</div>
+                <div><strong>Trạng thái:</strong> <span className={`status ${(statusClass as any)[selectedOrder.status || '']}`}>{selectedOrder.status || 'Chờ Xử Lý'}</span></div>
+                <div style={{marginTop:8}}>
+                  <strong>Chi tiết sản phẩm:</strong>
+                  <div style={{marginTop:6}}>
+                    {Array.isArray(selectedOrder.items) && selectedOrder.items.length > 0 ? (
+                      <ul>
+                        {selectedOrder.items.map((it:any, idx:number) => (
+                          <li key={idx}>{it.name || it.title || it.productName} — SL: {it.quantity || it.qty || 1} — {formatCurrency(it.price || it.unitPrice || it.priceApplied || 0)}</li>
+                        ))}
+                      </ul>
+                    ) : (<div>Không có thông tin sản phẩm chi tiết</div>)}
+                  </div>
+                </div>
+              </div>
+              <div style={{marginTop:12}}><button onClick={()=>setSelectedOrder(null)}>Đóng</button></div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

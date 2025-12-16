@@ -20,6 +20,7 @@ import {
   getDocs,
   Timestamp
 } from 'firebase/firestore';
+import { fetchActiveDeals, applyDealsToPrice } from '../utils/deals';
 
 
 // ===========================================
@@ -236,6 +237,23 @@ function ProductCard({
   const displayTag = isSale ? `-${discount}%` : (tags.length > 0 ? tags[0] : null);
   const WishIcon = isWished ? '❤️' : '🤍';
 
+  const [appliedPrice, setAppliedPrice] = useState<number | null>(null);
+  const [appliedDealName, setAppliedDealName] = useState<string | null>(null);
+
+  useEffect(()=>{
+    let mounted = true;
+    (async ()=>{
+      try {
+        const deals = await fetchActiveDeals();
+        const { price, applied } = applyDealsToPrice(newPrice, String(id), deals);
+        if (!mounted) return;
+        setAppliedPrice(price);
+        setAppliedDealName(applied ? applied.name : null);
+      } catch(e){ console.error('apply deals product card', e); }
+    })();
+    return ()=>{ mounted=false };
+  }, [id, newPrice]);
+
   const baseProductData: ProductData = {
     id,
     name,
@@ -275,8 +293,18 @@ function ProductCard({
 
       <span className="product-card-name">{name}</span>
       <div className="product-card-price-wrapper">
-        <span className="product-card-price">{formatPrice(newPrice)}</span>
-        {isSale && <span className="product-card-oldprice">{formatPrice(oldPrice!)}</span>}
+        {appliedPrice !== null && appliedPrice !== newPrice ? (
+          <>
+            <span className="product-card-price">{formatPrice(appliedPrice)}</span>
+            <span className="product-card-oldprice">{formatPrice(newPrice)}</span>
+            {appliedDealName ? <span className="product-card-dealbadge">{appliedDealName}</span> : null}
+          </>
+        ) : (
+          <>
+            <span className="product-card-price">{formatPrice(newPrice)}</span>
+            {isSale && <span className="product-card-oldprice">{formatPrice(oldPrice!)}</span>}
+          </>
+        )}
       </div>
 
       {/* KHỐI CHỨA 2 NÚT HÀNH ĐỘNG MỚI */}
@@ -286,7 +314,7 @@ function ProductCard({
           className="add-to-cart-btn"
           onClick={(e) => {
             e.stopPropagation();
-            handleAddToCart(baseProductData, e);
+            handleAddToCart({ ...baseProductData, newPrice: appliedPrice !== null ? appliedPrice : baseProductData.newPrice }, e);
           }}
           title="Thêm vào giỏ hàng"
         >
@@ -297,7 +325,7 @@ function ProductCard({
           className="buy-now-btn"
           onClick={(e) => {
             e.stopPropagation();
-            handleBuyNow(baseProductData);
+            handleBuyNow({ ...baseProductData, newPrice: appliedPrice !== null ? appliedPrice : baseProductData.newPrice });
           }}
         >
           Mua Ngay
@@ -561,15 +589,8 @@ export default function ProductListingPage() {
   return (
     <div className="product-page">
       <Header />
-
       <main className="product-main">
-        {/* BREADCRUMB CÓ THỂ CLICK */}
-        <div className="breadcrumb">
-          <span onClick={() => navigate('/')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Trang chủ</span> /
-          <span onClick={() => navigate('/categories/all/all')} style={{ cursor: 'pointer', textDecoration: 'underline' }}> Sản phẩm</span> /
-          {currentCategoryName}
-        </div>
-
+        <div className="breadcrumb">Trang chủ / Sản phẩm / {currentCategoryName}</div>
         <h1 className="product-category-title">{currentCategoryName}</h1>
 
         <div className="product-content">
@@ -581,6 +602,7 @@ export default function ProductListingPage() {
               priceFilters={priceFilters}
             />
           </aside>
+
           <section className="product-list-section">
             <div className="product-list-top">
               <span className="product-count">Hiển thị {indexOfFirstProduct + 1} - {indexOfFirstProduct + currentProducts.length} trên {totalProducts} sản phẩm</span>
@@ -609,7 +631,7 @@ export default function ProductListingPage() {
               ))}
             </div>
 
-            {/* LOGIC PHÂN TRANG */}
+            {/* Pagination */}
             {totalPages > 1 && (
               <div className="product-pagination">
                 <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>←</button>

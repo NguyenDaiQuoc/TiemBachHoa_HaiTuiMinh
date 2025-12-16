@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { db, auth } from "../firebase";
-import { signInAnonymously } from 'firebase/auth';
-import { collection, doc, getDoc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, setDoc, addDoc } from "firebase/firestore";
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { collection, doc, getDoc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, setDoc, addDoc, query, where } from "firebase/firestore";
 
 export default function FloatingButtons() {
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -14,6 +14,8 @@ export default function FloatingButtons() {
   const [supportName, setSupportName] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [supportMsg, setSupportMsg] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0);
 
   // simple templates (can be expanded) — updated to be meaningful
   const templates = [
@@ -82,6 +84,48 @@ export default function FloatingButtons() {
     startListen();
     return () => { if (unsub) unsub(); };
   }, [sessionId]);
+
+  // Detect admin user and start listening to pending orders for notification badge
+  useEffect(() => {
+    let ordersUnsub: (() => void) | null = null;
+    const offAuth = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setIsAdmin(false);
+        setPendingOrdersCount(0);
+        if (ordersUnsub) { ordersUnsub(); ordersUnsub = null; }
+        return;
+      }
+
+      try {
+        // Check if an admin doc exists for this uid
+        const adminDoc = await getDoc(doc(db, 'admins', user.uid));
+        if (adminDoc.exists()) {
+          setIsAdmin(true);
+          // listen to orders with status 'Chờ Xử Lý' (pending)
+          const q = query(collection(db, 'orders'), where('status', '==', 'Chờ Xử Lý'));
+          ordersUnsub = onSnapshot(q, (snap) => {
+            setPendingOrdersCount(snap.size);
+          }, (err) => {
+            console.warn('orders notif listen failed', err.message);
+            setPendingOrdersCount(0);
+          });
+        } else {
+          setIsAdmin(false);
+          setPendingOrdersCount(0);
+          if (ordersUnsub) { ordersUnsub(); ordersUnsub = null; }
+        }
+      } catch (e:any) {
+        console.warn('admin check failed', e?.message || e);
+        setIsAdmin(false);
+        setPendingOrdersCount(0);
+      }
+    });
+
+    return () => {
+      if (ordersUnsub) ordersUnsub();
+      offAuth();
+    };
+  }, []);
 
   const sendMessage = async (text: string) => {
     if (!text || !sessionId) return;
@@ -214,6 +258,14 @@ export default function FloatingButtons() {
           alt="Messenger"
         />
       </a>
+
+      {/* ORDERS NOTIFICATION (admins only) */}
+      {isAdmin && (
+        <div className="float-btn orders-btn" title="Đơn hàng mới" onClick={() => { window.location.href = '/admin/orders'; }}>
+          🔔
+          {pendingOrdersCount > 0 && <span className="orders-badge">{pendingOrdersCount}</span>}
+        </div>
+      )}
 
       {/* CHATBOT */}
       <div className="chatbot-wrapper">

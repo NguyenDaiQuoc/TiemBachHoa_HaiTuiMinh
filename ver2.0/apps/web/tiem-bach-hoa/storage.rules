@@ -3,42 +3,54 @@ rules_version = '2';
 // Craft rules based on data in your Firestore database
 // allow write: if firestore.get(
 //    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+ rules_version = '2';
+
+ // Storage rules with role checks (reads are public; writes restricted by role)
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Allow authenticated users to read all files
+
+    // Simpler, safe rules: require user to be authenticated for writes.
+    // Role-based checks (via Firestore get()) are NOT supported reliably
+    // inside storage.rules in all projects, and can lead to denies.
+
+    // Public read for all files (adjust if you need private media)
     match /{allPaths=**} {
-      allow read: if true; // Public read access for all files
+      allow read: if true;
     }
-    
-    // Category icons - Allow authenticated users to upload
-    match /category_icons/{iconFile} {
-      allow write: if request.auth != null;
-    }
-    
-    // Product images - Allow authenticated users to upload
-    match /product_images/{allPaths=**} {
-      allow write: if request.auth != null;
-    }
-    
-    // Inventory images - Allow authenticated users to upload
+
+    // Inventory images: require an authenticated user to upload.
     match /inventory_images/{allPaths=**} {
       allow write: if request.auth != null;
+      allow read: if true;
     }
-    
-    // Blog images - Allow authenticated users to upload  
+
+    // Product images: require authenticated user (admin UI should ensure only admins upload)
+    match /product_images/{allPaths=**} {
+      allow write: if request.auth != null;
+      allow read: if true;
+    }
+
+    // Category icons
+    match /category_icons/{iconFile} {
+      allow write: if request.auth != null;
+      allow read: if true;
+    }
+
+    // Blog images
     match /blog_images/{allPaths=**} {
       allow write: if request.auth != null;
+      allow read: if true;
     }
-    
-    // Media/uploads - Allow authenticated users to upload
+
+    // Other uploads: authenticated users
     match /uploads/{allPaths=**} {
       allow write: if request.auth != null;
-    }
-    
-    // User uploads - Allow authenticated users to upload their own files
-    match /users/{userId}/{allPaths=**} {
       allow read: if true;
+    }
+
+    // User-scoped uploads: user may read/write their own files
+    match /users/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
   }

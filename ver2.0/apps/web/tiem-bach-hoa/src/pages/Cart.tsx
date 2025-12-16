@@ -8,6 +8,7 @@ import LoginWarning from "../components/LoginWarning";
 import "../../css/cart.css";
 import { auth, db } from "../firebase";
 import { doc, setDoc, onSnapshot } from "firebase/firestore";
+import { fetchActiveDeals, applyDealsToPrice } from '../utils/deals';
 import { removeFromCart, clearCart } from "../utils/cart";
 import { showSuccess, showError } from "../utils/toast";
 import { Toaster } from "react-hot-toast";
@@ -81,10 +82,22 @@ export default function CartPage() {
     }
 
     const cartRef = doc(db, "cart", user.uid);
+    let activeDeals: any[] = [];
+
+    (async ()=>{
+      activeDeals = await fetchActiveDeals();
+    })();
+
     const unsubscribe = onSnapshot(cartRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        setCartItems(data.items || []);
+        const items = data.items || [];
+        // attach appliedPrice
+        const applied = items.map((it:any) => {
+          const { price } = applyDealsToPrice(it.price, String(it.productId || it.id || ''), activeDeals);
+          return { ...it, appliedPrice: price };
+        });
+        setCartItems(applied);
       } else {
         setCartItems([]);
       }
@@ -95,12 +108,16 @@ export default function CartPage() {
   }, []);
 
   const subtotal = cartItems.reduce(
-    (acc: number, item: any) => acc + item.price * item.qty,
+    (acc: number, item: any) => acc + (item.appliedPrice || item.price) * (item.qty || item.quantity || 1),
     0
   );
 
   const shippingFee = subtotal > 500000 ? 0 : 30000;
-  const discount = 0;
+  const originalSubtotal = cartItems.reduce(
+    (acc: number, item: any) => acc + (item.price || 0) * (item.qty || item.quantity || 1),
+    0
+  );
+  const discount = Math.max(0, originalSubtotal - subtotal);
   const total = subtotal + shippingFee - discount;
 
   const handleQuantityChange = async (productId: string, newQuantity: number) => {

@@ -257,7 +257,11 @@ export default function Header() {
                     ) : (
                       <>
                         <div className="user-dropdown-top" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px' }}>
-                          <img src={userRecord?.profilePictureURL || ''} alt="avatar" style={{ width: 40, height: 40, borderRadius: 999 }} onError={(e:any)=>{ e.currentTarget.style.display='none'; }} />
+                          {userRecord?.profilePictureURL ? (
+                            <img src={userRecord.profilePictureURL} alt="avatar" style={{ width: 40, height: 40, borderRadius: 999 }} onError={(e:any)=>{ e.currentTarget.style.display='none'; }} />
+                          ) : (
+                            <div style={{ width: 40, height: 40, borderRadius: 999, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>👤</div>
+                          )}
                           <div>
                             <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span>{(userRecord?.fullName || currentUser.displayName || currentUser.email || '').split(' ').pop() || 'User'}</span>

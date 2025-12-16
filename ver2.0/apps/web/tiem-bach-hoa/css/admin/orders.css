@@ -195,3 +195,36 @@
   background: var(--primary-dark);
   border: none;
 }
+
+/* Modal (read-only) */
+.modal-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+.modal-card {
+  background: #fff;
+  padding: 18px;
+  border-radius: 10px;
+  width: 720px;
+  max-width: calc(100% - 40px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.modal-card h3 { margin-top: 0; }
+.order-details { display:block; gap:8px; line-height:1.45; }
+.order-details ul { margin:8px 0 0 18px; }
+.order-details li { margin-bottom:6px; }
+
+/* Make metric numbers more prominent */
+.metric-value { font-size: 28px; }
+
+/* Small adjustments for actions column (view-only) */
+.actions .edit-btn { padding:6px 8px; border-radius:6px; background:#eef2ff; border:1px solid #c7d2fe; color:var(--blue); cursor:pointer; }
+
