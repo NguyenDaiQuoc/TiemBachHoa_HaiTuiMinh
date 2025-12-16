@@ -7,6 +7,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --- Toast Z-Index Override --- */
+/* Đảm bảo toast hiển thị trên tất cả modal và overlay */
+[data-sonner-toaster],
+.Toaster,
+[class*="react-hot-toast"] {
+  z-index: 99999 !important;
+}
+
 /* --- Body & Scrollbar style --- */
 
 ::-webkit-scrollbar {

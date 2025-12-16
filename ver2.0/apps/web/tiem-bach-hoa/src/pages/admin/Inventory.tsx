@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, addDoc, doc, updateDoc, serverTimestamp, increment, setDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, doc, updateDoc, serverTimestamp, increment, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db, auth, storage } from '../../firebase';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import AdminSidebar from '../../components/admin/Sidebar';
@@ -120,6 +120,8 @@ export default function InventoryPage() {
     try {
       const snap = await getDocs(collection(db, 'warehouse'));
       const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log('Warehouse items loaded:', items); // Debug log
+      console.log('First warehouse item:', items[0]); // Debug first item structure
       setWarehouseItems(items.slice(0, 200));
     } catch (err) {
       console.error('Load warehouse items error', err);
@@ -130,16 +132,30 @@ export default function InventoryPage() {
   const closeProductPicker = () => setShowProductPicker(false);
 
   const handlePickFromWarehouse = (w:any) => {
+    console.log('Picking from warehouse:', w); // Debug
     // fill selected product from warehouse record
+    let productImages = [];
+    if (w.images && Array.isArray(w.images) && w.images.length > 0) {
+      productImages = w.images;
+      console.log('Using w.images array:', productImages);
+    } else if (w.image && typeof w.image === 'string') {
+      productImages = [w.image];
+      console.log('Using w.image string:', productImages);
+    } else if (w.image && Array.isArray(w.image) && w.image.length > 0) {
+      productImages = w.image;
+      console.log('Using w.image array:', productImages);
+    }
+    
     const asProduct = {
       id: w.productId || w.id,
       name: w.productName || w.name || '',
-      image: w.image ? [w.image] : (w.images || []),
+      image: productImages,
       stock: w.stock || 0,
       slug: w.slug || '',
     };
+    console.log('Created asProduct:', asProduct); // Debug
     setSelectedProduct(asProduct);
-    setQuantity(Number(w.stock) > 0 ? 1 : 1);
+    setQuantity(1);
     setShowProductPicker(false);
     setProductNameInput(asProduct.name || '');
   };
@@ -210,39 +226,101 @@ export default function InventoryPage() {
 
   // Delete a PO (all inventory_in docs with this invoiceNumber)
   const deleteInvoice = async (invoiceNum:string) => {
-    if (!window.confirm(`Xóa toàn bộ phiếu nhập ${invoiceNum}? Hành động này sẽ giảm tồn kho tương ứng.`)) return;
+    if (!window.confirm(`Xóa toàn bộ phiếu nhập ${invoiceNum}?\n\nHành động này sẽ:\n- Giảm số lượng tồn kho trong Products\n- Giảm số lượng trong Warehouse\n- Xóa các dòng trong phiếu nhập`)) return;
+    
     try {
       const q = query(collection(db, 'inventory_in'), where('invoiceNumber', '==', invoiceNum));
       const snap = await getDocs(q);
       if (snap.empty) return showError('Phiếu không tồn tại');
+      
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+      
       for (const d of snap.docs) {
         const data:any = d.data();
         const qty = Number(data.qty) || 0;
-        // decrement product stock
+        const productId = data.productId;
+        const productName = data.productName || 'Unknown';
+        
+        console.log(`Processing delete for ${productName} (${productId}), qty: ${qty}`);
+        
+        if (!productId) {
+          console.warn(`Skipping product without ID: ${productName}`);
+          continue;
+        }
+        
         try {
-          if (data.productId) {
-            const prodRef = doc(db, 'products', data.productId);
-            await updateDoc(prodRef, { stock: increment(-qty) });
+          // 1. Decrement product stock in products collection
+          const prodRef = doc(db, 'products', productId);
+          const prodSnap = await getDocs(query(collection(db, 'products'), where('__name__', '==', productId)));
+          
+          if (!prodSnap.empty) {
+            const currentStock = prodSnap.docs[0].data().stock || 0;
+            const newStock = Math.max(0, currentStock - qty); // Không cho âm
+            
+            await updateDoc(prodRef, { 
+              stock: newStock,
+              updatedAt: serverTimestamp()
+            });
+            console.log(`✓ Updated products/${productId}: ${currentStock} → ${newStock}`);
+          } else {
+            console.warn(`Product ${productId} not found in products collection`);
           }
-        } catch (err) { console.warn('Failed to decrement product stock', err); }
-        // decrement warehouse
-        try {
-          if (data.productId) {
-            const whRef = doc(db, 'warehouse', data.productId);
-            await setDoc(whRef, { stock: increment(-qty), lastUpdated: serverTimestamp() }, { merge: true });
+          
+          // 2. Decrement warehouse stock
+          const whRef = doc(db, 'warehouse', productId);
+          const whSnap = await getDocs(query(collection(db, 'warehouse'), where('__name__', '==', productId)));
+          
+          if (!whSnap.empty) {
+            const currentWhStock = whSnap.docs[0].data().stock || 0;
+            const newWhStock = Math.max(0, currentWhStock - qty); // Không cho âm
+            
+            await setDoc(whRef, { 
+              stock: newWhStock,
+              lastUpdated: serverTimestamp(),
+              productId: productId,
+              productName: productName
+            }, { merge: true });
+            console.log(`✓ Updated warehouse/${productId}: ${currentWhStock} → ${newWhStock}`);
+          } else {
+            // Nếu không có trong warehouse, tạo mới với stock = 0
+            await setDoc(whRef, {
+              productId: productId,
+              productName: productName,
+              stock: 0,
+              lastUpdated: serverTimestamp()
+            }, { merge: true });
+            console.log(`✓ Created warehouse/${productId} with stock = 0`);
           }
-        } catch (err) { console.warn('Failed to decrement warehouse stock', err); }
-        // delete inventory doc
-        await deleteDoc(doc(db, 'inventory_in', d.id));
+          
+          // 3. Delete inventory_in document
+          await deleteDoc(doc(db, 'inventory_in', d.id));
+          console.log(`✓ Deleted inventory_in/${d.id}`);
+          
+          successCount++;
+        } catch (err: any) {
+          console.error(`Failed to process ${productName}:`, err);
+          errors.push(`${productName}: ${err.message}`);
+          errorCount++;
+        }
       }
-      showSuccess('Đã xóa phiếu nhập và cập nhật tồn kho');
-      // reload
-  const reload = await getDocs(collection(db, 'inventory_in'));
-  const items = reload.docs.map(dd => ({ id: dd.id, ...(dd.data() as any) }));
+      
+      // Show result
+      if (errorCount === 0) {
+        showSuccess(`Đã xóa phiếu nhập ${invoiceNum} và cập nhật ${successCount} sản phẩm trong kho`);
+      } else {
+        showError(`Xóa phiếu với ${errorCount} lỗi. Chi tiết: ${errors.join(', ')}`);
+      }
+      
+      // Reload inventory list
+      const reload = await getDocs(collection(db, 'inventory_in'));
+      const items = reload.docs.map(dd => ({ id: dd.id, ...(dd.data() as any) }));
       setEntries(items.sort((a:any,b:any) => (b.createdAt?.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt?.toMillis ? a.createdAt.toMillis() : 0)));
+      
     } catch (err:any) {
       console.error('Delete invoice error', err);
-      showError('Lỗi khi xóa phiếu');
+      showError('Lỗi khi xóa phiếu: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -272,8 +350,12 @@ export default function InventoryPage() {
 
   const handleSubmit = async (e:any) => {
     e.preventDefault();
+    
+    // Build final lineItems array for processing
+    let finalLineItems = [...lineItems];
+    
     // If there are no line items, try to use selectedProduct as single item
-    if (lineItems.length === 0) {
+    if (finalLineItems.length === 0) {
       if (!selectedProduct && !productNameInput) return showError('Vui lòng chọn hoặc nhập sản phẩm hoặc thêm ít nhất một dòng chi tiết');
       if (!poSupplier && !supplier) return showError('Nhập tên đơn vị nhập');
       if (!quantity || quantity <= 0) return showError('Số lượng phải > 0');
@@ -288,7 +370,9 @@ export default function InventoryPage() {
         totalPrice: (Number(unitPrice)||0)*(Number(quantity)||0),
         isNewProduct: !selectedProduct,
       };
-      setLineItems([single]);
+      finalLineItems = [single];
+      setLineItems(finalLineItems); // Update state for UI
+      console.log('📦 Tạo line item từ form:', single); // Debug
     }
 
     if (!poSupplier && supplier) setPoSupplier(supplier);
@@ -297,12 +381,21 @@ export default function InventoryPage() {
     const finalInvoice = invoiceNumber && invoiceNumber.trim() ? invoiceNumber.trim() : `PO-${Date.now()}`;
 
     if (!poSupplier) return showError('Vui lòng nhập tên đơn vị nhập (Supplier)');
+    
+    console.log('📋 Phiếu nhập mới:', finalInvoice, 'Số sản phẩm:', finalLineItems.length);
+
+    // Check authentication before proceeding with upload
+    if (!auth.currentUser) {
+      showError('Bạn cần đăng nhập để thực hiện thao tác này!');
+      console.error('User not authenticated');
+      return;
+    }
 
     try {
-      const uid = auth.currentUser?.uid || 'system';
+      const uid = auth.currentUser.uid;
 
       // Prepare uploads: invoice image + per-line files; perform parallel uploads with progress
-      const liCopy = lineItems.map((it:any) => ({ ...it }));
+      const liCopy = finalLineItems.map((it:any) => ({ ...it }));
       const uploadEntries: Array<{file: File, lineIndex: number | null, isInvoice?: boolean}> = [];
       if (poImageFile) uploadEntries.push({ file: poImageFile as File, lineIndex: null, isInvoice: true });
       liCopy.forEach((it:any, idx:number) => {
@@ -338,6 +431,10 @@ export default function InventoryPage() {
               } catch (e) { /* ignore */ }
             }, (err) => {
               console.warn('Upload failed', err);
+              // Show specific error message for storage permission issues
+              if (err?.code === 'storage/unauthorized') {
+                showError('Không có quyền upload file. Vui lòng kiểm tra Storage Rules!');
+              }
               reject(err);
             }, async () => {
               try {
@@ -359,8 +456,18 @@ export default function InventoryPage() {
               li.images.push(r.url);
             }
           }
-        } catch (err) {
+        } catch (err: any) {
           console.warn('One or more uploads failed', err);
+          // Show error to user
+          if (err?.code === 'storage/unauthorized') {
+            showError('Lỗi quyền truy cập Storage. Vui lòng deploy storage.rules!');
+          } else {
+            showError('Lỗi khi tải file lên: ' + (err.message || 'Unknown error'));
+          }
+          // Don't proceed with saving to Firestore if upload failed
+          setUploading(false);
+          setUploadProgress(0);
+          return;
         } finally {
           setUploading(false);
           setUploadProgress(0);
@@ -375,7 +482,7 @@ export default function InventoryPage() {
         originalLineItems.forEach((o:any) => { origByDoc[o.docId] = o; });
 
         // Detect deleted docs
-        const currentDocIds = lineItems.filter((it:any)=>it.docId).map((it:any)=>it.docId);
+        const currentDocIds = finalLineItems.filter((it:any)=>it.docId).map((it:any)=>it.docId);
         for (const o of originalLineItems) {
           if (!currentDocIds.includes(o.docId)) {
             // deleted: remove doc and decrement stocks
@@ -390,7 +497,7 @@ export default function InventoryPage() {
         }
 
         // Process current items: update existing or create new
-        for (const it of lineItems) {
+        for (const it of finalLineItems) {
           const payload = {
             date: poDate || date || new Date().toISOString(),
             supplier: poSupplier || supplier,
@@ -470,17 +577,38 @@ export default function InventoryPage() {
             // Upsert into warehouse: if we had a productId (existing), use that id as warehouse doc id; otherwise we already created warehouse above
             try {
               if (it.productId) {
-                const whRef = doc(db, 'warehouse', it.productId);
-                await setDoc(whRef, {
+                // Lấy thông tin đầy đủ từ products collection (trong edit mode)
+                const prodRef = doc(db, 'products', it.productId);
+                const prodSnap = await getDoc(prodRef);
+                
+                let warehouseData: any = {
                   productId: it.productId,
                   productName: it.productName,
                   images: it.images || [],
                   image: (it.images && it.images[0]) ? it.images[0] : (it.image || ''),
-                  invoiceImage: (typeof invoiceImageUrl !== 'undefined') ? invoiceImageUrl : (poImageUrl || ''),
                   stock: increment(Number(it.qty) || 0),
                   lastPurchasePrice: Number(it.unitPrice) || 0,
                   lastUpdated: serverTimestamp(),
-                }, { merge: true });
+                };
+                
+                // Nếu sản phẩm có trong products, lấy thêm thông tin
+                if (prodSnap.exists()) {
+                  const prodData = prodSnap.data();
+                  warehouseData = {
+                    ...warehouseData,
+                    category: prodData.category || '',
+                    slug: prodData.slug || '',
+                    price: prodData.price || 0,
+                    oldPrice: prodData.oldPrice || 0,
+                    discount: prodData.discount || 0,
+                    description: prodData.description || '',
+                    images: (it.images && it.images.length > 0) ? it.images : (prodData.images || prodData.image ? [prodData.image] : []),
+                    image: (it.images && it.images[0]) ? it.images[0] : (prodData.image || ''),
+                  };
+                }
+                
+                const whRef = doc(db, 'warehouse', it.productId);
+                await setDoc(whRef, warehouseData, { merge: true });
               }
             } catch (err) { console.warn(err); }
           }
@@ -489,7 +617,7 @@ export default function InventoryPage() {
         showSuccess('Phiếu đã được cập nhật');
       } else {
         // Create new invoice (original behavior)
-        for (const it of lineItems) {
+        for (const it of finalLineItems) {
           // If this is a manual/new product (no productId), create a warehouse doc instead of adding to products
           let warehouseId: string | null = null;
           if (!it.productId) {
@@ -551,39 +679,75 @@ export default function InventoryPage() {
           // upsert into warehouse collection: if productId exists, use it as warehouse id; otherwise we already created the warehouse doc
           try {
             if (it.productId) {
-              const whRef = doc(db, 'warehouse', it.productId);
-              await setDoc(whRef, {
+              // Lấy thông tin đầy đủ từ products collection
+              const prodRef = doc(db, 'products', it.productId);
+              const prodSnap = await getDoc(prodRef);
+              
+              let warehouseData: any = {
                 productId: it.productId,
                 productName: it.productName,
                 images: it.images || [],
                 image: (it.images && it.images[0]) ? it.images[0] : (it.image || ''),
-                invoiceImage: (typeof invoiceImageUrl !== 'undefined') ? invoiceImageUrl : (poImageUrl || ''),
                 stock: increment(Number(it.qty) || 0),
                 lastPurchasePrice: Number(it.unitPrice) || 0,
                 lastUpdated: serverTimestamp(),
-              }, { merge: true });
+              };
+              
+              // Nếu sản phẩm có trong products, lấy thêm thông tin
+              if (prodSnap.exists()) {
+                const prodData = prodSnap.data();
+                warehouseData = {
+                  ...warehouseData,
+                  category: prodData.category || '',
+                  slug: prodData.slug || '',
+                  price: prodData.price || 0,
+                  oldPrice: prodData.oldPrice || 0,
+                  discount: prodData.discount || 0,
+                  description: prodData.description || '',
+                  // Giữ nguyên images từ inventory nếu có, không thì lấy từ product
+                  images: (it.images && it.images.length > 0) ? it.images : (prodData.images || prodData.image ? [prodData.image] : []),
+                  image: (it.images && it.images[0]) ? it.images[0] : (prodData.image || ''),
+                };
+                console.log('✅ Đồng bộ thông tin từ products ->', it.productName);
+              }
+              
+              const whRef = doc(db, 'warehouse', it.productId);
+              await setDoc(whRef, warehouseData, { merge: true });
+              console.log('✅ Cập nhật warehouse:', it.productId, 'qty:', Number(it.qty));
             }
           } catch (err) {
-            console.warn('Failed to upsert warehouse doc', err);
+            console.error('Failed to upsert warehouse doc', err);
           }
         }
 
-        showSuccess('Nhập hàng thành công');
+        showSuccess(`Đã nhập ${finalLineItems.length} sản phẩm vào kho thành công!`);
+        console.log('✅ Phíeu nhập mới:', finalInvoice, 'Số lượng:', finalLineItems.length);
       }
 
       // reload entries
+      console.log('🔄 Reload danh sách phíeu nhập...');
   const snap = await getDocs(collection(db, 'inventory_in'));
   const items = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-      setEntries(items.sort((a,b) => (b.createdAt?.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt?.toMillis ? a.createdAt.toMillis() : 0)));
+      const sortedItems = items.sort((a,b) => (b.createdAt?.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt?.toMillis ? a.createdAt.toMillis() : 0));
+      setEntries(sortedItems);
+      console.log('✅ Đã tải', sortedItems.length, 'phíeu nhập');
+      console.log('Phíeu nhập mới nhất:', sortedItems[0]);
+
+      // Close form modal
+      setShowForm(false);
 
       // reset form and PO
   setSupplier(''); setSelectedProduct(null); setQuantity(1); setDate(''); setUnitPrice(0); setInvoiceNumber(''); setNotes('');
   setPoSupplier(''); setPoDate(''); setPoNotes(''); setLineItems([]);
-  setPoImageFile(undefined); setPoImageUrl('');
+  setPoImageFile(undefined); setPoImageUrl(''); setProductNameInput(''); setCurrentFiles([]);
   setEditMode(false); setOriginalLineItems([]); setCurrentInvoice('');
     } catch (err:any) {
       console.error('Submit inventory error', err);
-      showError(err.message || 'Lỗi khi nhập hàng');
+      if (err?.code === 'storage/unauthorized') {
+        showError('Lỗi quyền truy cập Storage. Hãy chạy: firebase deploy --only storage');
+      } else {
+        showError(err.message || 'Lỗi khi nhập hàng');
+      }
     }
   };
 
@@ -596,7 +760,7 @@ export default function InventoryPage() {
         <header className="po-header admin-header">
           <h1 className="title">Quản Lý Nhập Hàng</h1>
           <div>
-            <button className="btn btn-accent" onClick={() => setShowForm(s => !s)}>+ Tạo Đơn Nhập Hàng Mới</button>
+            <button className="inventory-btn inventory-btn-accent" onClick={() => setShowForm(s => !s)}>+ Tạo Đơn Nhập Hàng Mới</button>
           </div>
         </header>
 
@@ -622,10 +786,10 @@ export default function InventoryPage() {
             <option value="Đã hủy">Đã hủy</option>
           </select>
 
-          <button className="btn btn-dark" onClick={() => { setManualFilterTick(Date.now()); }}>Áp Dụng Lọc</button>
+          <button className="inventory-btn inventory-btn-dark" onClick={() => { setManualFilterTick(Date.now()); }}>Áp Dụng Lọc</button>
 
             <div className="toolbar-extra">
-              <button className="btn btn-light" onClick={() => setHistoryOpen(true)}>Xem Lịch sử Nhập Kho</button>
+              <button className="inventory-btn inventory-btn-light" onClick={() => setHistoryOpen(true)}>Xem Lịch sử Nhập Kho</button>
             </div>
         </div>
 
@@ -664,11 +828,11 @@ export default function InventoryPage() {
                           </div>
                           <div className="history-actions action-rows">
                             <div className="action-row action-row-top">
-                              <button className="btn btn-view" onClick={() => { setHistoryOpen(false); openViewInvoice(inv.invoiceNumber); }}>Xem</button>
-                              <button className="btn btn-edit" onClick={() => { setHistoryOpen(false); openEditInvoice(inv.invoiceNumber); }}>Sửa</button>
+                              <button className="inventory-btn inventory-btn-view" onClick={() => { setHistoryOpen(false); openViewInvoice(inv.invoiceNumber); }}>Xem</button>
+                              <button className="inventory-btn inventory-btn-edit" onClick={() => { setHistoryOpen(false); openEditInvoice(inv.invoiceNumber); }}>Sửa</button>
                             </div>
                             <div className="action-row action-row-bottom">
-                              <button className="btn btn-delete" onClick={() => { setHistoryOpen(false); deleteInvoice(inv.invoiceNumber); }}>Xóa</button>
+                              <button className="inventory-btn inventory-btn-delete" onClick={() => { setHistoryOpen(false); deleteInvoice(inv.invoiceNumber); }}>Xóa</button>
                             </div>
                           </div>
                         </div>
@@ -723,7 +887,7 @@ export default function InventoryPage() {
                     <label>Tên sản phẩm (hoặc chọn từ kho)</label>
                     <div style={{display:'flex', gap:8, alignItems:'center', marginBottom:8}}>
                       <input type="text" placeholder="Nhập tên sản phẩm mới hoặc để trống" value={productNameInput} onChange={e=>setProductNameInput(e.target.value)} style={{flex:1}} />
-                      <button type="button" className="btn" onClick={openProductPicker}>🔎 Tìm sản phẩm</button>
+                      <button type="button" className="inventory-btn" onClick={openProductPicker}>🔎 Tìm sản phẩm</button>
                       {selectedProduct && <img src={(selectedProduct.image && selectedProduct.image[0])||''} alt={selectedProduct.name} style={{width:48, height:48, objectFit:'cover', borderRadius:6}} />}
                     </div>
 
@@ -741,15 +905,36 @@ export default function InventoryPage() {
                       </div>
                     )}
 
-                    {selectedProduct && (
-                      <div className="selected-product">
-                        <img src={(selectedProduct.image && selectedProduct.image[0])||''} alt={selectedProduct.name} />
-                        <div>
-                          <div className="pname">{selectedProduct.name}</div>
-                          <div className="pstock">Hiện có: {selectedProduct.stock || 0}</div>
+                    {selectedProduct && (() => {
+                      const imgSrc = (selectedProduct.image && Array.isArray(selectedProduct.image) && selectedProduct.image.length > 0) 
+                        ? selectedProduct.image[0] 
+                        : (selectedProduct.image && typeof selectedProduct.image === 'string') 
+                          ? selectedProduct.image 
+                          : '';
+                      console.log('Selected product image:', imgSrc, 'Full product:', selectedProduct); // Debug
+                      
+                      return (
+                        <div className="selected-product">
+                          {imgSrc ? (
+                            <img 
+                              src={imgSrc} 
+                              alt={selectedProduct.name} 
+                              style={{width:60,height:60,objectFit:'cover',borderRadius:6,border:'1px solid #ddd'}} 
+                              onError={(e:any) => { 
+                                console.error('Selected product image error:', imgSrc);
+                                e.target.style.display = 'none'; 
+                              }}
+                            />
+                          ) : (
+                            <div style={{width:60,height:60,background:'#f0f0f0',borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'#999'}}>No img</div>
+                          )}
+                          <div>
+                            <div className="pname" style={{fontWeight:600}}>{selectedProduct.name}</div>
+                            <div className="pstock" style={{fontSize:12,color:'#666',marginTop:4}}>Hiện có: {selectedProduct.stock || 0}</div>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* If user is entering a manual product name (not picking from warehouse), allow attaching product images here */}
                     {!selectedProduct && (
@@ -781,7 +966,7 @@ export default function InventoryPage() {
                       <label>Giá nhập (₫ / đơn vị)</label>
                       <input type="number" min={0} step={100} value={unitPrice} onChange={e=>setUnitPrice(Number(e.target.value))} />
 
-                      <button type="button" className="btn-add-line" onClick={addCurrentToLineItems}>+ Thêm vào phiếu</button>
+                      <button type="button" className="inventory-btn-add-line" onClick={addCurrentToLineItems}>+ Thêm vào phiếu</button>
                     </div>
 
                     <div className="line-items">
@@ -808,7 +993,7 @@ export default function InventoryPage() {
                                   </div>
                                   {/* previews only in the line list; image uploads happen in the product entry form before adding the line */}
                                 </td>
-                                <td><button type="button" className="btn-ghost" onClick={()=>removeLineItem(idx)}>Xóa</button></td>
+                                <td><button type="button" className="inventory-btn-ghost" onClick={()=>removeLineItem(idx)}>Xóa</button></td>
                               </tr>
                             ))}
                           </tbody>
@@ -828,8 +1013,8 @@ export default function InventoryPage() {
                         <div style={{fontSize:12, color:'#666', marginTop:6}}>{uploadProgress}% đang tải lên...</div>
                       </div>
                     ) : null}
-                    <button type="submit" className="btn-primary" disabled={uploading}>Ghi nhận nhập kho</button>
-                  <button type="button" className="btn-ghost" onClick={()=>{ setShowForm(false); setLineItems([]); }}>Hủy</button>
+                    <button type="submit" className="inventory-btn-primary" disabled={uploading}>Ghi nhận nhập kho</button>
+                  <button type="button" className="inventory-btn-ghost" onClick={()=>{ setShowForm(false); setLineItems([]); }}>Hủy</button>
                   </div>
                 </div>
               </form>
@@ -853,18 +1038,46 @@ export default function InventoryPage() {
                 }} />
 
                 <div style={{maxHeight:400, overflow:'auto', marginTop:8}}>
-                  {warehouseItems.length === 0 ? <div>Không có sản phẩm trong kho</div> : warehouseItems.map(w => (
-                    <div key={w.productId || w.id} className="product-search-item" style={{display:'flex',gap:12,alignItems:'center',padding:8,cursor:'pointer'}} onClick={()=>handlePickFromWarehouse(w)}>
-                      <img src={(w.image)||''} alt={w.productName} style={{width:56,height:56,objectFit:'cover',borderRadius:6}} />
-                      <div>
-                        <div style={{fontWeight:600}}>{w.productName}</div>
-                        <div style={{fontSize:12,color:'#666'}}>Mã: {w.productId || w.id} · Kho: {w.stock || 0}</div>
+                  {warehouseItems.length === 0 ? <div>Không có sản phẩm trong kho</div> : warehouseItems.map(w => {
+                    // Try multiple ways to get image
+                    let imgSrc = '';
+                    if (w.images && Array.isArray(w.images) && w.images.length > 0) {
+                      imgSrc = w.images[0];
+                    } else if (w.image && typeof w.image === 'string') {
+                      imgSrc = w.image;
+                    } else if (w.image && Array.isArray(w.image) && w.image.length > 0) {
+                      imgSrc = w.image[0];
+                    }
+                    
+                    console.log(`Warehouse item ${w.productId || w.id} image:`, imgSrc, 'Full item:', w); // Debug
+                    
+                    return (
+                    <div key={w.productId || w.id} className="product-search-item" style={{display:'flex',gap:12,alignItems:'center',padding:8,cursor:'pointer',borderBottom:'1px solid #f0f0f0'}} onClick={()=>handlePickFromWarehouse(w)}>
+                      {imgSrc ? (
+                        <img 
+                          src={imgSrc} 
+                          alt={w.productName || 'Product'} 
+                          style={{width:64,height:64,objectFit:'cover',borderRadius:8,border:'1px solid #eee'}} 
+                          onError={(e:any) => { 
+                            console.error('Image load error for', w.productId, imgSrc);
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }} 
+                        />
+                      ) : null}
+                      {!imgSrc || true ? (
+                        <div style={{width:64,height:64,background:'#f5f5f5',borderRadius:8,display:imgSrc ? 'none' : 'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'#999',border:'1px solid #eee'}}>No image</div>
+                      ) : null}
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:600,fontSize:14}}>{w.productName || w.name || 'Unknown'}</div>
+                        <div style={{fontSize:12,color:'#666',marginTop:4}}>Mã: {w.productId || w.id} · Kho: {w.stock || 0}</div>
                       </div>
                       <div style={{marginLeft:'auto'}}>
-                        <button className="btn" onClick={(ev)=>{ ev.stopPropagation(); handlePickFromWarehouse(w); }}>Chọn</button>
+                        <button className="inventory-btn inventory-btn-dark" onClick={(ev)=>{ ev.stopPropagation(); handlePickFromWarehouse(w); }}>Chọn</button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -900,18 +1113,28 @@ export default function InventoryPage() {
                     <td>{en.totalPrice ? (Number(en.totalPrice).toLocaleString('vi-VN') + ' ₫') : ''}</td>
                     <td>
                       {(en.images && en.images.length > 0) || en.image ? (
-                        <img src={((en.images && en.images[0]) || en.image)} alt={en.productName} style={{width:60,cursor:'pointer'}} onClick={()=>{ const imgs = (en.images && en.images.length>0) ? en.images : (en.image ? [en.image] : []); setLightboxImages(imgs); setLightboxStart(0); setLightboxOpen(true); }} />
-                      ) : ''}
+                        <img 
+                          src={((en.images && en.images[0]) || en.image)} 
+                          alt={en.productName} 
+                          style={{width:60,height:60,objectFit:'cover',borderRadius:6,cursor:'pointer',border:'1px solid #eee'}} 
+                          onClick={()=>{ const imgs = (en.images && en.images.length>0) ? en.images : (en.image ? [en.image] : []); setLightboxImages(imgs); setLightboxStart(0); setLightboxOpen(true); }} 
+                          onError={(e:any) => { e.target.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <span style={{fontSize:12,color:'#999'}}>Không có</span>
+                      )}
                     </td>
                     <td>
-                      <div className="action-rows">
-                        <div className="action-row action-row-top">
-                          <button className="btn btn-view" onClick={()=>openViewInvoice(en.invoiceNumber)}>Xem phiếu</button>
-                          <button className="btn btn-edit" onClick={()=>openEditInvoice(en.invoiceNumber)} style={{marginLeft:8}}>Sửa phiếu</button>
-                        </div>
-                        <div className="action-row action-row-bottom">
-                          <button className="btn btn-delete" onClick={()=>deleteInvoice(en.invoiceNumber)} style={{marginTop:8, width: '100%'}}>Xóa phiếu</button>
-                        </div>
+                      <div className="action-buttons">
+                        <button className="inventory-btn inventory-btn-view" onClick={()=>openViewInvoice(en.invoiceNumber)} title="Xem chi tiết phiếu">
+                          👁️ Xem phiếu
+                        </button>
+                        <button className="inventory-btn inventory-btn-edit" onClick={()=>openEditInvoice(en.invoiceNumber)} title="Chỉnh sửa phiếu">
+                          ✏️ Sửa phiếu
+                        </button>
+                        <button className="inventory-btn inventory-btn-delete" onClick={()=>deleteInvoice(en.invoiceNumber)} title="Xóa phiếu">
+                          🗑️ Xóa phiếu
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -956,10 +1179,21 @@ export default function InventoryPage() {
                           <td>{it.unitPrice ? (Number(it.unitPrice).toLocaleString('vi-VN') + ' ₫') : ''}</td>
                           <td>{it.totalPrice ? (Number(it.totalPrice).toLocaleString('vi-VN') + ' ₫') : ''}</td>
                           <td>
-                            <div style={{display:'flex',gap:6}}>
-                              {(it.images && it.images.length > 0 ? it.images : (it.image ? [it.image] : [])).map((u:string, ui:number) => (
-                                <img key={ui} src={u} alt={`img-${ui}`} style={{width:64,height:64,objectFit:'cover',borderRadius:6,cursor:'pointer'}} onClick={()=>{ setLightboxImages(it.images && it.images.length>0 ? it.images : (it.image ? [it.image] : [])); setLightboxStart(ui); setLightboxOpen(true); }} />
-                              ))}
+                            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                              {(it.images && it.images.length > 0 ? it.images : (it.image ? [it.image] : [])).length > 0 ? (
+                                (it.images && it.images.length > 0 ? it.images : (it.image ? [it.image] : [])).map((u:string, ui:number) => (
+                                  <img 
+                                    key={ui} 
+                                    src={u} 
+                                    alt={`img-${ui}`} 
+                                    style={{width:64,height:64,objectFit:'cover',borderRadius:6,cursor:'pointer',border:'1px solid #eee'}} 
+                                    onClick={()=>{ setLightboxImages(it.images && it.images.length>0 ? it.images : (it.image ? [it.image] : [])); setLightboxStart(ui); setLightboxOpen(true); }}
+                                    onError={(e:any) => { e.target.style.opacity = '0.3'; }}
+                                  />
+                                ))
+                              ) : (
+                                <span style={{fontSize:12,color:'#999'}}>Không có ảnh</span>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -980,9 +1214,9 @@ export default function InventoryPage() {
         <div className="po-pagination">
           <span>Hiển thị {entries.length} phiếu nhập</span>
           <div className="page-buttons">
-            <button className="page-btn">Trước</button>
-            <button className="page-btn active">1</button>
-            <button className="page-btn">Sau</button>
+            <button className="page-inventory-btn">Trước</button>
+            <button className="page-inventory-btn active">1</button>
+            <button className="page-inventory-btn">Sau</button>
           </div>
         </div>
       </main>

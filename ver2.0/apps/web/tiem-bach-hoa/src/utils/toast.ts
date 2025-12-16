@@ -1,5 +1,8 @@
 import toast from 'react-hot-toast';
 
+// Z-index cao nhất để hiển thị trên tất cả modal và overlay
+const TOAST_Z_INDEX = 99999;
+
 export const showSuccess = (message: string) => {
   toast.success(message, {
     duration: 3000,
@@ -8,6 +11,7 @@ export const showSuccess = (message: string) => {
       background: '#10b981',
       color: '#fff',
       fontWeight: '500',
+      zIndex: TOAST_Z_INDEX,
     },
   });
 };
@@ -20,6 +24,7 @@ export const showError = (message: string) => {
       background: '#ef4444',
       color: '#fff',
       fontWeight: '500',
+      zIndex: TOAST_Z_INDEX,
     },
   });
 };
@@ -33,6 +38,7 @@ export const showInfo = (message: string) => {
       background: '#3b82f6',
       color: '#fff',
       fontWeight: '500',
+      zIndex: TOAST_Z_INDEX,
     },
   });
 };

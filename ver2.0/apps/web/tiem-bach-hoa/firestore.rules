@@ -1,0 +1,88 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Products collection - read for all, write for authenticated users
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Warehouse collection - read/write for authenticated users
+    match /warehouse/{warehouseId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+    
+    // Inventory In collection - read/write for authenticated users
+    match /inventory_in/{inventoryId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.adminId == request.auth.uid;
+      allow update, delete: if isAuthenticated();
+    }
+    
+    // Users collection - users can read/write their own data, admins can read all
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Orders collection
+    match /orders/{orderId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+    
+    // Categories collection - read for all, write for authenticated
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Blog posts - read for all, write for authenticated
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Vouchers/Coupons - read for all, write for authenticated
+    match /vouchers/{voucherId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Chats collection - read/write for authenticated users
+    match /chats/{chatId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Messages sub-collection in chats
+    match /chats/{chatId}/messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+    
+    // Default deny for all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

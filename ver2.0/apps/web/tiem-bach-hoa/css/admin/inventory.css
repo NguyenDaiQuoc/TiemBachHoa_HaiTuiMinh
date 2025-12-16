@@ -47,12 +47,17 @@
   padding: 6px;
   border-bottom: 1px solid #f4f4f4;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+.product-search-item:hover {
+  background: #f9f9f9;
 }
 .product-search-item img {
   width: 48px;
   height: 48px;
   object-fit: cover;
   border-radius: 6px;
+  border: 1px solid #eee;
 }
 .selected-product {
   display: flex;
@@ -61,6 +66,15 @@
   padding: 8px;
   border: 1px solid #eee;
   margin-top: 8px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+.selected-product img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ddd;
 }
 .inventory-list {
   flex: 1;
@@ -82,8 +96,18 @@
 .inv-table tbody td {
   padding: 8px;
   border-bottom: 1px solid #f6f6f6;
+  vertical-align: middle;
 }
-.btn-primary {
+
+/* Image cells in inventory table */
+.inv-table tbody td img {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.inv-table tbody td img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.inventory-btn-primary {
   background: #0b74ff;
   color: #fff;
   padding: 8px 12px;
@@ -91,7 +115,7 @@
   border-radius: 6px;
   cursor: pointer;
 }
-.btn-ghost {
+.inventory-btn-ghost {
   background: transparent;
   border: 1px solid #ddd;
   padding: 8px 12px;
@@ -101,83 +125,123 @@
 }
 
 /* Action buttons (table row) */
-.btn-view {
+.inventory-btn-view {
   background: #eef7ff;
   color: #0b74ff;
-  border: 1px solid rgba(11,116,255,0.12);
-  padding: 6px 10px;
+  border: 1px solid rgba(11, 116, 255, 0.12);
+  padding: 6px 12px;
   border-radius: 6px;
   font-weight: 600;
-  min-width: 84px;
-  height: 34px;
+  min-width: 70px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.btn-view:hover { background: #e1f0ff; }
+.inventory-btn-view:hover {
+  background: #e1f0ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(11, 116, 255, 0.2);
+}
 
-.btn-edit {
+.inventory-btn-edit {
   background: #fff8ea;
   color: #c78500;
-  border: 1px solid rgba(199,133,0,0.12);
-  padding: 6px 10px;
+  border: 1px solid rgba(199, 133, 0, 0.12);
+  padding: 6px 12px;
   border-radius: 6px;
   font-weight: 600;
-  min-width: 84px;
-  height: 34px;
+  min-width: 70px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.btn-edit:hover { background: #fff3d6; }
+.inventory-btn-edit:hover {
+  background: #fff3d6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(199, 133, 0, 0.2);
+}
 
-.btn-delete, .btn-danger {
+.inventory-btn-delete,
+.inventory-btn-danger {
   background: #ffecec;
   color: #c70000;
-  border: 1px solid rgba(199,0,0,0.08);
-  padding: 6px 10px;
+  border: 1px solid rgba(199, 0, 0, 0.08);
+  padding: 6px 12px;
   border-radius: 6px;
-  font-weight: 700;
-  min-width: 84px;
-  height: 34px;
+  font-weight: 600;
+  min-width: 70px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.btn-delete:hover, .btn-danger:hover { background: #ffd6d6; }
+.inventory-btn-delete:hover,
+.inventory-btn-danger:hover {
+  background: #ffd6d6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(199, 0, 0, 0.2);
+}
 
 /* History modal specific */
-.history-list { display:flex; flex-direction:column; gap:8px; }
-.history-item { display:flex; gap:12px; align-items:center; padding:10px; border:1px solid #f0f0f0; border-radius:8px; }
-.history-meta { flex:1; }
-.history-actions { display:flex; gap:8px; }
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.history-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+}
+.history-meta {
+  flex: 1;
+}
+.history-actions {
+  display: flex;
+  gap: 8px;
+}
 
-/* Two-row action layout: top row (view/edit), bottom row (delete full-width) */
-.action-rows { display:flex; flex-direction:column; align-items:flex-start; }
-.action-row { width:100%; display:flex; }
-.action-row-top { gap:8px; }
-.action-row-bottom { margin-top:6px; }
-.action-row-bottom .btn-delete { width: 100%; }
+/* Single-row action layout: all buttons in one row */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
 
 /* Make history action buttons use same sizing as row action buttons */
-.history-actions .btn-view,
-.history-actions .btn-edit,
-.history-actions .btn-delete {
+.history-actions .inventory-btn-view,
+.history-actions .inventory-btn-edit,
+.history-actions .inventory-btn-delete {
   min-width: 84px;
   height: 34px;
   padding: 6px 10px;
 }
 
 /* Tweak table action cell so buttons align nicely */
-.po-table td .btn {
+.po-table td .inventory-btn {
   vertical-align: middle;
 }
 
 /* Ensure consistent margins between action buttons */
-.po-table td .btn + .btn { margin-left: 8px; }
+.po-table td .inventory-btn + .inventory-btn {
+  margin-left: 8px;
+}
 
 /* admin-purchase.css – CSS gọn, nhóm theo layout, spacing, component */
 
@@ -238,7 +302,7 @@
 }
 
 /* Buttons */
-.btn {
+.inventory-btn {
   padding: 10px 16px;
   font-size: 14px;
   border-radius: 8px;
@@ -247,33 +311,33 @@
   font-weight: 600;
   transition: 0.2s;
 }
-.btn-accent {
+.inventory-btn-accent {
   background: #c75f4b;
   color: #fff;
 }
-.btn-accent:hover {
+.inventory-btn-accent:hover {
   opacity: 0.9;
 }
-.btn-dark {
+.inventory-btn-dark {
   background: #4a6d56;
   color: #fff;
 }
-.btn-dark:hover {
+.inventory-btn-dark:hover {
   background: #3c5745;
 }
-.btn-light {
+.inventory-btn-light {
   background: #fff;
   border: 1px solid #ccc;
   color: #333;
 }
-.btn-light:hover {
+.inventory-btn-light:hover {
   background: #f2f2f2;
 }
-.btn-success {
+.inventory-btn-success {
   background: #3fa55b;
   color: #fff;
 }
-.btn-success:hover {
+.inventory-btn-success:hover {
   background: #2f8a49;
 }
 
@@ -391,7 +455,7 @@
   display: flex;
   gap: 8px;
 }
-.page-btn {
+.page-inventory-btn {
   padding: 6px 14px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -399,10 +463,10 @@
   font-size: 14px;
   cursor: pointer;
 }
-.page-btn:hover {
+.page-inventory-btn:hover {
   background: #f2f2f2;
 }
-.page-btn.active {
+.page-inventory-btn.active {
   background: #4a6d56;
   color: white;
   border-color: #4a6d56;
@@ -412,7 +476,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -426,7 +490,7 @@
   max-width: 100%;
   max-height: 92vh;
   overflow: auto;
-  box-shadow: 0 8px 30px rgba(20,20,20,0.25);
+  box-shadow: 0 8px 30px rgba(20, 20, 20, 0.25);
   padding: 16px;
 }
 .modal-header {
@@ -443,5 +507,8 @@
 }
 
 /* Small adjustments for inventory form inside modal */
-.modal-content .inventory-form { width: 100%; box-shadow: none; padding: 0; }
-
+.modal-content .inventory-form {
+  width: 100%;
+  box-shadow: none;
+  padding: 0;
+}
