@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 // Import các hàm CRUD cần thiết từ Firebase Firestore
-import { db } from "../../firebase";
+import { db, storage, auth } from "../../firebase";
 import {
   collection,
   getDocs,
@@ -10,6 +10,12 @@ import {
   updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import {
+  ref as storageRef,
+  uploadBytesResumable,
+  getDownloadURL,
+} from "firebase/storage";
+import { showSuccess, showError } from "../../utils/toast";
 
 // Giả sử đường dẫn này là đúng
 import AdminSidebar from "../../components/admin/Sidebar";
@@ -112,6 +118,8 @@ const VariationForm: React.FC<{
   onChange: (index: number, v: Variation) => void;
   onRemove: (index: number) => void;
 }> = ({ variation, index, onChange, onRemove }) => {
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleVChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -119,6 +127,50 @@ const VariationForm: React.FC<{
       ...variation,
       [name]: type === 'number' ? Number(value) || 0 : value,
     });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    if (!auth.currentUser) {
+      showError('Vui lòng đăng nhập để upload hình ảnh!');
+      return;
+    }
+
+    const file = e.target.files[0];
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `product_images/variants/${Date.now()}_${safeName}`;
+    const sRef = storageRef(storage, path);
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const uploadTask = uploadBytesResumable(sRef, file);
+      
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          setUploadProgress(progress);
+        },
+        (error) => {
+          console.error('Upload failed:', error);
+          showError('Lỗi khi tải ảnh lên: ' + error.message);
+          setUploading(false);
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          onChange(index, { ...variation, image: downloadURL });
+          showSuccess('Tải ảnh biến thể thành công!');
+          setUploading(false);
+          setUploadProgress(0);
+        }
+      );
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      showError('Lỗi upload: ' + error.message);
+      setUploading(false);
+    }
   };
 
   return (
@@ -135,7 +187,37 @@ const VariationForm: React.FC<{
         <label>Giá Mới:</label><input type="number" name="newPrice" value={variation.newPrice} onChange={handleVChange} />
         <label>Giảm (%):</label><input type="number" name="discount" value={variation.discount} onChange={handleVChange} />
       </div>
-      <label>URL Ảnh Biến Thể:</label><input type="text" name="image" value={variation.image} onChange={handleVChange} />
+      <label>URL Ảnh Biến Thể:</label><input type="text" name="image" value={variation.image} onChange={handleVChange} placeholder="Hoặc tải ảnh bên dưới" />
+      
+      <div className="variant-image-upload">
+        <label className="upload-label">
+          📷 Tải ảnh sản phẩm biến thể
+          <input 
+            type="file" 
+            accept="image/*" 
+            onChange={handleImageUpload}
+            disabled={uploading}
+            style={{ display: 'none' }}
+          />
+        </label>
+        {uploading && (
+          <div className="upload-progress">
+            <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
+            <span>{uploadProgress}%</span>
+          </div>
+        )}
+        {variation.image && (
+          <div className="variant-image-preview">
+            <img src={variation.image} alt="Preview" style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }} />
+            <button 
+              type="button" 
+              onClick={() => onChange(index, { ...variation, image: '' })}
+              className="btn-remove-image"
+            >❌</button>
+          </div>
+        )}
+      </div>
+      
       <button type="button" onClick={() => onRemove(index)} className="btn-remove-variation">Xóa Biến Thể</button>
     </div>
   );

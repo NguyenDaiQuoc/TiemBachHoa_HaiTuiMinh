@@ -66,6 +66,17 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
     
+    // Email Campaigns - authenticated only
+    match /email_campaigns/{campaignId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Marketing Banners - read for all, write for authenticated
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
     // Chats collection - read/write for authenticated users
     match /chats/{chatId} {
       allow read: if isAuthenticated();
