@@ -1242,6 +1242,108 @@
   transition: transform 0.2s ease;
 }
 
+.orders-btn {
+  background: #1f1f1f;
+  color: #fff;
+  position: relative;
+}
+
+.orders-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #c75f4b;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+.orders-panel {
+  position: fixed;
+  right: 90px;
+  bottom: 90px;
+  width: 320px;
+  max-height: 60vh;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.22);
+  padding: 14px;
+  overflow: auto;
+  animation: fadeInUp 0.2s ease;
+  z-index: 100000;
+}
+
+.orders-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.orders-panel__sub {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.orders-panel__link {
+  border: 1px solid #ddd;
+  background: #f8f8f8;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.orders-panel__empty {
+  padding: 12px;
+  color: #666;
+  background: #fafafa;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.orders-panel__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.orders-panel__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  background: #fffdfb;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.orders-panel__title {
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 2px;
+}
+
+.orders-panel__meta {
+  font-size: 12px;
+  color: #666;
+}
+
+.orders-panel__total {
+  font-weight: 800;
+  color: #c75f4b;
+}
+
 .float-btn:hover {
   transform: scale(1.08);
 }

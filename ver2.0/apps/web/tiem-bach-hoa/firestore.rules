@@ -31,6 +31,8 @@ service cloud.firestore {
     match /banners/{id} { allow read: if true; allow write: if isAdmin(); }
     match /blogs/{id}   { allow read: if true; allow write: if isAdmin(); }
     match /vouchers/{id}{ allow read: if true; allow write: if isAdmin(); }
+    match /news/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /media/{id}   { allow read: if true; allow write: if isAdmin(); }
 
     // -- Warehouse & Inventory (admin area) -----------------------------------
     // Warehouse stores items that admins manage. Allow admins full access.

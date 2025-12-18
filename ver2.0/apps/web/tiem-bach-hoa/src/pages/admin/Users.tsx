@@ -3,6 +3,7 @@ import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/users.css";
 import { db } from "../../firebase";
 import { collection, onSnapshot, query, orderBy, doc, where, Timestamp, getDocs, limit, orderBy as fbOrderBy, updateDoc } from 'firebase/firestore';
+import { exportToExcel, exportToPDF, exportToCSV } from "../../utils/exportUtils";
 
 // (Formatting helpers are inside the component)
 
@@ -117,20 +118,37 @@ export default function AdminCustomerPage() {
 
   const formatVND = (n: number) => n.toLocaleString('vi-VN') + ' VNĐ';
 
-  const exportCSV = (rows: any[]) => {
-    const headers = ['UID','Account','FullName','Email','Phone','Chi tieu thang','Hang','Discount'];
-    const csv = [headers.join(',')].concat(rows.map(u => {
+  const prepareExportData = (rows: any[]) => {
+    return rows.map(u => {
       const spend = monthlySpendMap[u.id] || 0;
       const { rank } = getRankFor(spend);
-      return [u.id, '"'+(u.account||'')+'"','"'+(u.fullName||'')+'"', (u.email||''), (u.phone||''), spend, rank.name, rank.discount+'%'].join(',');
-    })).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `customers_export_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+      return {
+        'UID': u.id,
+        'Tên khách': u.fullName || u.name || u.account || '',
+        'Email': u.email || '',
+        'Điện thoại': u.phone || '',
+        'Chi tiêu tháng': spend,
+        'Hạng': rank.name,
+        'Chiết khấu (%)': rank.discount,
+      };
+    });
+  };
+
+  const handleExportExcel = (rows: any[]) => {
+    const data = prepareExportData(rows);
+    exportToExcel(data, `khach-hang-${new Date().toISOString().slice(0,10)}`);
+  };
+
+  const handleExportPDF = (rows: any[]) => {
+    const data = prepareExportData(rows);
+    const columns = ['UID', 'Tên khách', 'Email', 'Điện thoại', 'Chi tiêu tháng', 'Hạng', 'Chiết khấu (%)'];
+    exportToPDF(data, `khach-hang-${new Date().toISOString().slice(0,10)}`, columns, 'Danh Sách Khách Hàng');
+  };
+
+  const handleExportCSV = (rows: any[]) => {
+    const data = prepareExportData(rows);
+    const columns = ['UID', 'Tên khách', 'Email', 'Điện thoại', 'Chi tiêu tháng', 'Hạng', 'Chiết khấu (%)'];
+    exportToCSV(data, `khach-hang-${new Date().toISOString().slice(0,10)}`, columns);
   };
 
   const openDetails = async (u:any) => {
@@ -190,7 +208,9 @@ export default function AdminCustomerPage() {
               <option value="thường">Thường</option>
             </select>
             <button className="btn-search">Tìm Kiếm</button>
-            <button className="btn-export" onClick={()=>exportCSV(filtered)}>Xuất Excel 📊</button>
+            <button className="btn-export" onClick={()=>handleExportExcel(filtered)}>Xuất Excel 📊</button>
+            <button className="btn-export" onClick={()=>handleExportPDF(filtered)}>Xuất PDF 📄</button>
+            <button className="btn-export" onClick={()=>handleExportCSV(filtered)}>Xuất CSV 📋</button>
           </div>
 
           <div className="table-container">
@@ -265,20 +285,67 @@ export default function AdminCustomerPage() {
       </div>
         {selectedUser && (
           <div className="modal-overlay" onClick={()=>setSelectedUser(null)}>
-            <div className="modal-card" onClick={e=>e.stopPropagation()}>
-              <h3>Khách hàng: {selectedUser.fullName || selectedUser.account || selectedUser.id}</h3>
-              <div><strong>Email:</strong> {selectedUser.email || '-'}</div>
-              <div><strong>Phone:</strong> {selectedUser.phone || '-'}</div>
-              <div style={{ marginTop: 8 }}><strong>Chi tiêu tháng:</strong> {formatVND(monthlySpendMap[selectedUser.id] || 0)}</div>
-              <div style={{ marginTop: 8 }}>
-                <strong>Đơn hàng gần đây:</strong>
-                <ul>
-                  {selectedUserOrders.length === 0 ? <li>Không có đơn</li> : selectedUserOrders.map(o=> (
-                    <li key={o.id}>{o.id} — {formatVND(Number(o.total||o.amount||o.subtotal||0))} — {o.status || ''}</li>
-                  ))}
-                </ul>
+            <div className="modal-card" onClick={e=>e.stopPropagation()} style={{maxHeight:'80vh',overflowY:'auto',maxWidth:'600px'}}>
+              <h3>Chi Tiết Khách Hàng: {selectedUser.fullName || selectedUser.account || selectedUser.id}</h3>
+              
+              {/* Thông tin cơ bản */}
+              <div style={{marginTop:12,paddingBottom:12,borderBottom:'1px solid #eee'}}>
+                <h4 style={{marginTop:0}}>Thông Tin Cơ Bản</h4>
+                <div><strong>UID:</strong> {selectedUser.id}</div>
+                <div><strong>Tên đầy đủ:</strong> {selectedUser.fullName || selectedUser.name || '-'}</div>
+                <div><strong>Email:</strong> {selectedUser.email || '-'}</div>
+                <div><strong>Điện thoại:</strong> {selectedUser.phone || selectedUser.mobile || '-'}</div>
+                <div><strong>Địa chỉ:</strong> {selectedUser.address || selectedUser.shippingAddress || '-'}</div>
+                <div><strong>Thành phố:</strong> {selectedUser.city || selectedUser.province || '-'}</div>
+                <div><strong>Mã bưu chính:</strong> {selectedUser.postalCode || selectedUser.zipCode || '-'}</div>
               </div>
-              <div style={{ marginTop: 12 }}><button onClick={()=>setSelectedUser(null)}>Đóng</button></div>
+
+              {/* Thông tin tài khoản */}
+              <div style={{marginTop:12,paddingBottom:12,borderBottom:'1px solid #eee'}}>
+                <h4>Thông Tin Tài Khoản</h4>
+                <div><strong>Trạng thái:</strong> {selectedUser.isDeactivated === 'blocked' ? <span style={{color:'red'}}>Đã chặn</span> : <span style={{color:'green'}}>Hoạt động</span>}</div>
+                <div><strong>Ngày tham gia:</strong> {selectedUser.createdAt && selectedUser.createdAt.toDate ? selectedUser.createdAt.toDate().toLocaleDateString('vi-VN') : (selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString('vi-VN') : '-')}</div>
+                <div><strong>Cập nhật lần cuối:</strong> {selectedUser.updatedAt && selectedUser.updatedAt.toDate ? selectedUser.updatedAt.toDate().toLocaleDateString('vi-VN') : '-'}</div>
+              </div>
+
+              {/* Thông tin giao dịch */}
+              <div style={{marginTop:12,paddingBottom:12,borderBottom:'1px solid #eee'}}>
+                <h4>Thông Tin Giao Dịch</h4>
+                <div><strong>Chi tiêu tháng này:</strong> {formatVND(monthlySpendMap[selectedUser.id] || 0)}</div>
+                <div><strong>Tổng chi tiêu:</strong> {selectedUser.totalSpent ? formatVND(selectedUser.totalSpent) : '-'}</div>
+                <div><strong>Số đơn hàng:</strong> {selectedUser.ordersCount || selectedUser.orders || 0}</div>
+                {(() => {
+                  const spend = monthlySpendMap[selectedUser.id] || 0;
+                  const { rank, next } = getRankFor(spend);
+                  const need = next ? Math.max(0, next.threshold - spend) : 0;
+                  return (
+                    <>
+                      <div><strong>Hạng hiện tại:</strong> {rank.name} ({rank.discount}% chiết khấu)</div>
+                      {next && <div><strong>Cần thêm:</strong> {formatVND(need)} để lên {next.name}</div>}
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Đơn hàng gần đây */}
+              <div style={{marginTop:12}}>
+                <h4>Đơn Hàng Gần Đây</h4>
+                {selectedUserOrders.length === 0 ? (
+                  <div style={{color:'#666'}}>Không có đơn hàng nào</div>
+                ) : (
+                  <ul style={{listStyle:'none',padding:0,margin:0}}>
+                    {selectedUserOrders.map(o=> (
+                      <li key={o.id} style={{padding:8,borderBottom:'1px solid #f0f0f0'}}>
+                        <div style={{fontWeight:600}}>{o.id}</div>
+                        <div style={{fontSize:13,color:'#666'}}>{formatVND(Number(o.total||o.amount||o.subtotal||0))} · {o.status || 'Chờ xử lý'}</div>
+                        <div style={{fontSize:12,color:'#999'}}>{o.createdAt && o.createdAt.toDate ? o.createdAt.toDate().toLocaleDateString('vi-VN') : '-'}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div style={{ marginTop: 16 }}><button onClick={()=>setSelectedUser(null)} style={{padding:'8px 16px',borderRadius:6,background:'#c75f4b',color:'#fff',border:'none',cursor:'pointer'}}>Đóng</button></div>
             </div>
           </div>
         )}

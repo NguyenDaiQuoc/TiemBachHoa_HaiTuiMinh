@@ -16,6 +16,8 @@ export default function FloatingButtons() {
   const [supportMsg, setSupportMsg] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0);
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [showOrdersPanel, setShowOrdersPanel] = useState(false);
 
   // simple templates (can be expanded) — updated to be meaningful
   const templates = [
@@ -23,6 +25,9 @@ export default function FloatingButtons() {
     { id: 'tpl_promo', title: 'Hỏi khuyến mãi', text: 'Có khuyến mãi cho sản phẩm [tên sản phẩm] không?' },
     { id: 'tpl_support', title: 'Yêu cầu tư vấn', text: 'Mình cần tư vấn thêm, vui lòng liên hệ nhân viên tư vấn.' }
   ];
+
+  const formatCurrency = (v: number) =>
+    Number(v || 0).toLocaleString('vi-VN') + ' đ';
 
   // Hiện nút Back to Top khi scroll qua Hero
   useEffect(() => {
@@ -92,6 +97,8 @@ export default function FloatingButtons() {
       if (!user) {
         setIsAdmin(false);
         setPendingOrdersCount(0);
+        setPendingOrders([]);
+        setShowOrdersPanel(false);
         if (ordersUnsub) { ordersUnsub(); ordersUnsub = null; }
         return;
       }
@@ -104,20 +111,40 @@ export default function FloatingButtons() {
           // listen to orders with status 'Chờ Xử Lý' (pending)
           const q = query(collection(db, 'orders'), where('status', '==', 'Chờ Xử Lý'));
           ordersUnsub = onSnapshot(q, (snap) => {
+            const list = snap.docs.map(d => {
+              const data = d.data() as any;
+              return {
+                id: d.id,
+                customer: data.customerName || data.customer || data.userName || data.name || 'Khách lẻ',
+                total: Number(data.total || data.amount || 0),
+                createdAt: data.createdAt,
+                status: data.status || 'Chờ Xử Lý'
+              };
+            }).sort((a, b) => {
+              const da = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : Number(a.createdAt || 0);
+              const db = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : Number(b.createdAt || 0);
+              return db - da;
+            }).slice(0, 5);
+            setPendingOrders(list);
             setPendingOrdersCount(snap.size);
           }, (err) => {
             console.warn('orders notif listen failed', err.message);
             setPendingOrdersCount(0);
+            setPendingOrders([]);
           });
         } else {
           setIsAdmin(false);
           setPendingOrdersCount(0);
+          setPendingOrders([]);
+          setShowOrdersPanel(false);
           if (ordersUnsub) { ordersUnsub(); ordersUnsub = null; }
         }
       } catch (e:any) {
         console.warn('admin check failed', e?.message || e);
         setIsAdmin(false);
         setPendingOrdersCount(0);
+        setPendingOrders([]);
+        setShowOrdersPanel(false);
       }
     });
 
@@ -260,9 +287,51 @@ export default function FloatingButtons() {
 
       {/* ORDERS NOTIFICATION (admins only) */}
       {isAdmin && (
-        <div className="float-btn orders-btn" title="Đơn hàng mới" onClick={() => { window.location.href = '/admin/orders'; }}>
-          🔔
-          {pendingOrdersCount > 0 && <span className="orders-badge">{pendingOrdersCount}</span>}
+        <div style={{ position: 'relative' }}>
+          <div
+            className="float-btn orders-btn"
+            title="Đơn chờ xử lý"
+            aria-label="Thông báo đơn hàng mới"
+            onClick={() => setShowOrdersPanel((p) => !p)}
+          >
+            🔔
+            {pendingOrdersCount > 0 && <span className="orders-badge">{pendingOrdersCount}</span>}
+          </div>
+          {showOrdersPanel && (
+            <div className="orders-panel">
+              <div className="orders-panel__header">
+                <div>
+                  <strong>Đơn chờ xử lý</strong>
+                  <div className="orders-panel__sub">Hiển thị tối đa 5 đơn mới nhất</div>
+                </div>
+                <button className="orders-panel__link" onClick={() => (window.location.href = '/admin/orders')}>
+                  Mở trang
+                </button>
+              </div>
+              {pendingOrders.length === 0 ? (
+                <div className="orders-panel__empty">Chưa có đơn chờ xử lý</div>
+              ) : (
+                <ul className="orders-panel__list">
+                  {pendingOrders.map((o) => {
+                    const ts = o.createdAt?.seconds ? o.createdAt.seconds * 1000 : Number(o.createdAt || 0);
+                    const timeText = ts ? new Date(ts).toLocaleString('vi-VN') : '';
+                    return (
+                      <li key={o.id}>
+                        <div className="orders-panel__row">
+                          <div>
+                            <div className="orders-panel__title">#{o.id}</div>
+                            <div className="orders-panel__meta">{o.customer} · {o.status}</div>
+                            {timeText && <div className="orders-panel__meta">{timeText}</div>}
+                          </div>
+                          <div className="orders-panel__total">{formatCurrency(o.total)}</div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
 
