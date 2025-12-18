@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import ImageLightbox from "../components/ImageLightbox";
 import "../../css/product-detail.css";
 import { addToCart } from '../utils/cart';
 import { showSuccess, showError, showInfo } from '../utils/toast';
@@ -74,7 +75,7 @@ const mapProductFromFirestore = (docId: string, docData: DocumentData): ProductD
   return {
     id: docId,
     name: docData.name || 'Sản phẩm không tên',
-    image: (docData.image as string[] | undefined) || ['https://via.placeholder.com/600x600/E0E0E0?text=No+Image'],
+    image: (docData.image as string[] | undefined) || ['data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect fill="%23E0E0E0" width="600" height="600"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="30" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E'],
     oldPrice: docData.oldPrice || 0,
     newPrice: docData.newPrice || 0,
     discount: docData.discount || 0,
@@ -98,26 +99,15 @@ const fetchProductDetail = async (
 ) => {
   setLoading(true);
   try {
-    console.log('🔍 DEBUG: db object:', db);
-    console.log('🔍 DEBUG: Searching for slug:', productSlug);
-    
     const productsRef = collection(db, "products");
-    console.log('🔍 DEBUG: Collection ref path:', productsRef.path);
-    
     const slugToSearch = productSlug.trim();
     const q = query(productsRef, where("slug", "==", slugToSearch));
     const querySnapshot = await getDocs(q);
 
-    console.log('✅ Query result - Found:', querySnapshot.size, 'docs');
-
     if (querySnapshot.empty) {
-      // No product found in 'products' collection. Do not attempt a lookup on a different
-      // collection name because Firestore rules may intentionally not expose it (causes permission errors).
-      console.error(`❌ Không tìm thấy sản phẩm với slug: ${slugToSearch}`);
       setProductDetail(null);
     } else {
       const doc = querySnapshot.docs[0];
-      console.log('✅ Product data (from "products"):', doc.data());
       const productData = mapProductFromFirestore(doc.id, doc.data());
       setProductDetail(productData);
     }
@@ -181,16 +171,10 @@ export default function ProductDetailPage() {
 
   // --- useEffect để fetch data ---
   useEffect(() => {
-    console.log('🔵 ProductDetail useEffect triggered');
-    console.log('🔵 productSlug from URL:', productSlug);
-    console.log('🔵 Firebase db object:', db);
-    
     if (productSlug) {
-      console.log('🔵 Calling fetchProductDetail with slug:', productSlug);
       setPermissionDenied(false);
       fetchProductDetail(productSlug, setProductDetail, setLoading, setPermissionDenied);
     } else {
-      console.log('⚠️ No productSlug found in URL params');
       setLoading(false);
       setProductDetail(null);
     }
@@ -229,13 +213,6 @@ export default function ProductDetailPage() {
           setReviews(revs);
         } catch (rqErr: any) {
           // If Firestore complains about missing index, fall back to a simple query and sort client-side
-          const msg = rqErr && (rqErr.message || '').toString().toLowerCase();
-          if (msg.includes('requires an index') || msg.includes('index')) {
-            console.warn('Reviews query requires an index, falling back to unordered fetch and client-side sort.');
-          } else {
-            console.warn('Reviews ordered query failed, falling back to unordered fetch:', rqErr);
-          }
-
           // Fallback: fetch reviews for product without orderBy (less efficient) then sort locally
           try {
             const fallbackQ = query(reviewsRef, where('productID', '==', productDetail.id));
@@ -365,7 +342,58 @@ export default function ProductDetailPage() {
   const displayOldPrice = selectedVariation ? selectedVariation.oldPrice : (productDetail?.oldPrice || 0);
   const isSale = displayOldPrice > displayPrice;
   const isOutOfStock = selectedVariation ? selectedVariation.stock <= 0 : true;
-  const displayImage = selectedVariation ? selectedVariation.image : (productDetail?.image[0] || 'https://via.placeholder.com/600x600/E0E0E0?text=No+Image');
+  const displayImage = selectedVariation ? selectedVariation.image : (productDetail?.image[0] || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect fill="%23E0E0E0" width="600" height="600"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="30" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E');
+
+  // ⭐ State cho hình ảnh chính đang được xem ⭐
+  const [currentMainImage, setCurrentMainImage] = useState<string>(displayImage);
+  
+  // ⭐ State cho zoom effect ⭐
+  const [showZoom, setShowZoom] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // ⭐ Thu thập TẤT CẢ hình ảnh từ variations + hình ảnh chính ⭐
+  const allImages = useMemo(() => {
+    if (!productDetail) return [];
+    const images: string[] = [];
+    
+    // Thêm hình ảnh chính của sản phẩm
+    if (productDetail.image && productDetail.image.length > 0) {
+      images.push(...productDetail.image);
+    }
+    
+    // Thêm hình ảnh từ tất cả biến thể
+    if (productDetail.variations && productDetail.variations.length > 0) {
+      productDetail.variations.forEach(variation => {
+        if (variation.image && !images.includes(variation.image)) {
+          images.push(variation.image);
+        }
+      });
+    }
+    
+    // Loại bỏ duplicate và placeholder
+    return [...new Set(images)].filter(img => img && !img.includes('placeholder'));
+  }, [productDetail]);
+
+  // ⭐ Cập nhật hình ảnh chính khi chọn variation ⭐
+  useEffect(() => {
+    setCurrentMainImage(displayImage);
+  }, [displayImage]);
+
+  // ⭐ Handler cho zoom effect ⭐
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x, y });
+  };
+
+  const handleImageClick = () => {
+    const currentIndex = allImages.indexOf(currentMainImage);
+    setLightboxIndex(currentIndex >= 0 ? currentIndex : 0);
+    setShowLightbox(true);
+  };
 
 
   // --- UI Loading/Error (Giữ nguyên) ---
@@ -494,14 +522,41 @@ export default function ProductDetailPage() {
 
         <div className="product-detail-main">
           <div className="product-detail-images">
-            <div className="main-image">
-              {/* ⭐ SỬ DỤNG IMAGE CỦA VARIATION HOẶC IMAGE CHUNG ⭐ */}
-              <img src={displayImage} alt={name} />
+            <div 
+              className="main-image"
+              onMouseEnter={() => setShowZoom(true)}
+              onMouseLeave={() => setShowZoom(false)}
+              onMouseMove={handleMouseMove}
+              onClick={handleImageClick}
+            >
+              {/* ⭐ HIỂN THỊ HÌNH ẢNH CHÍNH (có thể thay đổi khi click vào thumbs) ⭐ */}
+              <img src={currentMainImage} alt={name} />
+              
+              {/* ⭐ ZOOM OVERLAY (hiển thị khi hover) ⭐ */}
+              {showZoom && (
+                <div className="zoom-overlay">
+                  <div 
+                    className="zoom-lens"
+                    style={{
+                      backgroundImage: `url(${currentMainImage})`,
+                      backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                      backgroundSize: '150%'
+                    }}
+                  />
+                  <div className="zoom-hint">🔍 Click để xem chi tiết</div>
+                </div>
+              )}
             </div>
             <div className="thumbs">
-              {/* Hiển thị các ảnh phụ nếu có */}
-              {productDetail.image.slice(0, 3).map((img, index) => (
-                <div key={index} className="thumb" style={{ backgroundImage: `url(${img})` }}></div>
+              {/* ⭐ HIỂN THỊ TẤT CẢ HÌNH ẢNH TỪ CÁC BIẾN THỂ ⭐ */}
+              {allImages.map((img, index) => (
+                <div 
+                  key={index} 
+                  className={`thumb ${currentMainImage === img ? 'thumb-active' : ''}`}
+                  style={{ backgroundImage: `url(${img})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                  onClick={() => setCurrentMainImage(img)}
+                  title={`Hình ${index + 1}`}
+                ></div>
               ))}
             </div>
           </div>
@@ -657,6 +712,16 @@ export default function ProductDetailPage() {
 
       <Toaster />
       <FloatingButtons />
+      
+      {/* ⭐ LIGHTBOX để xem ảnh phóng to ⭐ */}
+      {showLightbox && (
+        <ImageLightbox 
+          images={allImages} 
+          startIndex={lightboxIndex}
+          onClose={() => setShowLightbox(false)}
+        />
+      )}
+      
       <Footer />
     </div>
   );
