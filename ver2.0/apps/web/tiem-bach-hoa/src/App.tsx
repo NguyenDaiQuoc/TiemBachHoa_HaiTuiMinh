@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 //import for root page
@@ -29,6 +29,7 @@ import OrderTracking from "./pages/OrderTracking";
 import BlogDetail from "./pages/BlogDetail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VIP from "./pages/VIP";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ProdDetail from "./pages/ProductDetail";
 import Blog from "./pages/Blog";
@@ -93,6 +94,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />}></Route>
         <Route path="/login" element={<Login />}></Route>
         <Route path="/register" element={<Register />}></Route>
+  <Route path="/vip" element={<VIP />}></Route>
   <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>}></Route>
   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>}></Route>
         <Route path="/order-confirm" element={<OrderConfirm />}></Route>

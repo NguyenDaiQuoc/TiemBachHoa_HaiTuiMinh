@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 // Import các icon cần thiết cho Social Links
 import { Phone, ShoppingBag, Facebook, Instagram } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth, db } from '../firebase';
-import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { showSuccess } from '../utils/toast';
 import { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -102,10 +102,61 @@ export default function Header() {
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRecord, setUserRecord] = useState<any | null>(null);
+  const [tempUserUid, setTempUserUid] = useState<string | null>(null);
+  const [monthlySpend, setMonthlySpend] = useState<number>(0);
+  const [vipRank, setVipRank] = useState<string>('Thường');
+  const [vipProgressPercent, setVipProgressPercent] = useState<number>(0);
+
+  const RANKS: { name: string; threshold: number; discount: number }[] = [
+    { name: 'Thường', threshold: 0, discount: 0 },
+    { name: 'Đồng', threshold: 500000, discount: 1 },
+    { name: 'Bạc', threshold: 1000000, discount: 2.5 },
+    { name: 'Vàng', threshold: 2000000, discount: 3.5 },
+    { name: 'Bạch kim', threshold: 3000000, discount: 5 },
+    { name: 'Kim cương', threshold: 5000000, discount: 7.5 },
+  ];
+
+  const getRankFor = (amount: number) => {
+    let current = RANKS[0];
+    for (let i = 0; i < RANKS.length; i++) {
+      if (amount >= RANKS[i].threshold) current = RANKS[i];
+      else break;
+    }
+    const next = RANKS.find(r => r.threshold > current.threshold) || RANKS[RANKS.length - 1];
+    const pct = next.threshold === current.threshold ? 100 : Math.min(100, Math.round((amount - current.threshold) / (next.threshold - current.threshold) * 100));
+    return { current: current.name, next: next.name, percent: pct, nextThreshold: next.threshold };
+  };
 
   useEffect(() => {
+    // read cached profile/uid to show immediate info if user just signed in
+    try {
+      const cachedUid = localStorage.getItem('last_signed_in_uid');
+      const cachedProfile = localStorage.getItem('user_profile_cache');
+      if (cachedUid) setTempUserUid(cachedUid);
+      if (cachedProfile) {
+        try { setUserRecord(JSON.parse(cachedProfile)); } catch(e){ /* ignore */ }
+      }
+    } catch(e) {
+      // ignore
+    }
+
     const unsub = onAuthStateChanged(auth, async (u) => {
-      setCurrentUser(u);
+      // enforce client-side remember expiry: if remember_until set and expired, sign out
+      try {
+        const rem = localStorage.getItem('remember_until');
+        if (rem && u) {
+          const until = Number(rem || '0');
+          if (until > 0 && Date.now() > until) {
+            // expired
+            auth.signOut();
+            return;
+          }
+        }
+      } catch (e) {
+        // ignore localStorage errors
+      }
+
+  setCurrentUser(u);
       if (u) {
         try {
           const ref = doc(db, 'users', u.uid);
@@ -158,6 +209,78 @@ export default function Header() {
     return () => { if (unsubCart) unsubCart(); };
   }, [currentUser]);
 
+
+  // compute monthly spend for current user
+  useEffect(() => {
+    const compute = async () => {
+      if (!currentUser) {
+        setMonthlySpend(0);
+        setVipRank('Thường');
+        setVipProgressPercent(0);
+        return;
+      }
+      try {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        // Primary (efficient) query: userID == uid AND createdAt >= start
+        try {
+          const q = query(collection(db, 'orders'), where('userID', '==', currentUser.uid), where('createdAt', '>=', start));
+          const snap = await getDocs(q);
+          let sum = 0;
+          snap.forEach(d => {
+            const data: any = d.data();
+            const n = Number(data.total || data.amount || data.subtotal || 0) || 0;
+            sum += n;
+          });
+          setMonthlySpend(sum);
+          const r = getRankFor(sum);
+          setVipRank(r.current);
+          setVipProgressPercent(r.percent);
+          return;
+        } catch (primaryErr: any) {
+          const msg = String(primaryErr?.message || primaryErr || '');
+          console.warn('monthly spend primary query failed:', msg);
+
+          // If Firestore requires a composite index, do NOT run a broad createdAt-only query
+          // because that may violate security rules (permission-denied) and return excessive data.
+          if (msg.includes('requires an index') || msg.includes('create it here')) {
+            // Provide the console link in warning to make it easy to create the index.
+            // The error message from Firestore typically includes the exact console URL.
+            const indexUrlMatch = msg.match(/https:\/\/console\.firebase\.google\.com[\S]+/);
+            const indexUrl = indexUrlMatch ? indexUrlMatch[0] : 'https://console.firebase.google.com/project';
+            console.warn('Firestore composite index required for this query. Create it here:', indexUrl);
+
+            // Fail gracefully: show 0 (or cached value) instead of attempting a broad query that may be blocked.
+            setMonthlySpend(0);
+            const r = getRankFor(0);
+            setVipRank(r.current);
+            setVipProgressPercent(r.percent);
+            return;
+          }
+
+          // If the primary error is permission-related, surface a friendly message and bail out.
+          if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('insufficient')) {
+            console.warn('Permission denied when reading orders for monthly spend. Check Firestore security rules and ensure the authenticated user can read their own orders.');
+            setMonthlySpend(0);
+            const r = getRankFor(0);
+            setVipRank(r.current);
+            setVipProgressPercent(r.percent);
+            return;
+          }
+
+          // otherwise rethrow to be handled by outer catch
+          throw primaryErr;
+        }
+      } catch (e) {
+        console.error('compute monthly spend error', e);
+        setMonthlySpend(0);
+        setVipRank('Thường');
+        setVipProgressPercent(0);
+      }
+    };
+    compute();
+  }, [currentUser, userRecord]);
+
   const vipColor = (vip: string | undefined) => {
     if (!vip) return '#111827';
     const v = String(vip).toLowerCase();
@@ -169,6 +292,7 @@ export default function Header() {
     return '#111827';
   };
 
+  const isGuest = !(currentUser || tempUserUid) || (currentUser && (currentUser as any).isAnonymous);
   return (
     <div className="main-header-wrapper">
       <Toaster />
@@ -249,7 +373,7 @@ export default function Header() {
               {isUserDropdownOpen && (
                 <div className="user-dropdown">
                   <div className="user-dropdown-list">
-                    {(!currentUser || currentUser.isAnonymous) ? (
+                    {isGuest ? (
                       <>
                         <a href="/login">Đăng nhập</a>
                         <a href="/register">Đăng ký</a>
@@ -263,11 +387,22 @@ export default function Header() {
                             <div style={{ width: 40, height: 40, borderRadius: 999, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>👤</div>
                           )}
                           <div>
-                            <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span>{(userRecord?.fullName || currentUser.displayName || currentUser.email || '').split(' ').pop() || 'User'}</span>
+                              <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span>{(userRecord?.fullName || currentUser?.displayName || currentUser?.email || '').split(' ').pop() || 'User'}</span>
                               <span style={{ width: 16, height: 16, borderRadius: 4, background: vipColor(userRecord?.vip), display: 'inline-block' }} title={userRecord?.vip || ''}></span>
                             </div>
-                            <div style={{ fontSize: 12, color: '#6b7280' }}>{userRecord?.email || currentUser.email}</div>
+                            <div style={{ fontSize: 12, color: '#6b7280' }}>{userRecord?.email || currentUser?.email || ''}</div>
+                            {/* VIP progress summary */}
+                            <div style={{ marginTop: 8 }}>
+                              <div style={{ fontSize: 12, color: '#374151' }}>Chi tiêu tháng: <strong>{formatCurrency(monthlySpend || 0)}</strong></div>
+                              <div style={{ height: 8, background: '#e5e7eb', borderRadius: 8, marginTop: 6, overflow: 'hidden' }}>
+                                <div style={{ width: `${vipProgressPercent}%`, height: '100%', background: vipColor(userRecord?.vip), transition: 'width 400ms ease' }} />
+                              </div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>{vipRank} • {vipProgressPercent}%</span>
+                                <a href="/vip" style={{ fontSize: 12, color: '#2563eb' }}>Tìm hiểu thêm</a>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <a href="/profile">Thông tin cá nhân</a>

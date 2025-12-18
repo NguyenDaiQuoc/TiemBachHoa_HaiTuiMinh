@@ -5,8 +5,8 @@ import FloatingButtons from "../components/FloatingButtons";
 import "../../css/login.css";
 import { useNavigate } from 'react-router-dom';
 import { auth, db, firebaseApiKey } from '../firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { showSuccess, showError } from '../utils/toast';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -37,6 +37,7 @@ function LoginForm() {
   const [identifier, setIdentifier] = useState(''); // email or account
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [remember, setRemember] = useState<boolean>(true);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [plainPasswordWarning, setPlainPasswordWarning] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -109,6 +110,13 @@ function LoginForm() {
   // expose debug info on the UI to help troubleshooting (dev only)
   setDebugInfo({ emailToUse, pwdLen: pwdTrim.length });
 
+      // Set persistence based on remember checkbox
+      try {
+        await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+      } catch (persErr: any) {
+        console.warn('setPersistence failed', persErr);
+      }
+
       // Kiểm tra định dạng email cơ bản
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(emailToUse)) {
@@ -118,7 +126,39 @@ function LoginForm() {
 
       // Log the request shape (without the password) to help debug network issues
       console.debug('Calling Firebase signInWithEmailAndPassword', { email: emailToUse, returnSecureToken: true });
-      await signInWithEmailAndPassword(auth, emailToUse, pwdTrim);
+  const cred = await signInWithEmailAndPassword(auth, emailToUse, pwdTrim);
+
+      // Cache user uid/profile in localStorage so header can show immediate info while auth initializes
+      try {
+        const uid = cred.user?.uid;
+        if (uid) {
+          localStorage.setItem('last_signed_in_uid', uid);
+          try {
+            const userRef = doc(db, 'users', uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              localStorage.setItem('user_profile_cache', JSON.stringify(userSnap.data()));
+            }
+          } catch (cacheErr) {
+            // ignore
+          }
+        }
+      } catch (e) {
+        // ignore caching errors
+      }
+
+      // If remember was checked, store an expiry timestamp (7 days). We'll enforce expiry on app start.
+      try {
+        if (remember) {
+          const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+          localStorage.setItem('remember_until', String(expiry));
+        } else {
+          localStorage.removeItem('remember_until');
+        }
+      } catch (e) {
+        console.warn('localStorage set remember failed', e);
+      }
+
       showSuccess('Đăng nhập thành công!');
       setTimeout(() => navigate('/'), 500);
     } catch (err: any) {
@@ -174,7 +214,9 @@ function LoginForm() {
             type="checkbox" 
             id="login-remember" 
             name="remember" 
-            className="auth-checkbox" 
+            className="auth-checkbox"
+            checked={remember}
+            onChange={(e:any)=>setRemember(Boolean(e.target.checked))}
           /> Ghi nhớ đăng nhập
         </label>
         <a href="#" className="auth-link">Quên mật khẩu?</a>

@@ -57,7 +57,7 @@ function RegisterForm() {
         profilePictureURL: '',
         status: 'active',
         isDeactivated: 'none',
-        vip: 'đồng',
+        vip: 'Thường',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

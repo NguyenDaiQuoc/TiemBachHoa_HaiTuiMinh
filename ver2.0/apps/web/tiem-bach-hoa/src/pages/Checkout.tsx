@@ -191,6 +191,14 @@ export default function CheckoutPage() {
               if (!fullName || !phone || !address) { alert('Vui lòng điền tên, số điện thoại và địa chỉ'); return; }
               setIsSubmitting(true);
               try {
+                // Check if user is blocked in users collection
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists() && (userDocSnap.data() as any).isDeactivated === 'blocked') {
+                  alert('Tài khoản của bạn đang bị chặn. Vui lòng liên hệ CSKH để được hỗ trợ.');
+                  setIsSubmitting(false);
+                  return;
+                }
                 const orderData = {
                   userID: user.uid,
                   customerName: fullName,
