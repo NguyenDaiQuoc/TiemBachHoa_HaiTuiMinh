@@ -1,34 +1,89 @@
 // src/components/CategoryContent.tsx
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import type { CategoryItem } from './Sidebar';
 import '../../css/categorycontent.css'; // Đường dẫn đến file CSS
 // ⭐️ IMPORT THÊM Link từ React Router DOM ⭐️
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import LoginWarning from './LoginWarning';
+import { db } from '../firebase';
+import { auth } from '../firebase';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { addToCart } from '../utils/cart';
+import { showSuccess, showError } from '../utils/toast';
 
-// Dữ liệu giả định cho sản phẩm
-const dummyProducts = [
-    { id: 1, name: "Sữa tắm On The Body", image: "https://picsum.photos/300/300?random=1", price: "100.000đ" },
-    { id: 2, name: "Kem chống nắng Biore", image: "https://picsum.photos/300/300?random=2", price: "150.000đ" },
-    { id: 3, name: "Sữa rửa mặt Cetaphil", image: "https://picsum.photos/300/300?random=3", price: "200.000đ" },
-    { id: 4, name: "Bàn chải Colgate", image: "https://picsum.photos/300/300?random=4", price: "120.000đ" }, // Sản phẩm thứ 4 bị cắt
-];
+// When a real backend exists we fetch products for the category and compute a featured (best-selling) product
 
-function ProductCard({ product }: { product: typeof dummyProducts[0] }) {
+function ProductCard({ product, onShowLoginWarning }: { product: any, onShowLoginWarning?: () => void }) {
+    const navigate = useNavigate();
+
+    const priceVal = typeof product.price === 'number' ? product.price : Number(product.price || 0);
+    const oldPriceVal = typeof product.oldPrice === 'number' ? product.oldPrice : (product.oldPrice ? Number(product.oldPrice) : undefined);
+    const formatPrice = (v: number | undefined) => v == null ? '' : v.toLocaleString('vi-VN') + ' đ';
+
+    const isAvailable = (product.status && product.status.toString() === 'Đang bán') || (typeof product.stock === 'number' && product.stock > 0);
+
+    // normalize image field
+    const imageUrl = Array.isArray(product.image) ? (product.image[0] || '') : (typeof product.image === 'string' ? product.image : '');
+
+    const handleAddToCart = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!auth.currentUser || (auth.currentUser as any).isAnonymous) {
+            if (onShowLoginWarning) onShowLoginWarning();
+            return;
+        }
+        try {
+            await addToCart({ productId: product.id, name: product.name, price: priceVal, qty: 1, image: imageUrl });
+            showSuccess('Đã thêm vào giỏ hàng');
+        } catch (err: any) {
+            showError('Thêm giỏ hàng thất bại: ' + (err?.message || err));
+        }
+    };
+
+    const handleBuyNow = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!auth.currentUser || (auth.currentUser as any).isAnonymous) {
+            if (onShowLoginWarning) onShowLoginWarning();
+            return;
+        }
+        try {
+            await addToCart({ productId: product.id, name: product.name, price: priceVal, qty: 1, image: imageUrl });
+            navigate('/cart');
+        } catch (err: any) {
+            showError('Có lỗi xảy ra: ' + (err?.message || err));
+        }
+    };
+
     return (
         <div className="cate-product-card">
-            <div className="product-image-wrapper">
-                <img
-                    src={product.image}
-                    alt={product.name}
-                    className="product-image"
-                />
+            <div className="product-image-wrapper" style={{cursor: 'pointer'}} onClick={() => navigate(`/product-detail/${product.slug || product.id}`)}>
+                {imageUrl ? (
+                    <img src={imageUrl} alt={product.name} className="product-image" />
+                ) : (
+                    <div style={{width: '100%', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f7f7f7'}}>📷</div>
+                )}
             </div>
-            <h4 className="product-name">{product.name}</h4>
-            <p className="product-price">{product.price}</p>
-            <button className="add-to-cart-btn">
-                🛒 Thêm vào giỏ
-            </button>
+
+            <div style={{padding: '8px 12px'}}>
+                <h4 className="product-name" style={{margin: '6px 0', cursor: 'pointer'}} onClick={() => navigate(`/product-detail/${product.slug || product.id}`)}>{product.name}</h4>
+
+                <div style={{display: 'flex', gap: 8, alignItems: 'baseline'}}>
+                    <div className="product-price" style={{fontWeight: 700, color: '#C75F4B'}}>{formatPrice(priceVal)}</div>
+                    {oldPriceVal != null && (
+                        <div className="product-old-price" style={{textDecoration: 'line-through', color: '#888', fontSize: '0.9rem'}}>{formatPrice(oldPriceVal)}</div>
+                    )}
+                </div>
+{/* 
+                <div style={{display:'flex',gap:8,alignItems:'center',marginTop:8}}>
+                    <div style={{fontSize:'0.85rem',padding:'4px 8px',borderRadius:6,background:isAvailable ? '#E6FFFA' : '#FFF5F5',color:isAvailable ? '#047857' : '#EF4444',border:isAvailable ? '1px solid #C6F6D5' : '1px solid #FECACA'}}>{product.status || 'Đang cập nhật'}</div>
+                </div> */}
+
+                <div style={{display:'flex',gap:8,marginTop:10}}>
+                    <button disabled={!isAvailable} onClick={handleAddToCart} style={{flex:1,padding:'8px',borderRadius:8,border:'1px solid #C75F4B',background:'#fff',color:'#C75F4B'}}>🛒 Thêm giỏ hàng</button>
+                    <button disabled={!isAvailable} onClick={handleBuyNow} style={{flex:1,padding:'8px',borderRadius:8,border:'none',background:isAvailable?'#C75F4B':'#F3F4F6',color:isAvailable?'#fff':'#9CA3AF'}}>Mua ngay</button>
+                </div>
+                {/* LoginWarning is controlled at page level to avoid multiple mount/unmount flicker */}
+            </div>
         </div>
     );
 }
@@ -81,10 +136,99 @@ const isParentSlug = (slug: string | null, categories: CategoryItem[]): boolean 
 
 
 export default function CategoryContent({ activeSlug, categoryTree }: { activeSlug: string | null, categoryTree: CategoryItem[] }) {
-
     const isParentNode = useMemo(() => isParentSlug(activeSlug, categoryTree), [activeSlug, categoryTree]);
 
     const displayTitle = useMemo(() => findCategoryName(activeSlug, categoryTree), [activeSlug, categoryTree]);
+
+    const [products, setProducts] = useState<any[]>([]);
+    // displayedProducts: up to 3 products to show as featured for this category
+    const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
+    const [showLoginWarning, setShowLoginWarning] = useState(false);
+
+    // Load products for selected category and compute local best-seller from recent orders
+    useEffect(() => {
+        if (!activeSlug) return;
+        let mounted = true;
+        (async () => {
+            try {
+                const pq = query(collection(db, 'products'), where('categorySlugs', 'array-contains', activeSlug), orderBy('createdAt', 'desc'), limit(20));
+                const ps = await getDocs(pq);
+                const loaded = ps.docs.map(d => {
+                    const data = d.data() as any;
+                    const image = Array.isArray(data.image) ? (data.image[0] || '') : (typeof data.image === 'string' ? data.image : (data.imageUrl || data.thumbnail || ''));
+                    const createdAt = data.createdAt;
+                    const createdAtMs = createdAt && createdAt.seconds ? createdAt.seconds * 1000 : (typeof createdAt === 'number' ? createdAt : 0);
+                    return {
+                        id: d.id,
+                        slug: data.slug || d.id,
+                        name: data.name || data.title || 'Sản phẩm',
+                        image,
+                        price: data.newPrice || data.price || 0,
+                        oldPrice: data.oldPrice || undefined,
+                        status: data.status || 'Đang bán',
+                        stock: typeof data.stock === 'number' ? data.stock : (data.quantity || data.qty || 0),
+                        createdAtMs,
+                    };
+                });
+                if (!mounted) return;
+                // Prefer products that are currently available ('Đang bán' or stock>0)
+                const available = loaded.filter(p => (p.status && p.status.toString() === 'Đang bán') || (typeof p.stock === 'number' && p.stock > 0));
+                setProducts(available.length > 0 ? available : loaded);
+
+                // Prepare source products to consider (prefer available stock)
+                if (loaded.length === 0) {
+                    setDisplayedProducts([]);
+                    return;
+                }
+                const sourceForCounts = (available && available.length > 0) ? available : loaded;
+                const ids = new Set(sourceForCounts.map((p:any) => p.id));
+
+                // If the client is not authenticated, we cannot scan orders (rules). Show 3 newest products.
+                if (!auth.currentUser) {
+                    const newest = sourceForCounts.slice().sort((a:any,b:any) => (b.createdAtMs || 0) - (a.createdAtMs || 0)).slice(0,3);
+                    setDisplayedProducts(newest);
+                    return;
+                }
+
+                // Authenticated: scan recent orders (client-side limited window) and compute counts for products in this category
+                const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(200));
+                const ordersSnap = await getDocs(ordersQ);
+                const counts: Record<string, number> = {};
+                ordersSnap.docs.forEach(d => {
+                    const od = d.data() as any;
+                    const items = od.items || [];
+                    items.forEach((it: any) => {
+                        const pid = it.productId || it.id || it.product || null;
+                        const qty = Number(it.quantity || it.qty || it.qtyOrdered || 1) || 0;
+                        if (!pid) return;
+                        if (!ids.has(pid)) return;
+                        counts[pid] = (counts[pid] || 0) + qty;
+                    });
+                });
+
+                // Sort source products by counts desc (tiebreaker: newest)
+                const withCounts = sourceForCounts.map((p:any) => ({
+                    ...p,
+                    salesCount: counts[p.id] || 0
+                }));
+                withCounts.sort((a:any,b:any) => {
+                    if ((b.salesCount || 0) !== (a.salesCount || 0)) return (b.salesCount || 0) - (a.salesCount || 0);
+                    return (b.createdAtMs || 0) - (a.createdAtMs || 0);
+                });
+                // If none have salesCount > 0, fall back to newest 3
+                const anySales = withCounts.some((p:any) => (p.salesCount || 0) > 0);
+                const finalList = anySales ? withCounts : sourceForCounts.slice().sort((a:any,b:any) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+                setDisplayedProducts(finalList.slice(0,3));
+            } catch (err) {
+                // Avoid spamming the console with stack traces from Firestore rules errors.
+                // Keep a concise warning for diagnostics and fail gracefully in the UI.
+                console.warn('Failed to load category products (check Firestore rules or network)');
+                setProducts([]);
+                setFeatured(null);
+            }
+        })();
+        return () => { mounted = false; };
+    }, [activeSlug]);
 
     // Trường hợp 1: Chưa chọn hoặc chọn danh mục Cha
     if (!activeSlug || isParentNode) {
@@ -109,8 +253,7 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
     }
 
     // Trường hợp 2: Đã chọn danh mục Cấp 2 (Tải sản phẩm)
-    // Giới hạn 3 sản phẩm đầu tiên
-    const productsToShow = dummyProducts.slice(0, 3);
+    // Giới hạn 3 sản phẩm đầu tiên; displayedProducts được tính ở effect phía trên
 
     return (
         <div className="category-content-container product-view">
@@ -119,10 +262,14 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
             <h3 className="content-subtitle">Sản phẩm nổi bật </h3>
 
             <div className="cate-product-grid">
-                {productsToShow.map(p => (
-                    <ProductCard key={p.id} product={p} />
+                {displayedProducts.map(p => (
+                    <ProductCard key={p.id} product={p} onShowLoginWarning={() => setShowLoginWarning(true)} />
                 ))}
             </div>
+
+            {showLoginWarning && (
+                <LoginWarning onClose={() => setShowLoginWarning(false)} />
+            )}
 
             {/* ⭐️ THAY THẾ thẻ <a> BẰNG component Link ⭐️ */}
             <Link to={`/categories/${activeSlug}/all`} className="view-all-link">

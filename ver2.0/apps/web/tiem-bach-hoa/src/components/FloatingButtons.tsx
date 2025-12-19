@@ -59,27 +59,94 @@ export default function FloatingButtons() {
 
     const startListen = async () => {
       try {
+        // Ensure we have an auth session first
         if (!auth.currentUser) {
-          try { await signInAnonymously(auth); } catch (e) { 
-            console.warn('Anonymous sign-in failed, chat may not work', e);
+          try {
+            await signInAnonymously(auth);
+          } catch (e:any) {
+            console.warn('Anonymous sign-in failed, chat disabled');
             return;
           }
         }
+
+        const uid = auth.currentUser ? auth.currentUser.uid : null;
+        // Try to read the existing chat doc. If it exists but is owned by a different id
+        // (e.g., legacy sessionId stored as userId), we avoid listening to that doc to prevent permission errors.
         const docRef = doc(db, 'chats', sessionId);
-        unsub = onSnapshot(docRef, (snap) => {
-          if (!snap.exists()) {
-            setMessages([]);
-            return;
+        try {
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            const data = snap.data() as any;
+            // If the doc's owner matches our auth uid, we can safely listen.
+            if (uid && (data.userId === uid || data.userId == null || data.isPublic === true)) {
+              unsub = onSnapshot(docRef, (s) => {
+                if (!s.exists()) { setMessages([]); return; }
+                const d = s.data() as any;
+                setMessages(Array.isArray(d.messages) ? d.messages : []);
+                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+              }, (err) => {
+                console.warn('chat doc listen failed -', err?.message || err);
+                setMessages([]);
+              });
+            } else {
+              // Ownership mismatch: create a new chat doc owned by this auth user and persist its id.
+              const newId = `chat-${uid}-${Date.now()}`;
+              const newRef = doc(db, 'chats', newId);
+              try {
+                await setDoc(newRef, {
+                  userId: uid,
+                  participants: [uid],
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp(),
+                  messages: []
+                });
+                localStorage.setItem('chat_session_id', newId);
+                setSessionId(newId);
+                // start listening to the new doc
+                unsub = onSnapshot(newRef, (s) => {
+                  if (!s.exists()) { setMessages([]); return; }
+                  const d = s.data() as any;
+                  setMessages(Array.isArray(d.messages) ? d.messages : []);
+                  setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+                }, (err) => {
+                  console.warn('chat new doc listen failed -', err?.message || err);
+                  setMessages([]);
+                });
+              } catch (inner) {
+                // If creating new doc fails (rules), just skip listening.
+                console.warn('Could not create personal chat doc; chat disabled');
+                setMessages([]);
+              }
+            }
+          } else {
+            // No existing doc; create one owned by current auth uid
+            if (!uid) return;
+            try {
+              await setDoc(docRef, {
+                userId: uid,
+                participants: [uid],
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                messages: []
+              });
+              unsub = onSnapshot(docRef, (s) => {
+                if (!s.exists()) { setMessages([]); return; }
+                const d = s.data() as any;
+                setMessages(Array.isArray(d.messages) ? d.messages : []);
+                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+              }, (err) => {
+                console.warn('chat doc listen failed -', err?.message || err);
+                setMessages([]);
+              });
+            } catch (createErr) {
+              console.warn('Failed to create chat doc (permissions?)', createErr?.message || createErr);
+              setMessages([]);
+            }
           }
-          const data = snap.data() as any;
-          setMessages(Array.isArray(data.messages) ? data.messages : []);
-          // scroll to bottom
-          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-        }, (err) => {
-          console.warn('chat doc listen failed - permissions issue:', err.message);
+        } catch (gErr:any) {
+          console.warn('Failed to access chat doc (permissions or network)');
           setMessages([]);
-          // Don't throw error, just silently fail
-        });
+        }
       } catch (e:any) {
         console.warn('startListen error', e?.message || e);
         setMessages([]);
@@ -176,8 +243,10 @@ export default function FloatingButtons() {
         const existing = await getDoc(chatDoc);
         if (!existing.exists()) {
           // create a new chat document tied to this auth.uid
+          const uid2 = auth.currentUser ? auth.currentUser.uid : sessionId;
           await setDoc(chatDoc, {
-            userId: auth.currentUser ? auth.currentUser.uid : sessionId,
+            userId: uid2,
+            participants: uid2 ? [uid2] : [],
             name: (auth.currentUser && (auth.currentUser as any).displayName) || 'Khách',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),

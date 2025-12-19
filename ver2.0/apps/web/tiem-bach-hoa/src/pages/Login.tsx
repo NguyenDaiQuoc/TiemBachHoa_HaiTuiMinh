@@ -6,7 +6,7 @@ import "../../css/login.css";
 import { useNavigate } from 'react-router-dom';
 import { auth, db, firebaseApiKey } from '../firebase';
 import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { showSuccess, showError } from '../utils/toast';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -37,7 +37,7 @@ function LoginForm() {
   const [identifier, setIdentifier] = useState(''); // email or account
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [remember, setRemember] = useState<boolean>(true);
+  const [remember, setRemember] = useState<boolean>(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [plainPasswordWarning, setPlainPasswordWarning] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -126,26 +126,7 @@ function LoginForm() {
 
       // Log the request shape (without the password) to help debug network issues
       console.debug('Calling Firebase signInWithEmailAndPassword', { email: emailToUse, returnSecureToken: true });
-  const cred = await signInWithEmailAndPassword(auth, emailToUse, pwdTrim);
-
-      // Cache user uid/profile in localStorage so header can show immediate info while auth initializes
-      try {
-        const uid = cred.user?.uid;
-        if (uid) {
-          localStorage.setItem('last_signed_in_uid', uid);
-          try {
-            const userRef = doc(db, 'users', uid);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-              localStorage.setItem('user_profile_cache', JSON.stringify(userSnap.data()));
-            }
-          } catch (cacheErr) {
-            // ignore
-          }
-        }
-      } catch (e) {
-        // ignore caching errors
-      }
+      await signInWithEmailAndPassword(auth, emailToUse, pwdTrim);
 
       // If remember was checked, store an expiry timestamp (7 days). We'll enforce expiry on app start.
       try {
@@ -214,9 +195,7 @@ function LoginForm() {
             type="checkbox" 
             id="login-remember" 
             name="remember" 
-            className="auth-checkbox"
-            checked={remember}
-            onChange={(e:any)=>setRemember(Boolean(e.target.checked))}
+            className="auth-checkbox" 
           /> Ghi nhớ đăng nhập
         </label>
         <a href="#" className="auth-link">Quên mật khẩu?</a>

@@ -10,6 +10,19 @@ import { collection, getDocs, query, orderBy, where, limit } from "firebase/fire
 import { addToCart } from "../utils/cart";
 import { showSuccess, showError } from "../utils/toast";
 
+// Small slugify helper for category default slugs
+const slugify = (input: string) => {
+  if (!input) return '';
+  let s = input.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  s = s.toLowerCase();
+  // Vietnamese specific: convert 'đ' to 'd' (and uppercase handled by toLowerCase above)
+  s = s.replace(/đ/g, 'd');
+  s = s.replace(/[^a-z0-9]+/g, '-');
+  s = s.replace(/^-+|-+$/g, '');
+  s = s.replace(/-+/g, '-');
+  return s;
+}
+
 // --- Kiểu dữ liệu cho props ---
 type ProductCardProps = {
   id: string;
@@ -18,6 +31,7 @@ type ProductCardProps = {
   price: string;
   oldPrice?: string;
   tag?: string | null;
+  slug?: string | null;
   onShowLoginWarning?: () => void;
 };
 
@@ -27,7 +41,7 @@ type CategoryCardProps = {
 };
 
 // --- Component Card Sản Phẩm ---
-function ProductCard({ id, image, name, price, oldPrice, tag, onShowLoginWarning }: ProductCardProps) {
+function ProductCard({ id, image, name, price, oldPrice, tag, slug, onShowLoginWarning }: ProductCardProps) {
   const navigate = useNavigate();
   const isSale = oldPrice !== undefined;
   
@@ -54,18 +68,8 @@ function ProductCard({ id, image, name, price, oldPrice, tag, onShowLoginWarning
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    console.log('handleAddToCart called');
-    console.log('auth.currentUser:', auth.currentUser);
-    console.log('isAnonymous:', auth.currentUser?.isAnonymous);
-    
     if (!auth.currentUser || auth.currentUser.isAnonymous) {
-      console.log('Showing login warning');
-      if (onShowLoginWarning) {
-        onShowLoginWarning();
-      } else {
-        console.error('onShowLoginWarning is not defined!');
-      }
+      if (onShowLoginWarning) onShowLoginWarning();
       return;
     }
 
@@ -107,7 +111,7 @@ function ProductCard({ id, image, name, price, oldPrice, tag, onShowLoginWarning
 
   return (
     <div className="home-product-card cursor-pointer">
-      <div className="home-product-image-wrapper" onClick={() => navigate('/products')}>
+      <div className="home-product-image-wrapper" onClick={() => navigate(`/product-detail/${slug || id}`)}>
         <div className="home-product-image-container">
           {imageUrl ? (
             <img 
@@ -124,7 +128,7 @@ function ProductCard({ id, image, name, price, oldPrice, tag, onShowLoginWarning
         </div>
         {tag && <span className="home-product-tag">{tag}</span>}
       </div>
-      <span className="home-product-name" onClick={() => navigate('/products')}>{name}</span>
+  <span className="home-product-name" onClick={() => navigate(`/product-detail/${slug || id}`)}>{name}</span>
       <div className="home-product-price-row">
         <span className="home-product-price">{formatPrice(price)}</span>
         {isSale && oldPrice && <span className="home-product-old-price">{formatPrice(oldPrice)}</span>}
@@ -306,11 +310,11 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
   }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timer;
+    let intervalId: number | null = null;
     if (showFloating) {
-      interval = setInterval(() => setCountdown(calculateCountdown()), 1000);
+      intervalId = window.setInterval(() => setCountdown(calculateCountdown()), 1000);
     }
-    return () => clearInterval(interval);
+    return () => { if (intervalId !== null) window.clearInterval(intervalId); };
   }, [showFloating]);
 
   const closeOverlay = () => {
@@ -415,19 +419,20 @@ export default function TiemBachHoaIndex() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Debug: log khi showLoginWarning thay đổi
-  useEffect(() => {
-    console.log('showLoginWarning changed to:', showLoginWarning);
-    console.trace('Stack trace:');
-  }, [showLoginWarning]);
+  // Removed noisy debug logging for showLoginWarning — keep console clean in production/dev
 
-  // default categories order (fallback)
-  const defaultCategories = [
-    { name: "Hàng mới về", icon: "🆕" },
-    { name: "Khuyến mãi sốc", icon: "🔥" },
-    { name: "Hàng 2nd", icon: "♻️" },
-    { name: "Đồ công nghệ", icon: "💻" }
-  ];
+    // default categories order (fallback)
+    // Use explicit overrides for a few names where we prefer a specific slug
+    const slugOverrides: Record<string, string> = {
+      'Khuyến mãi sốc': 'khuyen-mai'
+    };
+
+    const defaultCategories = [
+      { slug: slugOverrides['Hàng mới về'] || slugify('Hàng mới về'), name: "Hàng mới về", icon: "🆕" },
+      { slug: slugOverrides['Khuyến mãi sốc'] || slugify('Khuyến mãi sốc'), name: "Khuyến mãi sốc", icon: "🔥" },
+      { slug: slugOverrides['Hàng 2nd'] || slugify('Hàng 2nd'), name: "Hàng 2nd", icon: "♻️" },
+      { slug: slugOverrides['Đồ công nghệ'] || slugify('Đồ công nghệ'), name: "Đồ công nghệ", icon: "💻" }
+    ];
 
   // fetch products and categories from Firestore
   useEffect(() => {
@@ -441,7 +446,7 @@ export default function TiemBachHoaIndex() {
           limit(4)
         );
         const newProductsSnapshot = await getDocs(newProductsQuery);
-        const loadedNewProducts = newProductsSnapshot.docs.map(d => {
+  const loadedNewProducts = newProductsSnapshot.docs.map(d => {
           const data = d.data() as any;
           // Lấy image - có thể là array hoặc string
           let imageUrl = '';
@@ -455,17 +460,20 @@ export default function TiemBachHoaIndex() {
           
           return {
             id: d.id,
+            slug: data.slug || d.id,
             image: imageUrl,
             name: data.name || data.productName || data.title || 'Sản phẩm',
             price: data.newPrice || data.price || data.currentPrice || 0,
             oldPrice: data.oldPrice || data.originalPrice || undefined,
-            tag: 'Mới'
+            tag: 'Mới',
+            status: data.status || 'Đang bán',
+            stock: typeof data.stock === 'number' ? data.stock : (data.quantity || data.qty || 0),
           };
         });
-        console.log('Loaded new products:', loadedNewProducts);
         if (mounted) setNewProducts(loadedNewProducts);
       } catch (e) {
-        console.warn('Failed to load new products', e);
+        // Minimal warning to avoid noisy stacks in console
+        console.warn('Failed to load new products (check Firestore rules or network)');
         if (mounted) setNewProducts([]);
       }
 
@@ -491,6 +499,7 @@ export default function TiemBachHoaIndex() {
           
           return {
             id: d.id,
+            slug: data.slug || d.id,
             image: imageUrl,
             name: data.name || data.productName || data.title || 'Sản phẩm',
             price: data.newPrice || data.price || data.currentPrice || 0,
@@ -500,11 +509,10 @@ export default function TiemBachHoaIndex() {
           };
         });
         // Filter chỉ lấy sản phẩm có oldPrice, limit 4
-        const loadedSaleProducts = allProducts.filter(p => p.hasOldPrice).slice(0, 4);
-        console.log('Loaded sale products:', loadedSaleProducts);
+  const loadedSaleProducts = allProducts.filter(p => p.hasOldPrice).slice(0, 4);
         if (mounted) setSaleProducts(loadedSaleProducts);
       } catch (e) {
-        console.warn('Failed to load sale products', e);
+        console.warn('Failed to load sale products (check Firestore rules or network)');
         if (mounted) setSaleProducts([]);
       }
 
@@ -514,13 +522,16 @@ export default function TiemBachHoaIndex() {
         const cs = await getDocs(cq);
         const loadedCats = cs.docs.map(d => {
           const data = d.data() as any;
+          const name = data.name || data.categoryName || data.title || 'Danh mục';
+          // apply overrides for a few well-known category names so front-end routes match expectations
+          const overriddenSlug = slugOverrides[name] || data.slug || d.id;
           return {
             id: d.id,
-            name: data.name || data.categoryName || data.title || 'Danh mục',
+            slug: overriddenSlug,
+            name,
             icon: data.icon || data.image || data.imageUrl || data.thumbnail || ''
           };
         });
-        console.log('Loaded categories:', loadedCats);
         if (loadedCats.length === 0) {
           if (mounted) setCategories(defaultCategories);
         } else {
@@ -538,6 +549,8 @@ export default function TiemBachHoaIndex() {
     return () => { mounted = false; };
   }, []);
 
+  // Featured product calculation removed from index page — featured is handled per-category in CategoryContent
+
   // Kiễm tra đăng nhập khi component mount
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -546,6 +559,9 @@ export default function TiemBachHoaIndex() {
     });
     return () => unsubscribe();
   }, []);
+
+  // reference these values so linters/TypeScript don't complain about unused vars
+  useEffect(() => { void currentUser; void authLoading; }, [currentUser, authLoading]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -569,6 +585,8 @@ export default function TiemBachHoaIndex() {
     return () => observer.disconnect();
   }, []);
 
+  // newestAvailableProduct logic removed — category-level featured handled inside CategoryContent
+
   return (
     <div className="wrapper">
       <Header />
@@ -588,7 +606,7 @@ export default function TiemBachHoaIndex() {
         </div>
         <div className="category-grid">
           {categories.map((cat) => (
-            <div key={cat.name} onClick={() => navigate("/products")}>
+            <div key={cat.name} onClick={() => navigate(`/categories/${(cat as any).slug || cat.name}`)}>
               <CategoryCard {...cat} />
             </div>
           ))}
@@ -596,6 +614,8 @@ export default function TiemBachHoaIndex() {
       </div>
 
     
+
+      {/* (featured removed from index - featured is shown on category pages) */}
 
       {/* HOT SALES */}
       <div className="relative fade-in-section">

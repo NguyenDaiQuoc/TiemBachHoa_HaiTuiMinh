@@ -102,7 +102,6 @@ export default function Header() {
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRecord, setUserRecord] = useState<any | null>(null);
-  const [tempUserUid, setTempUserUid] = useState<string | null>(null);
   const [monthlySpend, setMonthlySpend] = useState<number>(0);
   const [vipRank, setVipRank] = useState<string>('Thường');
   const [vipProgressPercent, setVipProgressPercent] = useState<number>(0);
@@ -128,18 +127,6 @@ export default function Header() {
   };
 
   useEffect(() => {
-    // read cached profile/uid to show immediate info if user just signed in
-    try {
-      const cachedUid = localStorage.getItem('last_signed_in_uid');
-      const cachedProfile = localStorage.getItem('user_profile_cache');
-      if (cachedUid) setTempUserUid(cachedUid);
-      if (cachedProfile) {
-        try { setUserRecord(JSON.parse(cachedProfile)); } catch(e){ /* ignore */ }
-      }
-    } catch(e) {
-      // ignore
-    }
-
     const unsub = onAuthStateChanged(auth, async (u) => {
       // enforce client-side remember expiry: if remember_until set and expired, sign out
       try {
@@ -156,7 +143,7 @@ export default function Header() {
         // ignore localStorage errors
       }
 
-  setCurrentUser(u);
+      setCurrentUser(u);
       if (u) {
         try {
           const ref = doc(db, 'users', u.uid);
@@ -179,7 +166,8 @@ export default function Header() {
   useEffect(() => {
     let unsubCart: (() => void) | null = null;
     setCartLoading(true);
-    if (currentUser) {
+    // Only subscribe for non-anonymous authenticated users. Anonymous users or guests won't have cart read permission.
+    if (currentUser && !currentUser.isAnonymous) {
       try {
         const q = query(collection(db, 'cart'), where('userID', '==', currentUser.uid));
         unsubCart = onSnapshot(q, (snap) => {
@@ -191,17 +179,18 @@ export default function Header() {
           setCartItems(items);
           setCartLoading(false);
         }, (err) => {
-          console.error('cart onSnapshot error', err);
+          // Permission errors are expected if rules disallow reads; log a concise warning and fall back to empty cart.
+          console.warn('cart onSnapshot warning', err?.message || err);
           setCartItems([]);
           setCartLoading(false);
         });
       } catch (err) {
-        console.error('subscribe cart error', err);
+        console.warn('subscribe cart failed', (err as any)?.message || err);
         setCartItems([]);
         setCartLoading(false);
       }
     } else {
-      // not logged in -> empty cart
+      // not logged in or anonymous -> empty cart
       setCartItems([]);
       setCartLoading(false);
     }
@@ -222,60 +211,20 @@ export default function Header() {
       try {
         const now = new Date();
         const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-        // Primary (efficient) query: userID == uid AND createdAt >= start
-        try {
-          const q = query(collection(db, 'orders'), where('userID', '==', currentUser.uid), where('createdAt', '>=', start));
-          const snap = await getDocs(q);
-          let sum = 0;
-          snap.forEach(d => {
-            const data: any = d.data();
-            const n = Number(data.total || data.amount || data.subtotal || 0) || 0;
-            sum += n;
-          });
-          setMonthlySpend(sum);
-          const r = getRankFor(sum);
-          setVipRank(r.current);
-          setVipProgressPercent(r.percent);
-          return;
-        } catch (primaryErr: any) {
-          const msg = String(primaryErr?.message || primaryErr || '');
-          console.warn('monthly spend primary query failed:', msg);
-
-          // If Firestore requires a composite index, do NOT run a broad createdAt-only query
-          // because that may violate security rules (permission-denied) and return excessive data.
-          if (msg.includes('requires an index') || msg.includes('create it here')) {
-            // Provide the console link in warning to make it easy to create the index.
-            // The error message from Firestore typically includes the exact console URL.
-            const indexUrlMatch = msg.match(/https:\/\/console\.firebase\.google\.com[\S]+/);
-            const indexUrl = indexUrlMatch ? indexUrlMatch[0] : 'https://console.firebase.google.com/project';
-            console.warn('Firestore composite index required for this query. Create it here:', indexUrl);
-
-            // Fail gracefully: show 0 (or cached value) instead of attempting a broad query that may be blocked.
-            setMonthlySpend(0);
-            const r = getRankFor(0);
-            setVipRank(r.current);
-            setVipProgressPercent(r.percent);
-            return;
-          }
-
-          // If the primary error is permission-related, surface a friendly message and bail out.
-          if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('insufficient')) {
-            console.warn('Permission denied when reading orders for monthly spend. Check Firestore security rules and ensure the authenticated user can read their own orders.');
-            setMonthlySpend(0);
-            const r = getRankFor(0);
-            setVipRank(r.current);
-            setVipProgressPercent(r.percent);
-            return;
-          }
-
-          // otherwise rethrow to be handled by outer catch
-          throw primaryErr;
-        }
+        const q = query(collection(db, 'orders'), where('userID', '==', currentUser.uid), where('createdAt', '>=', start));
+        const snap = await getDocs(q);
+        let sum = 0;
+        snap.forEach(d => {
+          const data: any = d.data();
+          const n = Number(data.total || data.amount || data.subtotal || 0) || 0;
+          sum += n;
+        });
+        setMonthlySpend(sum);
+        const r = getRankFor(sum);
+        setVipRank(r.current);
+        setVipProgressPercent(r.percent);
       } catch (e) {
         console.error('compute monthly spend error', e);
-        setMonthlySpend(0);
-        setVipRank('Thường');
-        setVipProgressPercent(0);
       }
     };
     compute();
@@ -292,7 +241,6 @@ export default function Header() {
     return '#111827';
   };
 
-  const isGuest = !(currentUser || tempUserUid) || (currentUser && (currentUser as any).isAnonymous);
   return (
     <div className="main-header-wrapper">
       <Toaster />
@@ -301,7 +249,7 @@ export default function Header() {
 
       <div className="header">
         {/* Class gốc: flex justify-between items-center p-4 */}
-        <div className="header-container flex justify-between items-center p-4">
+        <div className="header-container justify-between items-center p-4">
 
           {/* LOGO */}
           <a href="/" className="header-logo-text font-bold text-lg">
@@ -373,7 +321,7 @@ export default function Header() {
               {isUserDropdownOpen && (
                 <div className="user-dropdown">
                   <div className="user-dropdown-list">
-                    {isGuest ? (
+                    {(!currentUser || currentUser.isAnonymous) ? (
                       <>
                         <a href="/login">Đăng nhập</a>
                         <a href="/register">Đăng ký</a>
@@ -387,11 +335,11 @@ export default function Header() {
                             <div style={{ width: 40, height: 40, borderRadius: 999, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>👤</div>
                           )}
                           <div>
-                              <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span>{(userRecord?.fullName || currentUser?.displayName || currentUser?.email || '').split(' ').pop() || 'User'}</span>
+                            <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span>{(userRecord?.fullName || currentUser.displayName || currentUser.email || '').split(' ').pop() || 'User'}</span>
                               <span style={{ width: 16, height: 16, borderRadius: 4, background: vipColor(userRecord?.vip), display: 'inline-block' }} title={userRecord?.vip || ''}></span>
                             </div>
-                            <div style={{ fontSize: 12, color: '#6b7280' }}>{userRecord?.email || currentUser?.email || ''}</div>
+                            <div style={{ fontSize: 12, color: '#6b7280' }}>{userRecord?.email || currentUser.email}</div>
                             {/* VIP progress summary */}
                             <div style={{ marginTop: 8 }}>
                               <div style={{ fontSize: 12, color: '#374151' }}>Chi tiêu tháng: <strong>{formatCurrency(monthlySpend || 0)}</strong></div>

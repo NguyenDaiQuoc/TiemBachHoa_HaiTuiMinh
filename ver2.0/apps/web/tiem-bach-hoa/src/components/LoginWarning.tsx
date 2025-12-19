@@ -12,16 +12,12 @@ export default function LoginWarning({
 }: LoginWarningProps) {
   const navigate = useNavigate();
 
-  console.log('LoginWarning rendered with message:', message);
-
   const handleLogin = () => {
-    console.log('handleLogin called');
     if (onClose) onClose();
     navigate('/login');
   };
 
   const handleClose = () => {
-    console.log('handleClose called');
     if (onClose) {
       onClose();
     } else {

@@ -114,14 +114,21 @@ export default function Sidebar({ activeSlug, setActiveSlug, setCategoryTree, ca
                 
                 const querySnapshot = await getDocs(q);
 
+                // If you want to override some slugs for nicer URLs, add them here
+                const slugOverrides: Record<string, string> = {
+                    'Khuyến mãi sốc': 'khuyen-mai'
+                };
+
                 const firestoreCategories: CategoryItem[] = querySnapshot.docs.map(doc => {
                     const data = doc.data();
                     const parentId = data.parentId === 'null' ? null : data.parentId || null;
+                    const name = data.name || 'Không tên';
+                    const overriddenSlug = slugOverrides[name] || data.slug || doc.id;
 
                     return {
                         id: doc.id,
-                        name: data.name || 'Không tên',
-                        slug: data.slug || '',
+                        name,
+                        slug: overriddenSlug,
                         icon: data.icon || undefined,
                         parentId: parentId,
                         status: data.status || 'visible',

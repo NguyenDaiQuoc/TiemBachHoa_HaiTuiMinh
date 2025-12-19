@@ -119,10 +119,9 @@ export default function InventoryPage() {
     setShowProductPicker(true);
     try {
       const snap = await getDocs(collection(db, 'warehouse'));
-      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      console.log('Warehouse items loaded:', items); // Debug log
-      console.log('First warehouse item:', items[0]); // Debug first item structure
-      setWarehouseItems(items.slice(0, 200));
+  const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  // removed debug logs: warehouse items loaded
+  setWarehouseItems(items.slice(0, 200));
     } catch (err) {
       console.error('Load warehouse items error', err);
       setWarehouseItems([]);
@@ -132,18 +131,15 @@ export default function InventoryPage() {
   const closeProductPicker = () => setShowProductPicker(false);
 
   const handlePickFromWarehouse = (w:any) => {
-    console.log('Picking from warehouse:', w); // Debug
+    // picking from warehouse record
     // fill selected product from warehouse record
     let productImages = [];
     if (w.images && Array.isArray(w.images) && w.images.length > 0) {
       productImages = w.images;
-      console.log('Using w.images array:', productImages);
     } else if (w.image && typeof w.image === 'string') {
       productImages = [w.image];
-      console.log('Using w.image string:', productImages);
     } else if (w.image && Array.isArray(w.image) && w.image.length > 0) {
       productImages = w.image;
-      console.log('Using w.image array:', productImages);
     }
     
     const asProduct = {
@@ -153,7 +149,7 @@ export default function InventoryPage() {
       stock: w.stock || 0,
       slug: w.slug || '',
     };
-    console.log('Created asProduct:', asProduct); // Debug
+  // created product object from warehouse record
     setSelectedProduct(asProduct);
     setQuantity(1);
     setShowProductPicker(false);
@@ -371,8 +367,7 @@ export default function InventoryPage() {
         isNewProduct: !selectedProduct,
       };
       finalLineItems = [single];
-      setLineItems(finalLineItems); // Update state for UI
-      console.log('📦 Tạo line item từ form:', single); // Debug
+  setLineItems(finalLineItems); // Update state for UI
     }
 
     if (!poSupplier && supplier) setPoSupplier(supplier);
@@ -382,7 +377,7 @@ export default function InventoryPage() {
 
     if (!poSupplier) return showError('Vui lòng nhập tên đơn vị nhập (Supplier)');
     
-    console.log('📋 Phiếu nhập mới:', finalInvoice, 'Số sản phẩm:', finalLineItems.length);
+  // preparing invoice (finalInvoice) and line item count available in UI
 
     // Check authentication before proceeding with upload
     if (!auth.currentUser) {

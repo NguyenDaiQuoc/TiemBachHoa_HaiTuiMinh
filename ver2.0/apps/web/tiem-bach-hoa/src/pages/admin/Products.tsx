@@ -76,6 +76,7 @@ type FormProductData = Omit<ProductData,
   | 'averageRating' | 'ratingBreakdown' | 'ratingCount' | 'totalRatingSum'
 > & {
   id?: string;
+  slug?: string;
   newPriceInput: number;
   oldPriceInput: number;
   discountInput: number;
@@ -84,6 +85,7 @@ type FormProductData = Omit<ProductData,
 // Dữ liệu mặc định cho sản phẩm mới
 const defaultNewProduct: FormProductData = {
   name: '',
+  slug: '',
   categorySlugs: [],
   status: 'Tạm ẩn',
   description: '',
@@ -257,6 +259,10 @@ const ProductFormModal: React.FC<{
   const [uploadedVideos, setUploadedVideos] = useState<string[]>(product.video);
   const [warehouseOptions, setWarehouseOptions] = useState<Array<any>>([]);
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
+  const [categoryOptions, setCategoryOptions] = useState<Array<{slug:string,name:string}>>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [categoryInputText, setCategoryInputText] = useState<string>((product.categorySlugs || []).join(', '));
+  const [tagInputText, setTagInputText] = useState<string>((product.tag || []).join(', '));
 
   // Load warehouse items for selection (to allow choosing existing warehouse product when creating product)
   useEffect(() => {
@@ -271,6 +277,42 @@ const ProductFormModal: React.FC<{
       }
     };
     loadWarehouse();
+  }, []);
+
+  // keep raw input text in sync when user toggles checkboxes or suggestions
+  useEffect(() => {
+    setCategoryInputText((formData.categorySlugs || []).join(', '));
+    setTagInputText((formData.tag || []).join(', '));
+  }, [formData.categorySlugs, formData.tag]);
+
+  // Load category options and tag suggestions (from existing products)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const cs = await getDocs(collection(db, 'categories'));
+        const cats = cs.docs.map(d => ({ slug: (d.data() as any).slug || d.id, name: (d.data() as any).name || d.id }));
+        if (mounted) setCategoryOptions(cats);
+      } catch (err) {
+        console.warn('Failed to load categories for product form', err);
+        setCategoryOptions([]);
+      }
+
+      try {
+        // collect tag suggestions from existing products (small scan)
+        const ps = await getDocs(collection(db, 'products'));
+        const tagsSet = new Set<string>();
+        ps.docs.forEach(d => {
+          const data = d.data() as any;
+          if (Array.isArray(data.tag)) data.tag.forEach((t: string) => tagsSet.add(t));
+        });
+        if (mounted) setTagSuggestions(Array.from(tagsSet));
+      } catch (err) {
+        console.warn('Failed to load tag suggestions', err);
+        setTagSuggestions([]);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
   // Xử lý thay đổi input
@@ -288,6 +330,22 @@ const ProductFormModal: React.FC<{
       ...prev,
       [name]: value.split(',').map(s => s.trim()).filter(s => s),
     }));
+  };
+
+  const toggleCategory = (slug: string) => {
+    setFormData(prev => {
+      const next = new Set(prev.categorySlugs || []);
+      if (next.has(slug)) next.delete(slug); else next.add(slug);
+      return { ...prev, categorySlugs: Array.from(next) } as FormProductData;
+    });
+  };
+
+  const toggleTagSuggestion = (tag: string) => {
+    setFormData(prev => {
+      const next = new Set(prev.tag || []);
+      if (next.has(tag)) next.delete(tag); else next.add(tag);
+      return { ...prev, tag: Array.from(next) } as FormProductData;
+    });
   };
 
   // Xử lý thay đổi Variations
@@ -384,6 +442,8 @@ const ProductFormModal: React.FC<{
                 </select>
                 <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Tên sản phẩm" required />
               </div>
+              <label>Slug (đường dẫn URL, có thể chỉnh sửa):</label>
+              <input type="text" name="slug" value={formData.slug || ''} onChange={handleChange} placeholder="ví dụ: sua-dau-goi-xyz" />
               {selectedWarehouseId && <div style={{fontSize:12,color:'#666',marginTop:6}}>Đã chọn sản phẩm từ kho — số tồn: {warehouseOptions.find(x=>x.id===selectedWarehouseId)?.stock || 0}</div>}
 
               <label>Mô Tả:</label>
@@ -408,11 +468,49 @@ const ProductFormModal: React.FC<{
             {/* Cột 2: Phân loại & Media */}
             <fieldset>
               <legend>Phân Loại & Media</legend>
-              <label>Category Slugs (cách nhau bởi dấu phẩy):</label>
-              <input type="text" value={formData.categorySlugs.join(', ')} onChange={(e) => handleArrayChange('categorySlugs', e.target.value)} />
+              <label>Chọn Danh Mục (có thể chọn nhiều):</label>
+              <div className="category-multiselect">
+                {categoryOptions.length === 0 ? (
+                  <div style={{fontSize:12,color:'#666'}}>Chưa có danh mục trong hệ thống, bạn có thể nhập slug thủ công:</div>
+                ) : (
+                  <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                    {categoryOptions.map(c => (
+                      <label key={c.slug} style={{display:'inline-flex',alignItems:'center',gap:6}}>
+                        <input type="checkbox" checked={(formData.categorySlugs || []).includes(c.slug)} onChange={() => toggleCategory(c.slug)} />
+                        <span style={{fontSize:13}}>{c.name} <small style={{color:'#666'}}>({c.slug})</small></span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div style={{marginTop:8}}>
+                  <div style={{fontSize:12,color:'#666'}}>Hoặc nhập slug thủ công (cách nhau bằng dấu phẩy):</div>
+                  <input
+                    type="text"
+                    value={categoryInputText}
+                    onChange={(e) => setCategoryInputText(e.target.value)}
+                    onBlur={() => handleArrayChange('categorySlugs', categoryInputText)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+                    placeholder="nhập slug danh mục, cách nhau bằng dấu phẩy"
+                  />
+                </div>
+              </div>
 
-              <label>Tags (cách nhau bởi dấu phẩy):</label>
-              <input type="text" value={formData.tag.join(', ')} onChange={(e) => handleArrayChange('tag', e.target.value)} />
+              <label>Tags (chọn hoặc nhập thêm):</label>
+              <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:8}}>
+                {(tagSuggestions || []).slice(0, 40).map(tag => (
+                  <button type="button" key={tag} onClick={() => toggleTagSuggestion(tag)} className={ (formData.tag||[]).includes(tag) ? 'tag-sel' : 'tag-plain' }>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={tagInputText}
+                onChange={(e) => setTagInputText(e.target.value)}
+                onBlur={() => handleArrayChange('tag', tagInputText)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+                placeholder="nhập tag, cách nhau bằng dấu phẩy"
+              />
 
               {/* UPLOAD ẢNH */}
               <div className="upload-control">
@@ -545,7 +643,7 @@ export default function AdminProductsPage() {
         const createdAtDate = data.createdAt && data.createdAt.toDate ? data.createdAt.toDate() : new Date();
 
         return {
-          id: doc.id, name: data.name || 'Sản phẩm không tên', categorySlugs: data.categorySlugs || [],
+          id: doc.id, name: data.name || 'Sản phẩm không tên', slug: data.slug || '', categorySlugs: data.categorySlugs || [],
           price: data.newPrice || data.oldPrice || 0, stock: totalStock, status: status, variants: variantCount,
           averageRating: data.averageRating || 0, createdAt: createdAtDate, description: data.description || '',
           discount: data.discount || 0, image: data.image || [], newPrice: data.newPrice || 0, oldPrice: data.oldPrice || 0,
@@ -597,6 +695,7 @@ export default function AdminProductsPage() {
     if (productToEdit) {
       const formProduct: FormProductData = {
         ...productToEdit,
+        slug: (productToEdit as any).slug || '',
         newPriceInput: productToEdit.newPrice,
         oldPriceInput: productToEdit.oldPrice,
         discountInput: productToEdit.discount,
@@ -619,11 +718,11 @@ export default function AdminProductsPage() {
     const videoArray = formData.video; // Đã là mảng URL/tên file
 
     // Chuẩn bị đối tượng dữ liệu để gửi lên Firestore
-    // Ensure slug uniqueness before saving
-    const baseSlug = slugify(formData.name || '');
-    const finalSlug = await generateUniqueSlug(baseSlug, formData.id);
+  // Determine desired slug: prefer admin-provided slug, else generate from name
+  const desiredBase = (formData.slug && String(formData.slug).trim()) ? String(formData.slug).trim() : String(formData.name || '');
+  const finalSlug = await generateUniqueSlug(desiredBase, formData.id);
 
-    const firestoreData = {
+  const firestoreData = {
       name: formData.name,
       slug: finalSlug,
       description: formData.description,
