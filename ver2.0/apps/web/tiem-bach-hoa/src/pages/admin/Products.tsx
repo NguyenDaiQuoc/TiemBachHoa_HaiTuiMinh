@@ -142,10 +142,33 @@ const VariationForm: React.FC<{
 
   const handleVChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    onChange(index, {
-      ...variation,
-      [name]: type === 'number' ? Number(value) || 0 : value,
-    });
+    const typed = type === 'number' ? (Number(value) || 0) : value;
+
+    let next: Variation = { ...variation, [name]: typed } as Variation;
+
+    // Auto-calc discount% when old/new price changes (rounded, clamped 0–100)
+    if (name === 'oldPrice' || name === 'newPrice') {
+      const oldP = name === 'oldPrice' ? (Number(value) || 0) : (variation.oldPrice || 0);
+      const newP = name === 'newPrice' ? (Number(value) || 0) : (variation.newPrice || 0);
+      if (oldP > 0 && newP >= 0) {
+        const percent = Math.round(Math.max(0, Math.min(100, ((oldP - newP) / oldP) * 100)));
+        next = { ...next, discount: percent } as Variation;
+      } else {
+        next = { ...next, discount: 0 } as Variation;
+      }
+    }
+
+    // If discount% changes, auto-calc newPrice (rounded)
+    if (name === 'discount') {
+      const oldP = variation.oldPrice || 0;
+      const d = Number(value) || 0;
+      if (oldP > 0 && d >= 0 && d <= 100) {
+        const newP = Math.round(oldP * (100 - d) / 100);
+        next = { ...next, newPrice: newP } as Variation;
+      }
+    }
+
+    onChange(index, next);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -318,10 +341,41 @@ const ProductFormModal: React.FC<{
   // Xử lý thay đổi input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name.includes('Price') || name.includes('Discount') ? Number(value) || 0 : value,
-    }));
+    setFormData(prev => {
+      const isNumericField = name.includes('Price') || name.includes('Discount');
+      const typed = isNumericField ? (Number(value) || 0) : value;
+
+      const updates: any = { [name]: typed };
+
+      // Tự động sinh slug khi thay đổi tên sản phẩm
+      if (name === 'name' && value) {
+        updates.slug = slugify(value);
+      }
+
+      // Tự tính giảm giá (%) khi thay đổi giá
+      if (name === 'oldPriceInput' || name === 'newPriceInput') {
+        const oldP = name === 'oldPriceInput' ? (Number(value) || 0) : (prev.oldPriceInput || 0);
+        const newP = name === 'newPriceInput' ? (Number(value) || 0) : (prev.newPriceInput || 0);
+        if (oldP > 0 && newP >= 0) {
+          const percent = Math.round(Math.max(0, Math.min(100, ((oldP - newP) / oldP) * 100)));
+          updates.discountInput = percent;
+        } else {
+          updates.discountInput = 0;
+        }
+      }
+
+      // Ngược lại: nếu người dùng nhập % giảm giá, tự tính lại giá mới
+      if (name === 'discountInput') {
+        const oldP = prev.oldPriceInput || 0;
+        const d = Number(value) || 0;
+        if (oldP > 0 && d >= 0 && d <= 100) {
+          const newP = Math.round(oldP * (100 - d) / 100);
+          updates.newPriceInput = newP;
+        }
+      }
+
+      return { ...prev, ...updates };
+    });
   };
 
   // Xử lý thay đổi cho các mảng slugs/tags
@@ -424,10 +478,18 @@ const ProductFormModal: React.FC<{
                 <select value={selectedWarehouseId} onChange={(e)=>{
                   const id = e.target.value;
                   setSelectedWarehouseId(id);
-                  if (!id) { setFormData(prev => ({...prev, name: ''})); return; }
+                  if (!id) { 
+                    setFormData(prev => ({...prev, name: '', slug: ''})); 
+                    return; 
+                  }
                   const w = warehouseOptions.find(x=> x.id === id || x.productId === id);
                   if (w) {
-                    setFormData(prev => ({ ...prev, name: w.productName || prev.name }));
+                    const productName = w.productName || '';
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      name: productName,
+                      slug: slugify(productName) // Tự động sinh slug khi chọn từ kho
+                    }));
                     setUploadedImages(w.image ? [w.image] : (w.images || []));
                     // set a default variation stock if empty
                     if (variationsState.length === 0) {

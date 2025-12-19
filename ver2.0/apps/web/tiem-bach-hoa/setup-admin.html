@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Admin Account</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #2196f3;
+    }
+    .success {
+      background: #e8f5e9;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #4caf50;
+      display: none;
+    }
+    .error {
+      background: #ffebee;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #f44336;
+      display: none;
+    }
+    button {
+      background: #2196f3;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #1976d2;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Setup Admin Account</h1>
+    
+    <div class="info">
+      <strong>Chú ý:</strong> Tool này sẽ kiểm tra và tạo quyền admin cho tài khoản đang đăng nhập.
+    </div>
+    
+    <div id="successMsg" class="success"></div>
+    <div id="errorMsg" class="error"></div>
+    
+    <button id="loginBtn">1. Đăng nhập Firebase</button>
+    <button id="checkBtn" disabled>2. Kiểm tra quyền admin</button>
+    <button id="createAdminBtn" disabled>3. Tạo quyền admin</button>
+    
+    <div id="status"></div>
+  </div>
+
+  <!-- Import Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js';
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js';
+    import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js';
+
+    // Import firebase config from your app
+    // You need to replace this with your actual firebase config
+    const firebaseConfig = {
+      // Copy from src/firebase.ts
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    
+    let currentUser = null;
+
+    const loginBtn = document.getElementById('loginBtn');
+    const checkBtn = document.getElementById('checkBtn');
+    const createAdminBtn = document.getElementById('createAdminBtn');
+    const status = document.getElementById('status');
+    const successMsg = document.getElementById('successMsg');
+    const errorMsg = document.getElementById('errorMsg');
+
+    function showStatus(msg, type = 'info') {
+      status.innerHTML = msg;
+      if (type === 'success') {
+        successMsg.innerHTML = msg;
+        successMsg.style.display = 'block';
+        errorMsg.style.display = 'none';
+      } else if (type === 'error') {
+        errorMsg.innerHTML = msg;
+        errorMsg.style.display = 'block';
+        successMsg.style.display = 'none';
+      } else {
+        successMsg.style.display = 'none';
+        errorMsg.style.display = 'none';
+      }
+    }
+
+    // Check auth state
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        showStatus(`✅ Đã đăng nhập: ${user.email}`);
+        loginBtn.disabled = true;
+        loginBtn.textContent = '✓ Đã đăng nhập';
+        checkBtn.disabled = false;
+      }
+    });
+
+    // Login
+    loginBtn.addEventListener('click', async () => {
+      try {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        currentUser = result.user;
+        showStatus(`✅ Đăng nhập thành công: ${currentUser.email}`, 'success');
+        checkBtn.disabled = false;
+      } catch (error) {
+        showStatus(`❌ Lỗi đăng nhập: ${error.message}`, 'error');
+      }
+    });
+
+    // Check admin status
+    checkBtn.addEventListener('click', async () => {
+      if (!currentUser) {
+        showStatus('❌ Vui lòng đăng nhập trước', 'error');
+        return;
+      }
+
+      try {
+        showStatus('🔍 Đang kiểm tra...');
+        
+        const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+
+        let statusHtml = `<strong>User ID:</strong> ${currentUser.uid}<br>`;
+        statusHtml += `<strong>Email:</strong> ${currentUser.email}<br><br>`;
+
+        if (adminDoc.exists()) {
+          statusHtml += '✅ <strong>Admin document tồn tại!</strong><br>';
+          statusHtml += `Data: ${JSON.stringify(adminDoc.data(), null, 2)}<br>`;
+          showStatus(statusHtml, 'success');
+          createAdminBtn.disabled = true;
+          createAdminBtn.textContent = '✓ Đã có quyền admin';
+        } else {
+          statusHtml += '❌ <strong>Không tìm thấy admin document</strong><br>';
+          createAdminBtn.disabled = false;
+        }
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          statusHtml += '<br>📄 <strong>User document:</strong><br>';
+          statusHtml += `Role: ${userData.role || '(chưa có)'}<br>`;
+          if (userData.role === 'admin') {
+            statusHtml += '✅ Role = admin';
+          }
+        } else {
+          statusHtml += '<br>❌ <strong>Không tìm thấy user document</strong>';
+        }
+
+        showStatus(statusHtml);
+      } catch (error) {
+        showStatus(`❌ Lỗi kiểm tra: ${error.message}`, 'error');
+        console.error(error);
+      }
+    });
+
+    // Create admin
+    createAdminBtn.addEventListener('click', async () => {
+      if (!currentUser) {
+        showStatus('❌ Vui lòng đăng nhập trước', 'error');
+        return;
+      }
+
+      if (!confirm('Tạo quyền admin cho tài khoản này?')) {
+        return;
+      }
+
+      try {
+        showStatus('⏳ Đang tạo admin document...');
+
+        // Create admin document
+        await setDoc(doc(db, 'admins', currentUser.uid), {
+          email: currentUser.email,
+          displayName: currentUser.displayName || '',
+          photoURL: currentUser.photoURL || '',
+          createdAt: serverTimestamp(),
+          role: 'admin'
+        });
+
+        // Also update users document with admin role
+        await setDoc(doc(db, 'users', currentUser.uid), {
+          email: currentUser.email,
+          displayName: currentUser.displayName || '',
+          photoURL: currentUser.photoURL || '',
+          role: 'admin',
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        showStatus(`✅ Đã tạo quyền admin thành công!<br><br>
+          <strong>Bước tiếp theo:</strong><br>
+          1. Deploy firestore rules: <code>firebase deploy --only firestore:rules</code><br>
+          2. Refresh lại trang web và thử nhập hàng`, 'success');
+        
+        createAdminBtn.disabled = true;
+        createAdminBtn.textContent = '✓ Đã tạo admin';
+      } catch (error) {
+        showStatus(`❌ Lỗi tạo admin: ${error.message}<br><br>
+          Nếu lỗi permission, bạn cần:<br>
+          1. Vào Firebase Console > Firestore Database<br>
+          2. Tạo collection 'admins' thủ công<br>
+          3. Thêm document với ID = UID của bạn<br>
+          4. Sau đó chạy lại script này`, 'error');
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>

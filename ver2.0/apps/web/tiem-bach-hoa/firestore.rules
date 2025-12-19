@@ -12,11 +12,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // isAdmin checks users collection for a role field equal to 'admin'
+    // isAdmin checks both users and admins collections for admin role
     function isAdmin() {
-      return isAuthenticated()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && (
+        // Check if user exists in admins collection
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        ||
+        // OR check if user has admin role in users collection
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        )
+      );
     }
 
     // -- Publicly readable collections -----------------------------------------
@@ -39,7 +46,8 @@ service cloud.firestore {
     // Allow authenticated read so staff UI can show warehouse lists if needed.
     match /warehouse/{warehouseId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // Admins collection: allow a user to read their own admin document after sign-in
@@ -55,8 +63,8 @@ service cloud.firestore {
       // Allow any authenticated user to read inventory entries so the admin UI (when
       // authenticated) can load them. Creation/update/delete remain admin-only.
       allow read: if isAuthenticated();
-      // only admins may create inventory records; require adminId to match caller
-      allow create: if isAdmin() && request.resource.data.adminId == request.auth.uid;
+      // Allow admins to create inventory records
+      allow create: if isAdmin();
       allow update, delete: if isAdmin();
     }
 

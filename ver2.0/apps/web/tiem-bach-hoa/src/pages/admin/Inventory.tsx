@@ -1079,7 +1079,7 @@ export default function InventoryPage() {
           </div>
         )}
 
-        {/* Table area */}
+        {/* Table area - Grouped by Invoice */}
         <div className="po-table-wrapper inventory-list">
           <table className="po-table inv-table">
             <thead>
@@ -1087,32 +1087,68 @@ export default function InventoryPage() {
                 <th>Ngày</th>
                 <th>Nhà cung cấp</th>
                 <th>Số hóa đơn</th>
-                <th>Sản phẩm</th>
-                <th>Số lượng</th>
-                <th>Giá nhập</th>
-                <th>Tổng</th>
-                <th>Hình</th>
+                <th>Số lượng SP</th>
+                <th>Tổng SL</th>
+                <th>Tổng tiền</th>
+                <th>Hình hoá đơn</th>
                 <th>Hành động</th>
               </tr>
             </thead>
             <tbody>
-              {filteredEntries
-                .map((en:any) => (
-                  <tr key={en.id}>
-                    <td>{en.date || (en.createdAt?.toDate ? en.createdAt.toDate().toLocaleString() : '')}</td>
-                    <td>{en.supplier}</td>
-                    <td>{en.invoiceNumber || ''}</td>
-                    <td>{en.productName}</td>
-                    <td>{en.qty}</td>
-                    <td>{en.unitPrice ? (Number(en.unitPrice).toLocaleString('vi-VN') + ' ₫') : ''}</td>
-                    <td>{en.totalPrice ? (Number(en.totalPrice).toLocaleString('vi-VN') + ' ₫') : ''}</td>
+              {(() => {
+                // Group filteredEntries by invoiceNumber
+                const invoiceMap: Record<string, any> = {};
+                filteredEntries.forEach((en: any) => {
+                  const key = en.invoiceNumber || '(không có)';
+                  if (!invoiceMap[key]) {
+                    invoiceMap[key] = {
+                      invoiceNumber: key,
+                      supplier: en.supplier || '',
+                      date: en.date || en.createdAt || '',
+                      invoiceImage: en.invoiceImage || '',
+                      notes: en.notes || '',
+                      items: [],
+                      totalQty: 0,
+                      totalAmount: 0,
+                    };
+                  }
+                  invoiceMap[key].items.push(en);
+                  invoiceMap[key].totalQty += Number(en.qty) || 0;
+                  invoiceMap[key].totalAmount += Number(en.totalPrice) || 0;
+                });
+
+                // Sort by date (newest first)
+                const invoiceList = Object.values(invoiceMap).sort((a: any, b: any) => {
+                  const da = a.date && a.date.toDate ? a.date.toDate().getTime() : (Date.parse(String(a.date)) || 0);
+                  const db = b.date && b.date.toDate ? b.date.toDate().getTime() : (Date.parse(String(b.date)) || 0);
+                  return db - da;
+                });
+
+                if (invoiceList.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={8} style={{textAlign:'center',padding:'24px',color:'#999'}}>
+                        Chưa có phiếu nhập hàng nào
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return invoiceList.map((inv: any) => (
+                  <tr key={inv.invoiceNumber}>
+                    <td>{inv.date && inv.date.toDate ? inv.date.toDate().toLocaleDateString('vi-VN') : String(inv.date || '')}</td>
+                    <td>{inv.supplier}</td>
+                    <td><strong>{inv.invoiceNumber}</strong></td>
+                    <td>{inv.items.length} sản phẩm</td>
+                    <td>{inv.totalQty}</td>
+                    <td>{inv.totalAmount.toLocaleString('vi-VN')} ₫</td>
                     <td>
-                      {(en.images && en.images.length > 0) || en.image ? (
+                      {inv.invoiceImage ? (
                         <img 
-                          src={((en.images && en.images[0]) || en.image)} 
-                          alt={en.productName} 
-                          style={{width:60,height:60,objectFit:'cover',borderRadius:6,cursor:'pointer',border:'1px solid #eee'}} 
-                          onClick={()=>{ const imgs = (en.images && en.images.length>0) ? en.images : (en.image ? [en.image] : []); setLightboxImages(imgs); setLightboxStart(0); setLightboxOpen(true); }} 
+                          src={inv.invoiceImage} 
+                          alt="Hoá đơn" 
+                          style={{width:80,height:60,objectFit:'cover',borderRadius:6,cursor:'pointer',border:'1px solid #eee'}} 
+                          onClick={() => { setLightboxImages([inv.invoiceImage]); setLightboxStart(0); setLightboxOpen(true); }}
                           onError={(e:any) => { e.target.style.display = 'none'; }}
                         />
                       ) : (
@@ -1120,20 +1156,21 @@ export default function InventoryPage() {
                       )}
                     </td>
                     <td>
-                      <div className="action-buttons">
-                        <button className="inventory-btn inventory-btn-view" onClick={()=>openViewInvoice(en.invoiceNumber)} title="Xem chi tiết phiếu">
+                      <div className="action-buttons" style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                        <button className="inventory-btn inventory-btn-view" onClick={() => openViewInvoice(inv.invoiceNumber)} title="Xem chi tiết phiếu">
                           👁️ Xem phiếu
                         </button>
-                        <button className="inventory-btn inventory-btn-edit" onClick={()=>openEditInvoice(en.invoiceNumber)} title="Chỉnh sửa phiếu">
-                          ✏️ Sửa phiếu
+                        <button className="inventory-btn inventory-btn-edit" onClick={() => openEditInvoice(inv.invoiceNumber)} title="Chỉnh sửa phiếu">
+                          ✏️ Sửa
                         </button>
-                        <button className="inventory-btn inventory-btn-delete" onClick={()=>deleteInvoice(en.invoiceNumber)} title="Xóa phiếu">
-                          🗑️ Xóa phiếu
+                        <button className="inventory-btn inventory-btn-delete" onClick={() => deleteInvoice(inv.invoiceNumber)} title="Xóa phiếu">
+                          🗑️ Xóa
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                ));
+              })()}
             </tbody>
           </table>
         </div>
