@@ -15,7 +15,7 @@ export default function AdminBlogCategoryPage() {
   };
 
   return (
-    <div className="blog-wrapper">
+    <div className="admin-blog-wrapper">
       <div className="blog-container">
         <header className="blog-header">
           <h1 className="blog-title">Quản Lý Danh Mục Bài Viết (Blog)</h1>

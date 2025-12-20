@@ -8,13 +8,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import LoginWarning from './LoginWarning';
 import { db } from '../firebase';
 import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { addToCart } from '../utils/cart';
 import { showSuccess, showError } from '../utils/toast';
 
 // When a real backend exists we fetch products for the category and compute a featured (best-selling) product
 
-function ProductCard({ product, onShowLoginWarning }: { product: any, onShowLoginWarning?: () => void }) {
+function ProductCard({ product, currentUser, onShowLoginWarning }: { product: any, currentUser: any, onShowLoginWarning?: () => void }) {
     const navigate = useNavigate();
 
     const priceVal = typeof product.price === 'number' ? product.price : Number(product.price || 0);
@@ -28,7 +29,8 @@ function ProductCard({ product, onShowLoginWarning }: { product: any, onShowLogi
 
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!auth.currentUser || (auth.currentUser as any).isAnonymous) {
+        // Check currentUser from prop (from parent state listener)
+        if (!currentUser || (currentUser as any).isAnonymous) {
             if (onShowLoginWarning) onShowLoginWarning();
             return;
         }
@@ -42,7 +44,8 @@ function ProductCard({ product, onShowLoginWarning }: { product: any, onShowLogi
 
     const handleBuyNow = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!auth.currentUser || (auth.currentUser as any).isAnonymous) {
+        // Check currentUser from prop (from parent state listener)
+        if (!currentUser || (currentUser as any).isAnonymous) {
             if (onShowLoginWarning) onShowLoginWarning();
             return;
         }
@@ -144,20 +147,48 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
     // displayedProducts: up to 3 products to show as featured for this category
     const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
     const [showLoginWarning, setShowLoginWarning] = useState(false);
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
-    // Load products for selected category and compute local best-seller from recent orders
+    // Listen to auth state changes like Cart.tsx
+    useEffect(() => {
+        console.log('[CategoryContent] Setting up auth listener');
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            console.log('[CategoryContent] Auth state changed:', {
+                hasUser: !!user,
+                uid: user?.uid,
+                email: user?.email,
+                time: new Date().toLocaleTimeString()
+            });
+            setCurrentUser(user);
+        });
+        return () => {
+            console.log('[CategoryContent] Cleaning up auth listener');
+            unsubscribe();
+        };
+    }, []);
+
+    // Load products for selected category (don't depend on currentUser to avoid re-loading on auth changes)
     useEffect(() => {
         if (!activeSlug) return;
         let mounted = true;
         (async () => {
             try {
-                const pq = query(collection(db, 'products'), where('categorySlugs', 'array-contains', activeSlug), orderBy('createdAt', 'desc'), limit(20));
+                const pq = query(
+                    collection(db, 'products'),
+                    where('categorySlugs', 'array-contains', activeSlug),
+                    orderBy('createdAt', 'desc'),
+                    limit(20)
+                );
                 const ps = await getDocs(pq);
                 const loaded = ps.docs.map(d => {
                     const data = d.data() as any;
-                    const image = Array.isArray(data.image) ? (data.image[0] || '') : (typeof data.image === 'string' ? data.image : (data.imageUrl || data.thumbnail || ''));
+                    const image = Array.isArray(data.image)
+                        ? (data.image[0] || '')
+                        : (typeof data.image === 'string' ? data.image : (data.imageUrl || data.thumbnail || ''));
                     const createdAt = data.createdAt;
-                    const createdAtMs = createdAt && createdAt.seconds ? createdAt.seconds * 1000 : (typeof createdAt === 'number' ? createdAt : 0);
+                    const createdAtMs = createdAt && createdAt.seconds
+                        ? createdAt.seconds * 1000
+                        : (typeof createdAt === 'number' ? createdAt : 0);
                     return {
                         id: d.id,
                         slug: data.slug || d.id,
@@ -172,25 +203,39 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
                 });
                 if (!mounted) return;
                 // Prefer products that are currently available ('Đang bán' or stock>0)
-                const available = loaded.filter(p => (p.status && p.status.toString() === 'Đang bán') || (typeof p.stock === 'number' && p.stock > 0));
+                const available = loaded.filter(p => (
+                    p.status && p.status.toString() === 'Đang bán'
+                ) || (typeof p.stock === 'number' && p.stock > 0));
                 setProducts(available.length > 0 ? available : loaded);
+            } catch (err) {
+                console.warn('Failed to load category products (check Firestore rules or network)');
+                setProducts([]);
+            }
+        })();
+        return () => { mounted = false; };
+    }, [activeSlug]);
 
-                // Prepare source products to consider (prefer available stock)
-                if (loaded.length === 0) {
-                    setDisplayedProducts([]);
-                    return;
-                }
-                const sourceForCounts = (available && available.length > 0) ? available : loaded;
-                const ids = new Set(sourceForCounts.map((p:any) => p.id));
+    // Compute displayed products based on currentUser (auth state) - separate effect
+    useEffect(() => {
+        if (products.length === 0) {
+            setDisplayedProducts([]);
+            return;
+        }
 
-                // If the client is not authenticated, we cannot scan orders (rules). Show 3 newest products.
-                if (!auth.currentUser) {
-                    const newest = sourceForCounts.slice().sort((a:any,b:any) => (b.createdAtMs || 0) - (a.createdAtMs || 0)).slice(0,3);
-                    setDisplayedProducts(newest);
-                    return;
-                }
+        const sourceForCounts = products;
+        const ids = new Set(sourceForCounts.map((p:any) => p.id));
 
-                // Authenticated: scan recent orders (client-side limited window) and compute counts for products in this category
+        // If the client is not authenticated, show 3 newest products
+        if (!currentUser) {
+            const newest = sourceForCounts.slice().sort((a:any,b:any) => (b.createdAtMs || 0) - (a.createdAtMs || 0)).slice(0,3);
+            setDisplayedProducts(newest);
+            return;
+        }
+            console.log('[CategoryContent] Computing displayed products, currentUser:', { hasUser: !!currentUser, uid: currentUser?.uid });
+
+        // Authenticated: scan recent orders and compute counts for products in this category
+        (async () => {
+            try {
                 const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(200));
                 const ordersSnap = await getDocs(ordersQ);
                 const counts: Record<string, number> = {};
@@ -220,15 +265,11 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
                 const finalList = anySales ? withCounts : sourceForCounts.slice().sort((a:any,b:any) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
                 setDisplayedProducts(finalList.slice(0,3));
             } catch (err) {
-                // Avoid spamming the console with stack traces from Firestore rules errors.
-                // Keep a concise warning for diagnostics and fail gracefully in the UI.
-                console.warn('Failed to load category products (check Firestore rules or network)');
-                setProducts([]);
-                setFeatured(null);
+                console.warn('Failed to compute displayed products');
+                setDisplayedProducts(sourceForCounts.slice(0,3));
             }
         })();
-        return () => { mounted = false; };
-    }, [activeSlug]);
+    }, [products, currentUser]);
 
     // Trường hợp 1: Chưa chọn hoặc chọn danh mục Cha
     if (!activeSlug || isParentNode) {
@@ -263,7 +304,7 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
 
             <div className="cate-product-grid">
                 {displayedProducts.map(p => (
-                    <ProductCard key={p.id} product={p} onShowLoginWarning={() => setShowLoginWarning(true)} />
+                    <ProductCard key={p.id} product={p} currentUser={currentUser} onShowLoginWarning={() => setShowLoginWarning(true)} />
                 ))}
             </div>
 

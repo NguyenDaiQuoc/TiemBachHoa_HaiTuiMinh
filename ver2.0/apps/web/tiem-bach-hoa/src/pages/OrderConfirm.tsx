@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import LoginWarning from "../components/LoginWarning";
 import "../../css/order-confirm.css";
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 // Format tiền tệ
@@ -22,6 +23,21 @@ export default function OrderConfirm() {
   const [loading, setLoading] = useState<boolean>(!!orderId);
   const [order, setOrder] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Listen to auth state changes like Cart.tsx
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        setShowLoginWarning(true);
+      } else {
+        setShowLoginWarning(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!orderId) {
@@ -147,6 +163,12 @@ export default function OrderConfirm() {
 
       <FloatingButtons />
       <Footer />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để xem thông tin đơn hàng"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </div>
   );
 }

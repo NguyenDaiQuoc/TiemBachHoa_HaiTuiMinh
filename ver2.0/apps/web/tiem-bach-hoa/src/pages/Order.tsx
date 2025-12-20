@@ -23,12 +23,19 @@ const getStatusColor = (status) => {
 export default function OrderHistoryPage() {
   const navigate = useNavigate();
   const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Listen to auth state changes like Cart.tsx
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      setShowLoginWarning(true);
-    }
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        setShowLoginWarning(true);
+      } else {
+        setShowLoginWarning(false);
+      }
+    });
+    return () => unsubscribe();
   }, []);
   const orders = [
     { id: 'NH20251111', date: '11/11/2025', total: 710000, status: 'Đang Giao Hàng', items: [{ name: 'Nến Thơm Organic', quantity: 2 }] },

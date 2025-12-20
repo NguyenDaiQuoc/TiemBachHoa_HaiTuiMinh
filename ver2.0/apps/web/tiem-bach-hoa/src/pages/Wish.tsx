@@ -10,12 +10,19 @@ import { auth } from "../firebase";
 export default function WishlistPage() {
   const navigate = useNavigate();
   const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Listen to auth state changes like Cart.tsx
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      setShowLoginWarning(true);
-    }
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        setShowLoginWarning(true);
+      } else {
+        setShowLoginWarning(false);
+      }
+    });
+    return () => unsubscribe();
   }, []);
   const wishlistItems = [
     { id: 1, name: "Nến Thơm Organic Vỏ Cam Quế", price: 250000, stock: 15 },
@@ -88,6 +95,12 @@ export default function WishlistPage() {
       </div>
 
       <Footer />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để xem danh sách yêu thích"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </>
   );
 }

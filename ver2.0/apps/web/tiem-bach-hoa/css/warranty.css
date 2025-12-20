@@ -15,8 +15,6 @@
 /* --- LAYOUT WRAPPER --- */
 .wp-wrapper {
   background: var(--bg-main);
-  display: flex;
-  justify-content: center;
   padding: 40px 16px 80px;
   min-height: 100vh;
 }

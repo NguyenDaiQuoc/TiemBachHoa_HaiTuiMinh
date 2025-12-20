@@ -15,8 +15,8 @@ import { useNavigate } from 'react-router-dom';
 const moreMenuData = [
   { name: "Liên hệ", link: "/contact" },
   { name: "Blog", link: "/blog" },
-  { name: "Về chúng tôi", link: "/about" },
-  { name: "Câu chuyện", link: "/about/story" },
+  { name: "Về chúng tôi", link: "/about-us" },
+  { name: "Câu chuyện", link: "/story" },
 ];
 
 // ----------------------------------------------------------------------
@@ -102,6 +102,7 @@ export default function Header() {
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRecord, setUserRecord] = useState<any | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [monthlySpend, setMonthlySpend] = useState<number>(0);
   const [vipRank, setVipRank] = useState<string>('Thường');
   const [vipProgressPercent, setVipProgressPercent] = useState<number>(0);
@@ -127,22 +128,22 @@ export default function Header() {
   };
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      // enforce client-side remember expiry: if remember_until set and expired, sign out
-      try {
-        const rem = localStorage.getItem('remember_until');
-        if (rem && u) {
-          const until = Number(rem || '0');
-          if (until > 0 && Date.now() > until) {
-            // expired
-            auth.signOut();
-            return;
-          }
-        }
-      } catch (e) {
-        // ignore localStorage errors
+    // Restore user from localStorage first (instant)
+    try {
+      const saved = localStorage.getItem('tiem_user');
+      if (saved) {
+        const userData = JSON.parse(saved);
+        // Create a partial User object from saved data for instant UI update
+        // This will be verified by onAuthStateChanged below
+        setCurrentUser(userData as any);
+        setAuthLoading(false);
       }
+    } catch (e) {
+      console.warn('restore user from localStorage failed', e);
+    }
 
+    // Then verify with Firebase Auth (async)
+    const unsub = onAuthStateChanged(auth, async (u) => {
       setCurrentUser(u);
       if (u) {
         try {
@@ -155,8 +156,15 @@ export default function Header() {
           setUserRecord(null);
         }
       } else {
+        // User logged out - clear localStorage
+        try {
+          localStorage.removeItem('tiem_user');
+        } catch (e) {
+          console.warn('clear tiem_user from localStorage failed', e);
+        }
         setUserRecord(null);
       }
+      setAuthLoading(false);
     });
     return () => unsub();
   }, []);
@@ -321,7 +329,9 @@ export default function Header() {
               {isUserDropdownOpen && (
                 <div className="user-dropdown">
                   <div className="user-dropdown-list">
-                    {(!currentUser || currentUser.isAnonymous) ? (
+                    {authLoading ? (
+                      <div style={{ padding: 12, textAlign: 'center', color: '#6b7280' }}>Đang tải...</div>
+                    ) : (!currentUser || currentUser.isAnonymous) ? (
                       <>
                         <a href="/login">Đăng nhập</a>
                         <a href="/register">Đăng ký</a>
@@ -354,11 +364,17 @@ export default function Header() {
                           </div>
                         </div>
                         <a href="/profile">Thông tin cá nhân</a>
-                        <a href="/wishlist">❤️ Danh mục yêu thích</a>
-                        <a href="/orders">Đơn mua hàng</a>
+                        <a href="/wish-list">❤️ Danh mục yêu thích</a>
+                        <a href="/order-history">Đơn mua hàng</a>
                         <a href="/coupons">Mã giảm giá</a>
                         <a className="user-logout" href="#" onClick={(e) => { 
                           e.preventDefault(); 
+                          try {
+                            localStorage.removeItem('tiem_user');
+                            localStorage.removeItem('remember_until');
+                          } catch (e) {
+                            console.warn('clear localStorage failed', e);
+                          }
                           auth.signOut(); 
                           showSuccess('Đăng xuất thành công!');
                           setTimeout(() => window.location.reload(), 800);

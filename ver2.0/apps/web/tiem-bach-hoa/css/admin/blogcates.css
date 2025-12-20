@@ -15,7 +15,7 @@
 /* ===============================
    LAYOUT
 ================================*/
-.blog-wrapper {
+.admin-blog-wrapper {
   min-height: 100vh;
   background: var(--bg-light);
   display: flex;

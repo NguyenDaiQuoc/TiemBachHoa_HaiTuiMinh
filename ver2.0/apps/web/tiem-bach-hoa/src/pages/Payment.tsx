@@ -53,12 +53,19 @@ function PaymentCard({ method, isDefault }) {
 export default function PaymentMethodsPage() {
   const navigate = useNavigate();
   const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Listen to auth state changes like Cart.tsx
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      setShowLoginWarning(true);
-    }
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        setShowLoginWarning(true);
+      } else {
+        setShowLoginWarning(false);
+      }
+    });
+    return () => unsubscribe();
   }, []);
   const paymentMethods = [
     { id: 1, name: 'Thẻ Visa - Nguyễn V. A', type: 'Visa', last4: '4567', expiry: '12/28', isDefault: true },

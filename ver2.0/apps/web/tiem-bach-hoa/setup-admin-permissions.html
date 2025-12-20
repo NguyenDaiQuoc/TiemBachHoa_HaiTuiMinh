@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thiết lập Admin - Tiệm Bách Hóa</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .success {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #28a745;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        #status {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Thiết lập Quyền Admin</h1>
+
+        <div class="warning">
+            <strong>⚠️ Quan trọng:</strong> Trang này giúp bạn cấp quyền admin cho tài khoản của mình. 
+            Chỉ sử dụng cho tài khoản tin cậy!
+        </div>
+
+        <div class="section">
+            <h2>Bước 1: Đăng nhập</h2>
+            <button id="loginBtn" onclick="loginWithGoogle()">🔑 Đăng nhập với Google</button>
+            <div id="userInfo" style="display: none;" class="info">
+                <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                <p><strong>User ID:</strong> <span id="userId"></span></p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Bước 2: Cấp quyền Admin</h2>
+            <div class="info">
+                <p>Có 2 cách để cấp quyền admin:</p>
+                <ul>
+                    <li><strong>Cách 1:</strong> Thêm vào collection "admins" (Khuyên dùng)</li>
+                    <li><strong>Cách 2:</strong> Cập nhật role trong collection "users"</li>
+                </ul>
+            </div>
+            <button id="makeAdminBtn" onclick="makeUserAdmin()" disabled>
+                👑 Cấp quyền Admin (Cách 1)
+            </button>
+            <button id="updateRoleBtn" onclick="updateUserRole()" disabled>
+                📝 Cập nhật Role (Cách 2)
+            </button>
+        </div>
+
+        <div class="section">
+            <h2>Bước 3: Kiểm tra quyền</h2>
+            <button id="checkBtn" onclick="checkAdminStatus()" disabled>
+                🔍 Kiểm tra quyền Admin
+            </button>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="section">
+            <h2>📋 Hướng dẫn thủ công (nếu cần)</h2>
+            <p>Nếu các nút trên không hoạt động, bạn có thể sử dụng Firebase Console:</p>
+            
+            <h3>Cách 1: Thêm vào Admins Collection</h3>
+            <ol>
+                <li>Truy cập: <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a></li>
+                <li>Chọn project: <strong>tiembachhoa-haituiminh</strong></li>
+                <li>Vào <strong>Firestore Database</strong></li>
+                <li>Tạo collection mới tên <strong>admins</strong> (nếu chưa có)</li>
+                <li>Thêm document với ID là <strong>User ID của bạn</strong></li>
+                <li>Thêm field: <code>email</code>, <code>createdAt</code></li>
+            </ol>
+
+            <h3>Cách 2: Cập nhật Users Collection</h3>
+            <ol>
+                <li>Vào collection <strong>users</strong></li>
+                <li>Tìm document với ID là User ID của bạn</li>
+                <li>Thêm/sửa field <code>role</code> = <strong>"admin"</strong></li>
+            </ol>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDU2I_4bDFPGnAocp2mq_jK6UO0RFa8kNQ",
+            authDomain: "tiembachhoa-haituiminh.firebaseapp.com",
+            projectId: "tiembachhoa-haituiminh",
+            storageBucket: "tiembachhoa-haituiminh.firebasestorage.app",
+            messagingSenderId: "545584619256",
+            appId: "1:545584619256:web:49d9c18249a76f03a7e50d",
+            measurementId: "G-ZCS3EVRSEL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        window.currentUser = null;
+
+        window.loginWithGoogle = async function() {
+            const statusDiv = document.getElementById('status');
+            try {
+                const result = await signInWithPopup(auth, provider);
+                window.currentUser = result.user;
+                
+                document.getElementById('userEmail').textContent = result.user.email;
+                document.getElementById('userId').textContent = result.user.uid;
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('loginBtn').disabled = true;
+                document.getElementById('makeAdminBtn').disabled = false;
+                document.getElementById('updateRoleBtn').disabled = false;
+                document.getElementById('checkBtn').disabled = false;
+
+                statusDiv.innerHTML = '<div class="success">✅ Đăng nhập thành công!</div>';
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="warning">❌ Lỗi đăng nhập: ${error.message}</div>`;
+            }
+        };
+
+        window.makeUserAdmin = async function() {
+            if (!window.currentUser) {
+                alert('Vui lòng đăng nhập trước!');
+                return;
+            }
+
+            const statusDiv = document.getElementById('status');
+            try {
+                const adminRef = doc(db, 'admins', window.currentUser.uid);
+                await setDoc(adminRef, {
+                    email: window.currentUser.email,
+                    createdAt: serverTimestamp(),
+                    displayName: window.currentUser.displayName || '',
+                });
+
+                statusDiv.innerHTML = '<div class="success">✅ Đã thêm vào collection admins thành công!</div>';
+                
+                // Auto check status
+                setTimeout(() => checkAdminStatus(), 1000);
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="warning">❌ Lỗi: ${error.message}</div>`;
+            }
+        };
+
+        window.updateUserRole = async function() {
+            if (!window.currentUser) {
+                alert('Vui lòng đăng nhập trước!');
+                return;
+            }
+
+            const statusDiv = document.getElementById('status');
+            try {
+                const userRef = doc(db, 'users', window.currentUser.uid);
+                const userDoc = await getDoc(userRef);
+
+                if (userDoc.exists()) {
+                    await updateDoc(userRef, {
+                        role: 'admin'
+                    });
+                    statusDiv.innerHTML = '<div class="success">✅ Đã cập nhật role thành admin trong collection users!</div>';
+                } else {
+                    // Create new user document with admin role
+                    await setDoc(userRef, {
+                        email: window.currentUser.email,
+                        role: 'admin',
+                        createdAt: serverTimestamp(),
+                        displayName: window.currentUser.displayName || '',
+                    });
+                    statusDiv.innerHTML = '<div class="success">✅ Đã tạo user mới với role admin!</div>';
+                }
+
+                // Auto check status
+                setTimeout(() => checkAdminStatus(), 1000);
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="warning">❌ Lỗi: ${error.message}</div>`;
+            }
+        };
+
+        window.checkAdminStatus = async function() {
+            if (!window.currentUser) {
+                alert('Vui lòng đăng nhập trước!');
+                return;
+            }
+
+            const statusDiv = document.getElementById('status');
+            try {
+                const adminRef = doc(db, 'admins', window.currentUser.uid);
+                const userRef = doc(db, 'users', window.currentUser.uid);
+
+                const [adminDoc, userDoc] = await Promise.all([
+                    getDoc(adminRef),
+                    getDoc(userRef)
+                ]);
+
+                let result = '<div class="info"><h3>📊 Kết quả kiểm tra:</h3>';
+                
+                if (adminDoc.exists()) {
+                    result += '<p>✅ <strong>Có trong collection "admins"</strong></p>';
+                } else {
+                    result += '<p>❌ Không có trong collection "admins"</p>';
+                }
+
+                if (userDoc.exists() && userDoc.data().role === 'admin') {
+                    result += '<p>✅ <strong>Có role="admin" trong collection "users"</strong></p>';
+                } else if (userDoc.exists()) {
+                    result += `<p>❌ Role hiện tại: "${userDoc.data().role || 'không có'}"</p>`;
+                } else {
+                    result += '<p>❌ Không có trong collection "users"</p>';
+                }
+
+                const isAdmin = adminDoc.exists() || (userDoc.exists() && userDoc.data().role === 'admin');
+                
+                if (isAdmin) {
+                    result += '<p style="color: green; font-weight: bold; margin-top: 15px;">🎉 Bạn có quyền admin! Có thể tạo sản phẩm.</p>';
+                } else {
+                    result += '<p style="color: red; font-weight: bold; margin-top: 15px;">⚠️ Chưa có quyền admin. Vui lòng sử dụng nút "Cấp quyền Admin" ở trên.</p>';
+                }
+
+                result += '</div>';
+                statusDiv.innerHTML = result;
+
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="warning">❌ Lỗi khi kiểm tra: ${error.message}</div>`;
+            }
+        };
+    </script>
+</body>
+</html>

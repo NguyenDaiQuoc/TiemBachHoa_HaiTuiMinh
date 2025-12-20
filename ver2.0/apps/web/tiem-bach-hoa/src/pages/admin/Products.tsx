@@ -11,6 +11,7 @@ import {
   addDoc,
   updateDoc,
   serverTimestamp,
+  getDoc,
 } from "firebase/firestore";
 import {
   ref as storageRef,
@@ -80,6 +81,7 @@ type FormProductData = Omit<ProductData,
   newPriceInput: number;
   oldPriceInput: number;
   discountInput: number;
+  ingredients?: string;
 };
 
 // Dữ liệu mặc định cho sản phẩm mới
@@ -511,6 +513,15 @@ const ProductFormModal: React.FC<{
               <label>Mô Tả:</label>
               <textarea name="description" value={formData.description} onChange={handleChange} />
 
+              <label>Thành Phần & Nguồn Gốc:</label>
+              <textarea 
+                name="ingredients" 
+                value={formData.ingredients || ''} 
+                onChange={handleChange}
+                placeholder="Nhập thông tin về thành phần, xuất xứ, nguồn gốc..."
+                rows={4}
+              />
+
               <label>Trạng Thái:</label>
               <select name="status" value={formData.status} onChange={handleChange}>
                 <option value="Đang bán">Đang bán (visible)</option>
@@ -758,6 +769,7 @@ export default function AdminProductsPage() {
       const formProduct: FormProductData = {
         ...productToEdit,
         slug: (productToEdit as any).slug || '',
+        ingredients: (productToEdit as any).ingredients || '',
         newPriceInput: productToEdit.newPrice,
         oldPriceInput: productToEdit.oldPrice,
         discountInput: productToEdit.discount,
@@ -773,6 +785,33 @@ export default function AdminProductsPage() {
 
   // Xử lý LƯU (CREATE & UPDATE)
   const handleSaveProduct = async (formData: FormProductData & { variations: Variation[] }) => {
+    // Check authentication first
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert('Lỗi: Bạn phải đăng nhập để lưu sản phẩm.');
+      setLoading(false);
+      return;
+    }
+
+    // Check admin permissions
+    try {
+      const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      
+      const isAdmin = adminDoc.exists() || (userDoc.exists() && userDoc.data()?.role === 'admin');
+      
+      if (!isAdmin) {
+        alert('Lỗi: Bạn không có quyền admin để thực hiện thao tác này. Vui lòng liên hệ quản trị viên để được cấp quyền.');
+        setLoading(false);
+        return;
+      }
+    } catch (permError) {
+      console.error('Lỗi khi kiểm tra quyền admin:', permError);
+      alert('Lỗi: Không thể xác thực quyền admin. Vui lòng thử lại.');
+      setLoading(false);
+      return;
+    }
+
     setIsModalOpen(false);
     setLoading(true);
 
@@ -788,6 +827,7 @@ export default function AdminProductsPage() {
       name: formData.name,
       slug: finalSlug,
       description: formData.description,
+      ingredients: formData.ingredients || '',
       categorySlugs: formData.categorySlugs,
       tag: formData.tag,
       oldPrice: formData.oldPriceInput,
@@ -827,9 +867,21 @@ export default function AdminProductsPage() {
 
       await fetchProducts();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Lỗi khi lưu sản phẩm:", error);
-      alert(`Lỗi: Không thể lưu sản phẩm. Chi tiết: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`);
+      
+      // Improved error messages
+      let errorMessage = 'Lỗi không xác định';
+      if (error?.code === 'permission-denied') {
+        errorMessage = 'Bạn không có quyền thực hiện thao tác này. Vui lòng kiểm tra:\n' +
+                      '1. Tài khoản của bạn có được thêm vào collection "admins" hoặc có role="admin" trong collection "users"\n' +
+                      '2. Firestore rules đã được deploy đúng cách\n' +
+                      '3. Bạn đã đăng nhập với tài khoản admin';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(`Lỗi: Không thể lưu sản phẩm.\n\nChi tiết: ${errorMessage}\n\nUser ID: ${auth.currentUser?.uid || 'N/A'}`);
       setLoading(false);
     }
   };

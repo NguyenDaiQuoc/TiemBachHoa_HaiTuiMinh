@@ -29,17 +29,24 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('COD');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Listen to auth state changes like Cart.tsx
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      setShowLoginWarning(true);
-    }
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        setShowLoginWarning(true);
+      } else {
+        setShowLoginWarning(false);
+      }
+    });
+    return () => unsubscribe();
   }, []);
+  
   // Load cart from Firestore (single read)
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
+    if (!currentUser) {
       setCartItems([]);
       setLoadingCart(false);
       return;
@@ -47,7 +54,7 @@ export default function CheckoutPage() {
 
     (async () => {
       try {
-        const cartRef = doc(db, 'cart', user.uid);
+        const cartRef = doc(db, 'cart', currentUser.uid);
         const snap = await getDoc(cartRef);
         const items = snap.exists() ? (snap.data().items || []) : [];
 
@@ -66,7 +73,7 @@ export default function CheckoutPage() {
         setLoadingCart(false);
       }
     })();
-  }, []);
+  }, [currentUser]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.appliedPrice || item.price) * (item.quantity || item.qty || 1), 0);
   const shippingFee = subtotal > 500000 ? 0 : 30000;
@@ -186,13 +193,12 @@ export default function CheckoutPage() {
             <button className="btn-submit" disabled={isSubmitting} onClick={async ()=>{
               // basic validation + prevent double submit
               if (isSubmitting) return;
-              const user = auth.currentUser;
-              if (!user) { setShowLoginWarning(true); return; }
+              if (!currentUser) { setShowLoginWarning(true); return; }
               if (!fullName || !phone || !address) { alert('Vui lòng điền tên, số điện thoại và địa chỉ'); return; }
               setIsSubmitting(true);
               try {
                 // Check if user is blocked in users collection
-                const userDocRef = doc(db, 'users', user.uid);
+                const userDocRef = doc(db, 'users', currentUser.uid);
                 const userDocSnap = await getDoc(userDocRef);
                 if (userDocSnap.exists() && (userDocSnap.data() as any).isDeactivated === 'blocked') {
                   alert('Tài khoản của bạn đang bị chặn. Vui lòng liên hệ CSKH để được hỗ trợ.');
@@ -200,7 +206,7 @@ export default function CheckoutPage() {
                   return;
                 }
                 const orderData = {
-                  userID: user.uid,
+                  userID: currentUser.uid,
                   customerName: fullName,
                   phone,
                   email,

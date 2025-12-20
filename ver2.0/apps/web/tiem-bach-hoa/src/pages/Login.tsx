@@ -1,12 +1,22 @@
 import { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 import "../../css/login.css";
-import { useNavigate } from 'react-router-dom';
 import { auth, db, firebaseApiKey } from '../firebase';
-import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { 
+  signInWithEmailAndPassword, 
+  setPersistence, 
+  browserLocalPersistence, 
+  browserSessionPersistence,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  signInWithPopup,
+  RecaptchaVerifier,
+  signInWithPhoneNumber
+} from 'firebase/auth';
+import { collection, query, where, getDocs, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { showSuccess, showError } from '../utils/toast';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -128,6 +138,21 @@ function LoginForm() {
       console.debug('Calling Firebase signInWithEmailAndPassword', { email: emailToUse, returnSecureToken: true });
       await signInWithEmailAndPassword(auth, emailToUse, pwdTrim);
 
+      // Save auth state to localStorage for instant restoration on app reload
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          localStorage.setItem('tiem_user', JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+          }));
+        }
+      } catch (e) {
+        console.warn('localStorage set user failed', e);
+      }
+
       // If remember was checked, store an expiry timestamp (7 days). We'll enforce expiry on app start.
       try {
         if (remember) {
@@ -220,14 +245,144 @@ function LoginForm() {
 
 // Main Login Page
 export default function LoginPage() {
+  const navigate = useNavigate();
+
+  // Handle Google Sign In
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if user document exists, create if not
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', user.uid), {
+          account: user.email?.split('@')[0] || '',
+          fullName: user.displayName || '',
+          email: user.email || '',
+          phone: user.phoneNumber || '',
+          profilePictureURL: user.photoURL || '',
+          status: 'active',
+          isDeactivated: 'none',
+          vip: 'Thường',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      
+      showSuccess('Đăng nhập thành công với Google!');
+      setTimeout(() => navigate('/'), 500);
+    } catch (error: any) {
+      console.error('Google sign in error:', error);
+      showError('Đăng nhập Google thất bại: ' + (error.message || 'Lỗi không xác định'));
+    }
+  };
+
+  // Handle Facebook Sign In
+  const handleFacebookSignIn = async () => {
+    try {
+      const provider = new FacebookAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if user document exists, create if not
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', user.uid), {
+          account: user.email?.split('@')[0] || '',
+          fullName: user.displayName || '',
+          email: user.email || '',
+          phone: user.phoneNumber || '',
+          profilePictureURL: user.photoURL || '',
+          status: 'active',
+          isDeactivated: 'none',
+          vip: 'Thường',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      
+      showSuccess('Đăng nhập thành công với Facebook!');
+      setTimeout(() => navigate('/'), 500);
+    } catch (error: any) {
+      console.error('Facebook sign in error:', error);
+      showError('Đăng nhập Facebook thất bại: ' + (error.message || 'Lỗi không xác định'));
+    }
+  };
+
+  // Handle Phone Sign In
+  const handlePhoneSignIn = async () => {
+    const phoneNumber = prompt('Nhập số điện thoại (bắt đầu với +84):');
+    if (!phoneNumber) return;
+    
+    try {
+      showInfo('Đang gửi mã xác thực...');
+      // Note: RecaptchaVerifier needs to be set up properly in production
+      // This is a simplified version
+      showError('Tính năng đăng nhập bằng số điện thoại đang được phát triển. Vui lòng sử dụng phương thức khác.');
+    } catch (error: any) {
+      console.error('Phone sign in error:', error);
+      showError('Đăng nhập số điện thoại thất bại: ' + (error.message || 'Lỗi không xác định'));
+    }
+  };
+
   return (
-    <div className="auth-wrapper">
+    <div className="wrapper">
       <Toaster />
       <Header />
       <div className="auth-content">
         <div className="auth-card">
           <h1 className="auth-title">Chào Mừng Trở Lại!</h1>
           <LoginForm />
+          
+          {/* Social Login Section */}
+          <div className="auth-divider">
+            <span>Hoặc đăng nhập với</span>
+          </div>
+          
+          <div className="auth-social-buttons">
+            <button 
+              type="button" 
+              className="auth-social-btn google"
+              onClick={handleGoogleSignIn}
+            >
+              <svg viewBox="0 0 24 24">
+                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Google
+            </button>
+            
+            <button 
+              type="button" 
+              className="auth-social-btn facebook"
+              onClick={handleFacebookSignIn}
+            >
+              <svg viewBox="0 0 24 24">
+                <path fill="currentColor" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+              Facebook
+            </button>
+            
+            <button 
+              type="button" 
+              className="auth-social-btn phone"
+              onClick={handlePhoneSignIn}
+            >
+              <svg viewBox="0 0 24 24">
+                <path fill="currentColor" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+              </svg>
+              Số điện thoại
+            </button>
+          </div>
+
+          {/* Footer */}
+          <div className="auth-footer">
+            Chưa có tài khoản? <a href="/register">Đăng ký ngay</a>
+          </div>
         </div>
       </div>
       <FloatingButtons />
@@ -235,3 +390,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

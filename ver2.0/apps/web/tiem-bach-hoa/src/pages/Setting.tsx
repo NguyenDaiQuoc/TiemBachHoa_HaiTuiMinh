@@ -1,14 +1,33 @@
 // User Settings Page - Converted to minimal custom CSS classes
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../css/settings.css";
 
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 import SalesFloatingButton from "../components/SalesFloatingButton";
+import LoginWarning from "../components/LoginWarning";
+import { auth } from "../firebase";
 
 export default function UserSettingsPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("account");
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Listen to auth state changes like Cart.tsx
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        setShowLoginWarning(true);
+      } else {
+        setShowLoginWarning(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <>
@@ -74,6 +93,12 @@ export default function UserSettingsPage() {
 
       {/* Nằm ngoài wrapper */}
       <Footer />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để truy cập cài đặt"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </>
   );
 }

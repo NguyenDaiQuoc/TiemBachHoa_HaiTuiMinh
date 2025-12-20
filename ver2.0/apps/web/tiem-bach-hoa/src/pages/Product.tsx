@@ -5,6 +5,7 @@ import "../../css/product.css";
 import { addToCart } from '../utils/cart';
 import { showSuccess, showError, showInfo } from '../utils/toast';
 import { auth } from '../firebase';
+import LoginWarning from '../components/LoginWarning';
 // Đảm bảo các component này có sẵn (Giả định bạn đã tạo)
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -418,6 +419,8 @@ export default function ProductListingPage() {
   const [allProductsForCounting, setAllProductsForCounting] = useState<ProductData[]>([]);
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
   const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
 
   // State UI & Pagination
   const [currentCategoryName, setCurrentCategoryName] = useState("Hàng Mới Về");
@@ -425,6 +428,14 @@ export default function ProductListingPage() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
+
+  // Listen to auth state changes like Cart.tsx
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // ----------------------------------------------------
   // I. LOGIC ĐẾM SẢN PHẨM THEO MỨC GIÁ (useMemo)
@@ -499,9 +510,9 @@ export default function ProductListingPage() {
   };
 
   const handleAddToCart = async (product: ProductData, event?: React.MouseEvent) => {
-    if (!auth.currentUser) {
-      showInfo('Vui lòng đăng nhập để thêm vào giỏ hàng');
-      setTimeout(() => navigate('/login'), 1500);
+    // Use currentUser state instead of auth.currentUser directly
+    if (!currentUser) {
+      setShowLoginWarning(true);
       return;
     }
 
@@ -652,6 +663,12 @@ export default function ProductListingPage() {
       </main>
       <Footer />
       <FloatingButtons />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </div>
   );
 }

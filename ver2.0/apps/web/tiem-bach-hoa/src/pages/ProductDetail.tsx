@@ -4,6 +4,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 import ImageLightbox from "../components/ImageLightbox";
+import LoginWarning from "../components/LoginWarning";
 import "../../css/product-detail.css";
 import { addToCart } from '../utils/cart';
 import { showSuccess, showError, showInfo } from '../utils/toast';
@@ -55,6 +56,7 @@ interface ProductData {
   stock: number; // Tổng stock
   description: string;
   slug: string;
+  ingredients?: string; // Thành phần & nguồn gốc
   // ⭐ LẤY DỮ LIỆU TỪ TRƯỜNG `variations` ⭐
   variations: ProductVariation[];
 }
@@ -84,6 +86,7 @@ const mapProductFromFirestore = (docId: string, docData: DocumentData): ProductD
     stock: docData.stock || 0,
     description: docData.description || 'Chưa có mô tả chi tiết.',
     slug: docData.slug || '',
+    ingredients: docData.ingredients || '',
     createdAt: docData.createdAt instanceof Timestamp ? docData.createdAt.toMillis() : Date.now(),
     // ⭐ ÁNH XẠ CHÍNH XÁC TRƯỜNG variations ⭐
     variations: variationsData,
@@ -158,6 +161,8 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState("Mô Tả Chi Tiết");
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
 
   // State để lưu trữ dữ liệu sản phẩm
   const [productDetail, setProductDetail] = useState<ProductData | null>(null);
@@ -169,8 +174,19 @@ export default function ProductDetailPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
+  // Listen to auth state changes like Cart.tsx
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // --- useEffect để fetch data ---
   useEffect(() => {
+    // Scroll to top smoothly when component mounts or slug changes
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    
     if (productSlug) {
       setPermissionDenied(false);
       fetchProductDetail(productSlug, setProductDetail, setLoading, setPermissionDenied);
@@ -225,13 +241,20 @@ export default function ProductDetailPage() {
                 return tb - ta;
               });
             setReviews(revs);
-          } catch (fallbackErr) {
+          } catch (fallbackErr: any) {
             console.error('Fallback reviews fetch failed:', fallbackErr);
+            // If it's a permission error, log it but don't break the app
+            if (fallbackErr?.code === 'permission-denied') {
+              console.warn('Reviews collection requires Firestore rules update. Please deploy updated rules.');
+            }
             setReviews([]);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error loading reviews:', err);
+        if (err?.code === 'permission-denied') {
+          console.warn('Cannot access reviews collection. Please check Firestore security rules.');
+        }
         setReviews([]);
       }
 
@@ -308,33 +331,28 @@ export default function ProductDetailPage() {
     if (!children || children.length === 0) return;
     const child = children[Math.max(0, Math.min(index, children.length - 1))] as HTMLElement;
     if (child) {
-      child.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      // Use scrollLeft instead of scrollIntoView to prevent page scroll interference
+      const scrollLeft = child.offsetLeft - (container.offsetWidth / 2) + (child.offsetWidth / 2);
+      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
     }
   };
 
   const nextRelated = () => {
     if (relatedProducts.length === 0) return;
-    const next = (relatedIndex + 1) % relatedProducts.length;
+    const next = (relatedIndex + 1) % relatedProducts.length; // Loop back to start
     setRelatedIndex(next);
     scrollRelatedTo(next);
   };
 
   const prevRelated = () => {
     if (relatedProducts.length === 0) return;
-    const prev = (relatedIndex - 1 + relatedProducts.length) % relatedProducts.length;
+    const prev = (relatedIndex - 1 + relatedProducts.length) % relatedProducts.length; // Loop to end
     setRelatedIndex(prev);
     scrollRelatedTo(prev);
   };
 
-  // Auto-advance related products every 4s
-  useEffect(() => {
-    if (relatedProducts.length <= 1) return;
-    const t = setInterval(() => {
-      nextRelated();
-    }, 4000);
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [relatedProducts, relatedIndex]);
+  // Auto-scroll removed to prevent scroll jerk issues
+  // Users can manually navigate using prev/next buttons
 
 
   // ⭐ Logic tính toán giá, tồn kho dựa trên Biến thể được chọn ⭐
@@ -457,13 +475,14 @@ export default function ProductDetailPage() {
       case "Thành Phần & Nguồn Gốc":
         return (
           <div className="tab-content tab-bg">
-            <p className="font-semibold mb-2">Thành Phần & Thông số:</p>
-            <ul className="list-disc ml-5 text-sm">
-              <li>Màu Sắc: **{selectedVariation?.color || 'N/A'}**</li>
-              <li>Kích Thước: **{selectedVariation?.size || 'N/A'}**</li>
-              <li>Chất Liệu: **{selectedVariation?.material || 'N/A'}**</li>
-              <li>Tình Trạng: **{selectedVariation?.condition || 'N/A'}**</li>
-            </ul>
+            {productDetail.ingredients && productDetail.ingredients.trim() ? (
+              <div>
+                <p className="font-semibold mb-2">Thành Phần & Nguồn Gốc:</p>
+                <div className="text-sm whitespace-pre-line">{productDetail.ingredients}</div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">Chưa có thông tin về thành phần & nguồn gốc.</p>
+            )}
           </div>
         );
       case "Đánh Giá Khách Hàng":
@@ -495,12 +514,7 @@ export default function ProductDetailPage() {
       default:
         return (
           <div className="tab-content">
-            <p className="mb-3">{description}</p>
-            <p className="font-semibold mt-4">Thông số chung:</p>
-            <ul className="list-disc ml-5 text-sm">
-              <li>Mã SKU: **{selectedVariation?.skuID || 'N/A'}**</li>
-              <li>Giảm giá: **{productDetail.discount}%**</li>
-            </ul>
+            <div className="whitespace-pre-line">{description}</div>
           </div>
         );
     }
@@ -627,9 +641,9 @@ export default function ProductDetailPage() {
               <PrimaryButton
                 className="btn-buy"
                 onClick={async () => {
-                  if (!auth.currentUser) {
-                    showInfo('Vui lòng đăng nhập để thêm vào giỏ hàng');
-                    setTimeout(() => navigate('/login'), 1500);
+                  // Use currentUser state instead of auth.currentUser directly
+                  if (!currentUser) {
+                    setShowLoginWarning(true);
                     return;
                   }
                   
@@ -719,6 +733,13 @@ export default function ProductDetailPage() {
           images={allImages} 
           startIndex={lightboxIndex}
           onClose={() => setShowLightbox(false)}
+        />
+      )}
+      
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng"
+          onClose={() => setShowLoginWarning(false)}
         />
       )}
       

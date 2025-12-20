@@ -33,6 +33,7 @@ type ProductCardProps = {
   tag?: string | null;
   slug?: string | null;
   onShowLoginWarning?: () => void;
+  currentUser?: any;
 };
 
 type CategoryCardProps = {
@@ -41,7 +42,7 @@ type CategoryCardProps = {
 };
 
 // --- Component Card Sản Phẩm ---
-function ProductCard({ id, image, name, price, oldPrice, tag, slug, onShowLoginWarning }: ProductCardProps) {
+function ProductCard({ id, image, name, price, oldPrice, tag, slug, onShowLoginWarning, currentUser }: ProductCardProps) {
   const navigate = useNavigate();
   const isSale = oldPrice !== undefined;
   
@@ -68,7 +69,7 @@ function ProductCard({ id, image, name, price, oldPrice, tag, slug, onShowLoginW
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!auth.currentUser || auth.currentUser.isAnonymous) {
+    if (!currentUser || (currentUser as any).isAnonymous) {
       if (onShowLoginWarning) onShowLoginWarning();
       return;
     }
@@ -90,7 +91,7 @@ function ProductCard({ id, image, name, price, oldPrice, tag, slug, onShowLoginW
   const handleBuyNow = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (!auth.currentUser || auth.currentUser.isAnonymous) {
+    if (!currentUser || (currentUser as any).isAnonymous) {
       if (onShowLoginWarning) onShowLoginWarning();
       return;
     }
@@ -622,7 +623,7 @@ export default function TiemBachHoaIndex() {
         <div className="home-section-header">
             <h2 className="home-section-title">Sản Phẩm Giảm Giá Sốc</h2>
             {/* BUTTON XEM THÊM SALE */}
-            <ViewMoreButton text="Xem thêm" onClick={() => navigate("/sales")} />
+            <ViewMoreButton text="Xem thêm" onClick={() => navigate("/categories/khuyen-mai")} />
         </div>
         <div className="home-product-wrapper">
           <div className="home-product-grid">
@@ -633,7 +634,7 @@ export default function TiemBachHoaIndex() {
             ) : (
               saleProducts.map((p, index) => (
                 <div key={p.id || index}>
-                  <ProductCard id={p.id} {...p} onShowLoginWarning={() => setShowLoginWarning(true)} />
+                  <ProductCard id={p.id} {...p} currentUser={currentUser} onShowLoginWarning={() => setShowLoginWarning(true)} />
                 </div>
               ))
             )}
@@ -648,7 +649,7 @@ export default function TiemBachHoaIndex() {
         <div className="home-section-header">
             <h2 className="home-section-title">Sản Phẩm Mới</h2>
             {/* BUTTON XEM THÊM SẢN PHẨM MỚI */}
-            <ViewMoreButton text="Xem thêm" onClick={() => navigate("/new-product")} />
+            <ViewMoreButton text="Xem thêm" onClick={() => navigate("/categories/hang-moi-ve")} />
         </div>
         <div className="home-product-wrapper">
           <div className="home-product-grid">
@@ -659,7 +660,7 @@ export default function TiemBachHoaIndex() {
             ) : (
               newProducts.map((p, index) => (
                 <div key={p.id || index}>
-                  <ProductCard id={p.id} {...p} onShowLoginWarning={() => setShowLoginWarning(true)} />
+                  <ProductCard id={p.id} {...p} currentUser={currentUser} onShowLoginWarning={() => setShowLoginWarning(true)} />
                 </div>
               ))
             )}

@@ -15,9 +15,6 @@
 .ship-wrapper {
   min-height: 100vh;
   background: var(--bg-secondary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   font-family: sans-serif;
 }
 

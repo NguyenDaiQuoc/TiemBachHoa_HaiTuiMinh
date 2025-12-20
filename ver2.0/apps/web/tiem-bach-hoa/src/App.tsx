@@ -1,5 +1,7 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { useAuthPersistence } from "./hooks/useAuthPersistence";
 
 //import for root page
 import TiemBachHoaIndex from "./pages/TiemBachHoaIndex";
@@ -18,6 +20,7 @@ import Return from "./pages/Return";
 import Sale from "./pages/Sale";
 import Voucher from "./pages/Voucher";
 import Promotion from "./pages/Promotion";
+import Coupons from "./pages/Coupons";
 import Wish from "./pages/Wish";
 import Address from "./pages/Address";
 import Order from "./pages/Order";
@@ -34,6 +37,7 @@ import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ProdDetail from "./pages/ProductDetail";
 import Blog from "./pages/Blog";
 import Setting from "./pages/Setting";
+import Story from "./pages/Story";
 
 // import for admin
 import AdminIndex from "./pages/admin/AdminIndex";
@@ -59,6 +63,16 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 
 export default function App() {
+  // Check remember_until expiry globally
+  useAuthPersistence();
+  
+  // Prevent scroll restoration on browser back/forward
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -76,6 +90,7 @@ export default function App() {
         <Route path="/products" element={<Product />} />
         <Route path="/404" element={<Nothing404 />}></Route>
         <Route path="/about-us" element={<AboutUs />}></Route>
+        <Route path="/story" element={<Story />}></Route>
         <Route path="/blog" element={<Blog />}></Route>
         <Route path="/faqs" element={<FAQ />}></Route>
         <Route path="/general-terms" element={<Term />}></Route>
@@ -87,6 +102,7 @@ export default function App() {
         <Route path="/payment-method" element={<Payment />}></Route>
         <Route path="/my-voucher" element={<Voucher />}></Route>
         <Route path="/promotions" element={<Promotion />}></Route>
+        <Route path="/coupons" element={<Coupons />}></Route>
         <Route path="/wish-list" element={<Wish />}></Route>
         <Route path="/address-book" element={<Address />}></Route>
         <Route path="/order-history" element={<Order />}></Route>
@@ -94,34 +110,34 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />}></Route>
         <Route path="/login" element={<Login />}></Route>
         <Route path="/register" element={<Register />}></Route>
-  <Route path="/vip" element={<VIP />}></Route>
-  <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>}></Route>
-  <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>}></Route>
+        <Route path="/vip" element={<VIP />}></Route>
+        <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>}></Route>
+        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>}></Route>
         <Route path="/order-confirm" element={<OrderConfirm />}></Route>
         <Route path="/order-tracking" element={<OrderTracking />}></Route>
-        <Route path="/blog-detail" element={<BlogDetail />}></Route>
-        <Route path="/product-detail/:productSlug" element={<ProdDetail/> } />
+        <Route path="/blog-detail/:slug" element={<BlogDetail />}></Route>
+        <Route path="/product-detail/:productSlug" element={<ProdDetail />} />
         <Route path="/settings" element={<Setting />}></Route>
         {/* Route Admin */}
         <Route path="/admin" element={<AdminIndex />} />
-  <Route path="/admin/dashboard" element={<ProtectedRoute requireAdmin><Dashboard /></ProtectedRoute>}></Route>
-  <Route path="/admin/inventory" element={<ProtectedRoute requireAdmin><Inventory /></ProtectedRoute>}></Route>
-  <Route path="/admin/warehouse" element={<ProtectedRoute requireAdmin><Warehouse /></ProtectedRoute>}></Route>
-  <Route path="/admin/users" element={<ProtectedRoute requireAdmin><Users /></ProtectedRoute>}></Route>
-  <Route path="/admin/orders" element={<ProtectedRoute requireAdmin><Orders /></ProtectedRoute>}></Route>
-  <Route path="/admin/vouchers" element={<ProtectedRoute requireAdmin><Vouchers /></ProtectedRoute>}></Route>
-  <Route path="/admin/blogs" element={<ProtectedRoute requireAdmin><Blogs /></ProtectedRoute>}></Route>
-  <Route path="/admin/blog-cates" element={<ProtectedRoute requireAdmin><BlogCates /></ProtectedRoute>}></Route>
-  <Route path="/admin/products" element={<ProtectedRoute requireAdmin><Products /></ProtectedRoute>}></Route>
-  <Route path="/admin/product-cates" element={<ProtectedRoute requireAdmin><ProdCates /></ProtectedRoute>}></Route>
-  <Route path="/admin/promotions" element={<ProtectedRoute requireAdmin><Promotions /></ProtectedRoute>}></Route>
-  <Route path="/admin/marketing" element={<ProtectedRoute requireAdmin><Marketing /></ProtectedRoute>}></Route>
-  <Route path="/admin/media" element={<ProtectedRoute requireAdmin><Media /></ProtectedRoute>}></Route>
-  <Route path="/admin/deals" element={<ProtectedRoute requireAdmin><Deals /></ProtectedRoute>}></Route>
-  <Route path="/admin/news" element={<ProtectedRoute requireAdmin><News /></ProtectedRoute>}></Route>
-  <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin><Analytics /></ProtectedRoute>}></Route>
+        <Route path="/admin/dashboard" element={<ProtectedRoute requireAdmin><Dashboard /></ProtectedRoute>}></Route>
+        <Route path="/admin/inventory" element={<ProtectedRoute requireAdmin><Inventory /></ProtectedRoute>}></Route>
+        <Route path="/admin/warehouse" element={<ProtectedRoute requireAdmin><Warehouse /></ProtectedRoute>}></Route>
+        <Route path="/admin/users" element={<ProtectedRoute requireAdmin><Users /></ProtectedRoute>}></Route>
+        <Route path="/admin/orders" element={<ProtectedRoute requireAdmin><Orders /></ProtectedRoute>}></Route>
+        <Route path="/admin/vouchers" element={<ProtectedRoute requireAdmin><Vouchers /></ProtectedRoute>}></Route>
+        <Route path="/admin/blogs" element={<ProtectedRoute requireAdmin><Blogs /></ProtectedRoute>}></Route>
+        <Route path="/admin/blog-cates" element={<ProtectedRoute requireAdmin><BlogCates /></ProtectedRoute>}></Route>
+        <Route path="/admin/products" element={<ProtectedRoute requireAdmin><Products /></ProtectedRoute>}></Route>
+        <Route path="/admin/product-cates" element={<ProtectedRoute requireAdmin><ProdCates /></ProtectedRoute>}></Route>
+        <Route path="/admin/promotions" element={<ProtectedRoute requireAdmin><Promotions /></ProtectedRoute>}></Route>
+        <Route path="/admin/marketing" element={<ProtectedRoute requireAdmin><Marketing /></ProtectedRoute>}></Route>
+        <Route path="/admin/media" element={<ProtectedRoute requireAdmin><Media /></ProtectedRoute>}></Route>
+        <Route path="/admin/deals" element={<ProtectedRoute requireAdmin><Deals /></ProtectedRoute>}></Route>
+        <Route path="/admin/news" element={<ProtectedRoute requireAdmin><News /></ProtectedRoute>}></Route>
+        <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin><Analytics /></ProtectedRoute>}></Route>
 
-  <Route path="/admin/general" element={<ProtectedRoute><General /></ProtectedRoute>}></Route>
+        <Route path="/admin/general" element={<ProtectedRoute><General /></ProtectedRoute>}></Route>
 
         {/* Xử lý các đường dẫn không khớp */}
         <Route path="*" element={<Nothing404 />} />

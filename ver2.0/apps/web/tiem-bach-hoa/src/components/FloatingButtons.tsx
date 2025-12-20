@@ -59,16 +59,6 @@ export default function FloatingButtons() {
 
     const startListen = async () => {
       try {
-        // Ensure we have an auth session first
-        if (!auth.currentUser) {
-          try {
-            await signInAnonymously(auth);
-          } catch (e:any) {
-            console.warn('Anonymous sign-in failed, chat disabled');
-            return;
-          }
-        }
-
         const uid = auth.currentUser ? auth.currentUser.uid : null;
         // Try to read the existing chat doc. If it exists but is owned by a different id
         // (e.g., legacy sessionId stored as userId), we avoid listening to that doc to prevent permission errors.
@@ -78,7 +68,7 @@ export default function FloatingButtons() {
           if (snap.exists()) {
             const data = snap.data() as any;
             // If the doc's owner matches our auth uid, we can safely listen.
-            if (uid && (data.userId === uid || data.userId == null || data.isPublic === true)) {
+            if ((uid && (data.userId === uid || data.userId == null)) || data.isPublic === true) {
               unsub = onSnapshot(docRef, (s) => {
                 if (!s.exists()) { setMessages([]); return; }
                 const d = s.data() as any;
@@ -90,12 +80,13 @@ export default function FloatingButtons() {
               });
             } else {
               // Ownership mismatch: create a new chat doc owned by this auth user and persist its id.
-              const newId = `chat-${uid}-${Date.now()}`;
+              const newId = uid ? `chat-${uid}-${Date.now()}` : `chat-public-${Date.now()}`;
               const newRef = doc(db, 'chats', newId);
               try {
                 await setDoc(newRef, {
-                  userId: uid,
-                  participants: [uid],
+                  userId: uid || sessionId,
+                  participants: uid ? [uid] : [],
+                  isPublic: uid ? false : true,
                   createdAt: serverTimestamp(),
                   updatedAt: serverTimestamp(),
                   messages: []
@@ -120,11 +111,11 @@ export default function FloatingButtons() {
             }
           } else {
             // No existing doc; create one owned by current auth uid
-            if (!uid) return;
             try {
               await setDoc(docRef, {
-                userId: uid,
-                participants: [uid],
+                userId: uid || sessionId,
+                participants: uid ? [uid] : [],
+                isPublic: uid ? false : true,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 messages: []
@@ -224,10 +215,6 @@ export default function FloatingButtons() {
   const sendMessage = async (text: string) => {
     if (!text || !sessionId) return;
     try {
-      // ensure we have an auth session; anonymous sign-in if not
-      if (!auth.currentUser) {
-        try { await signInAnonymously(auth); } catch (e) { /* ignore */ }
-      }
       // append message into single `chats/{sessionId}` document (messages array)
       const chatDoc = doc(db, 'chats', sessionId);
       const msgId = `m-${Date.now()}-${Math.floor(Math.random()*100000)}`;

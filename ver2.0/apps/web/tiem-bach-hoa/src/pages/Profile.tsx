@@ -66,12 +66,19 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('info');
   const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Listen to auth state changes like Cart.tsx
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      setShowLoginWarning(true);
-    }
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        setShowLoginWarning(true);
+      } else {
+        setShowLoginWarning(false);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const renderContent = () => {

@@ -91,6 +91,23 @@ type OrderTrackingProps = {
 
 // --- Component Chính ---
 export default function OrderTracking({ orderId, currentStatus, totalAmount, currentLocation, ETA }: OrderTrackingProps) {
+  const navigate = useNavigate();
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Listen to auth state changes like Cart.tsx
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        setShowLoginWarning(true);
+      } else {
+        setShowLoginWarning(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const shippingAddress = "Số 123, đường Hai Bà Trưng, Phường Bến Nghé, Q.1, TP.HCM";
   const orderItems = [
     { name: "Nến Thơm Organic Vỏ Cam Quế", price: 180000, quantity: 2 },
@@ -155,6 +172,12 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
 
       <FloatingButtons />
       <Footer />
+      {showLoginWarning && (
+        <LoginWarning 
+          message="Vui lòng đăng nhập để theo dõi đơn hàng"
+          onClose={() => setShowLoginWarning(false)}
+        />
+      )}
     </div>
   );
 }

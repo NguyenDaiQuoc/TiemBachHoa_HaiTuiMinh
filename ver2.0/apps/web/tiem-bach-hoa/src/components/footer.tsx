@@ -40,13 +40,13 @@ export default function Footer() {
         <div className="footer-section">
           <span className="footer-title">Hỗ trợ khách hàng</span>
           <ul className="footer-list">
-            <li><a href="/terms">Điều khoản và quy định chung</a></li>
+            <li><a href="/general-terms">Điều khoản và quy định chung</a></li>
             <li><a href="/return-policy">Chính sách đổi trả & hoàn tiền</a></li>
             <li><a href="/shipping-policy">Chính sách vận chuyển & giao nhận</a></li>
-            <li><a href="/warranty">Chính sách bảo hành sản phẩm</a></li>
-            <li><a href="/purchase-guide">Hướng dẫn mua hàng</a></li>
-            <li><a href="/payment-methods">Quy định và hình thức thanh toán</a></li>
-            <li><a href="/faq">Các câu hỏi thường gặp (FAQs)</a></li>
+            <li><a href="/warranty-policy">Chính sách bảo hành sản phẩm</a></li>
+            <li><a href="/contact">Hướng dẫn mua hàng</a></li>
+            <li><a href="/payment-method">Quy định và hình thức thanh toán</a></li>
+            <li><a href="/faqs">Các câu hỏi thường gặp (FAQs)</a></li>
           </ul>
 
           <h4 className="footer-title mt-4">Hình thức thanh toán</h4>
@@ -65,10 +65,10 @@ export default function Footer() {
         <div className="footer-section">
           <span className="footer-title">Về Tiệm</span>
           <ul className="footer-list">
-            <li><a href="/about">Giới thiệu</a></li>
+            <li><a href="/about-us">Giới thiệu</a></li>
             <li><a href="/story">Câu chuyện</a></li>
             <li><a href="/blog">Blog</a></li>
-            <li><a href="/tips">Góc nội trợ & mẹo vặt cuộc sống</a></li>
+            <li><a href="/contact">Liên hệ</a></li>
           </ul>
         </div>
 
