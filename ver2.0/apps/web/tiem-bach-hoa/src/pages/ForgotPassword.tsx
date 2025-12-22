@@ -5,7 +5,7 @@ import FloatingButtons from "../components/FloatingButtons";
 import "../../css/forgot.css";
 
 // --- Component Input ---
-function AuthInput({ label, placeholder, type = "text", required = false }) {
+function AuthInput({ label, placeholder, type = "text", required = false }: any) {
   return (
     <div className="fp-input-group">
       <label className="fp-label">
@@ -20,7 +20,7 @@ function AuthInput({ label, placeholder, type = "text", required = false }) {
 export default function ForgotPasswordPage() {
   const [isSent, setIsSent] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     setIsSent(true);
   };

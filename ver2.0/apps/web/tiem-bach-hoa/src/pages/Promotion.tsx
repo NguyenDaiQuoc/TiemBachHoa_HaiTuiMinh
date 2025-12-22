@@ -4,7 +4,7 @@ import FloatingButtons from "../components/FloatingButtons";
 import "../../css/promotions.css";
 
 // --- Coupon Card ---
-function CouponCard({ code, description, expires, isNewUser = false }) {
+function CouponCard({ code, description, expires, isNewUser = false }: any) {
   const handleCopy = () => {
     alert(`Đã sao chép mã: ${code}`);
   };

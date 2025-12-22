@@ -8,7 +8,7 @@ import { auth } from "../firebase";
 import "../../css/payment.css";
 
 // Hàm lấy Icon theo loại thẻ
-const getCardIcon = (type) => {
+const getCardIcon = (type: any) => {
     switch (type.toLowerCase()) {
         case 'visa':
         case 'mastercard':
@@ -22,7 +22,7 @@ const getCardIcon = (type) => {
 };
 
 // --- Component Thẻ Phương Thức Thanh Toán ---
-function PaymentCard({ method, isDefault }) {
+function PaymentCard({ method, isDefault }: any) {
   return (
     <div className={`card-wrapper ${isDefault ? 'card-default' : ''}`}>
       <div className="card-header">

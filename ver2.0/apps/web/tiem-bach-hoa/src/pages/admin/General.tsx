@@ -2,7 +2,7 @@ import React from "react";
 import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/general.css";
 
-const SettingsContainer = ({ title, description, children }) => (
+const SettingsContainer = ({ title, description, children }: any) => (
   <div className="settings-card">
     <h2 className="settings-title">{title}</h2>
     <p className="settings-desc">{description}</p>
@@ -10,7 +10,7 @@ const SettingsContainer = ({ title, description, children }) => (
   </div>
 );
 
-const SettingInput = ({ label, value, type = 'text', hint }) => (
+const SettingInput = ({ label, value, type = 'text', hint }: any) => (
   <div className="setting-row">
     <div className="setting-info">
       <label className="setting-label">{label}</label>
@@ -33,7 +33,7 @@ const SettingInput = ({ label, value, type = 'text', hint }) => (
 );
 
 export default function AdminSettingsPage() {
-  const activeSection = 'general';
+  const activeSection = 'general' as 'general' | 'seo' | 'payment' | 'shipping' | 'social';
 
   const menuItems = [
     { key: 'general', label: 'Thông Tin Chung', icon: '🌎' },

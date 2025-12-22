@@ -235,7 +235,7 @@ export default function ProductDetailPage() {
             const fallbackSnap = await getDocs(fallbackQ);
             const revs = fallbackSnap.docs
               .map(d => ({ id: d.id, ...d.data() }))
-              .sort((a, b) => {
+              .sort((a: any, b: any) => {
                 const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
                 const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
                 return tb - ta;

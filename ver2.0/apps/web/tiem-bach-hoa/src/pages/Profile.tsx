@@ -8,7 +8,7 @@ import { auth } from "../firebase";
 import "../../css/profile.css";
 
 // --- Sidebar ---
-function ProfileSidebar({ activeTab, setActiveTab }) {
+function ProfileSidebar({ activeTab, setActiveTab }: any) {
   const menuItems = [
     { id: 'info', label: 'Thông Tin Cá Nhân', icon: '👤' },
     { id: 'orders', label: 'Quản Lý Đơn Hàng', icon: '📦' },

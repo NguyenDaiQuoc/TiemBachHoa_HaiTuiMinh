@@ -11,7 +11,7 @@ export default function WarrantyPolicyPage() {
     <>
       <Header />
       <FloatingButtons />
-      <SalesFloatingButton />
+      <SalesFloatingButton show={true} ctaLink="/sale" />
 
       <div className="wp-wrapper">
         <div className="wp-container">

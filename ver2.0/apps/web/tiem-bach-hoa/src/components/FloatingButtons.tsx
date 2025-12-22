@@ -129,7 +129,7 @@ export default function FloatingButtons() {
                 console.warn('chat doc listen failed -', err?.message || err);
                 setMessages([]);
               });
-            } catch (createErr) {
+            } catch (createErr: any) {
               console.warn('Failed to create chat doc (permissions?)', createErr?.message || createErr);
               setMessages([]);
             }

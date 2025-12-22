@@ -9,7 +9,7 @@ import { auth } from "../firebase";
 
 import "../../css/address.css";
 
-function AddressCard({ address, isDefault }) {
+function AddressCard({ address, isDefault }: any) {
   return (
     <div className={`ab-card ${isDefault ? "ab-card-default" : ""}`}>
       <div className="ab-card-header">

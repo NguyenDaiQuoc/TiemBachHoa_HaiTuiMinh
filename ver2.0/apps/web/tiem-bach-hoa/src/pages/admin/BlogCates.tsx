@@ -9,7 +9,7 @@ const blogCategories = [
 ];
 
 export default function AdminBlogCategoryPage() {
-  const statusColors = {
+  const statusColors: { [key: string]: string } = {
     "Hiển thị": "status-show",
     "Ẩn": "status-hide",
   };

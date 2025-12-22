@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -18,7 +18,7 @@ import {
 } from 'firebase/auth';
 import { collection, query, where, getDocs, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { showSuccess, showError } from '../utils/toast';
-import toast, { Toaster } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 
 // Input component dùng chung
 function AuthInput({ label, placeholder, type = "text", required = false, value, onChange }: any) {
@@ -43,18 +43,283 @@ function AuthInput({ label, placeholder, type = "text", required = false, value,
 }
 
 // Form Login
+// Phone login form (UI only; actual SMS verification requires Recaptcha + firebase backend)
+function PhoneForm({ onBack }: { onBack?: () => void }) {
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [confirmResult, setConfirmResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false); // Trạng thái đang gửi mã
+  const [networkBlocked, setNetworkBlocked] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let t: any;
+    if (countdown > 0) {
+      t = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(t);
+  }, [countdown]);
+
+  // Hàm khởi tạo reCAPTCHA (Chỉ tạo 1 lần hoặc reset khi lỗi)
+  const setupRecaptcha = () => {
+    try {
+      // Clear previous verifier instance when present
+      if ((window as any).recaptchaVerifier) {
+        try { (window as any).recaptchaVerifier.clear(); } catch(e) { /* ignore */ }
+        (window as any).recaptchaVerifier = null;
+        const el = document.getElementById('recaptcha-container');
+        if (el) el.innerHTML = '';
+      }
+
+      // Correct signature in this project: new RecaptchaVerifier(auth, containerId, params)
+      // Use 'normal' so the visible widget is rendered under the phone input.
+      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'normal',
+        callback: (response: any) => {
+          // reCAPTCHA solved (no console log to reduce noise in production)
+        },
+        'expired-callback': () => {
+          showError('reCAPTCHA hết hạn, vui lòng thử lại.');
+        }
+  });
+    } catch (setupErr) {
+      console.error('setupRecaptcha failed', setupErr);
+      // Leave a visible container so Firebase can fallback and render v2 widget
+      const el = document.getElementById('recaptcha-container');
+      if (el) el.style.display = 'block';
+    }
+  };
+
+  // Cleanup reCAPTCHA when the PhoneForm unmounts to avoid duplicate widgets
+  useEffect(() => {
+    return () => {
+      try {
+        if ((window as any).recaptchaVerifier) {
+          try { (window as any).recaptchaVerifier.clear(); } catch(e) { /* ignore */ }
+          (window as any).recaptchaVerifier = null;
+        }
+        const el = document.getElementById('recaptcha-container');
+        if (el) el.innerHTML = '';
+      } catch (e) {
+        console.warn('Error cleaning up recaptcha', e);
+      }
+    };
+  }, []);
+
+  const sendCode = async () => {
+    if (loading || countdown > 0) return;
+
+    let normalized = String(phone || '').trim();
+    // Chuẩn hóa số điện thoại VN: bỏ số 0 đầu, thêm +84
+    if (normalized.startsWith('0')) {
+      normalized = '+84' + normalized.slice(1);
+    }
+    if (!normalized.startsWith('+')) {
+      normalized = '+84' + normalized;
+    }
+
+    if (!/^\+\d{10,15}$/.test(normalized)) {
+      showError('Số điện thoại không đúng định dạng (VD: 0912...).');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      setupRecaptcha();
+      const verifier = (window as any).recaptchaVerifier;
+      
+      const confirmation = await signInWithPhoneNumber(auth, normalized, verifier);
+      setConfirmResult(confirmation);
+      setOtpSent(true);
+      setCountdown(60);
+      showSuccess('Mã OTP đã được gửi!');
+    } catch (e: any) {
+      console.error('sendCode error', e);
+      // Reset reCAPTCHA nếu lỗi để lần sau bấm lại không bị kẹt container
+      if (document.getElementById('recaptcha-container')) {
+          document.getElementById('recaptcha-container')!.innerHTML = '';
+      }
+
+      // Friendly error messages for common failure modes
+      let msg = 'Không thể gửi mã';
+      const code = e?.code || '';
+      if (code === 'auth/invalid-phone-number') msg = 'Số điện thoại không hợp lệ';
+      else if (code === 'auth/too-many-requests') msg = 'Thử lại quá nhiều lần, vui lòng đợi';
+      else if (code === 'auth/operation-not-allowed') msg = 'Phone sign-in chưa được bật cho dự án Firebase (bật Phone provider trong Firebase Console)';
+      else if (String(e).toLowerCase().includes('blocked') || String(e?.message || '').toLowerCase().includes('blocked') || String(e).includes('ERR_BLOCKED_BY_CLIENT')) {
+        msg = 'Yêu cầu mạng bị chặn bởi extension/proxy (ví dụ: adblock). Thử tắt extension hoặc dùng tab ẩn danh.';
+        try { setNetworkBlocked(true); } catch(_) {}
+      } else if (e?.message && e?.message.includes('400')) {
+        msg = 'Yêu cầu tới server bị từ chối (400). Kiểm tra Authorized domains trong Firebase và API key.';
+      }
+
+      showError(`${msg}${e?.message ? ' — ' + e.message : ''}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyCode = async () => {
+    if (!otp || otp.length < 6) {
+      showError('Vui lòng nhập đủ 6 số OTP');
+      return;
+    }
+    setLoading(true);
+    try {
+      const userCred = await confirmResult.confirm(otp);
+      const user = userCred.user;
+      
+      // Kiểm tra/Tạo user trong Firestore
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          account: user.phoneNumber?.replace('+', '') || '',
+          fullName: 'Người dùng mới',
+          email: '',
+          phone: user.phoneNumber || '',
+          status: 'active',
+          vip: 'Thường',
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      showSuccess('Đăng nhập thành công!');
+      setTimeout(() => navigate('/'), 800);
+    } catch (e: any) {
+      if (String(e).toLowerCase().includes('blocked') || String(e?.message || '').toLowerCase().includes('blocked') || String(e).includes('ERR_BLOCKED_BY_CLIENT')) {
+        try { setNetworkBlocked(true); } catch(_) {}
+        showError('Mã xác thực không thể xác minh do kết nối bị chặn (xem thông báo).');
+      } else {
+        showError('Mã xác thực không đúng hoặc đã hết hạn.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="phone-form">
+      {networkBlocked && (
+        <div className="form-warn" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <div style={{ flex: 1 }}>Kết nối tới Firebase có vẻ bị chặn bởi extension hoặc proxy. Thử tắt adblock hoặc mở trang trong cửa sổ ẩn danh.</div>
+          <button className="auth-link-btn" style={{ marginLeft: 8 }} onClick={() => setNetworkBlocked(false)}>Đã hiểu</button>
+        </div>
+      )}
+      <div className="phone-input-row">
+        <input 
+          className="auth-input" 
+          placeholder="Nhập số điện thoại (VD: 0912...)" 
+          value={phone} 
+          disabled={otpSent}
+          onChange={(e)=>setPhone(e.target.value)} 
+        />
+        <button type="button" className="auth-btn small" disabled={loading || countdown > 0} onClick={sendCode}>
+          {loading ? (<><span className="spinner"/> Đang gửi</>) : (otpSent ? `Gửi lại (${countdown}s)` : 'Gửi mã')}
+        </button>
+      </div>
+        {/* recaptcha container placed under the phone input for better visibility */}
+        <div id="recaptcha-container" className="recaptcha-box" />
+      
+      {otpSent && (
+        <div className="otp-row" style={{ marginTop: '15px' }}>
+          <input 
+            className="auth-input" 
+            placeholder="Nhập 6 số OTP" 
+            value={otp} 
+            onChange={(e)=>setOtp(e.target.value)} 
+            maxLength={6}
+          />
+          <button type="button" className="auth-btn small" disabled={loading} onClick={verifyCode}>
+            {loading ? (<><span className="spinner"/> Đang xác thực</>) : 'Xác thực'}
+          </button>
+        </div>
+      )}
+      <button type="button" className="auth-link-btn" style={{marginTop: '10px'}} onClick={onBack}>Quay lại</button>
+    </div>
+  );
+}
+
 function LoginForm() {
   const [identifier, setIdentifier] = useState(''); // email or account
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [remember, setRemember] = useState<boolean>(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  // const [debugInfo, setDebugInfo] = useState<any>(null);
   const [plainPasswordWarning, setPlainPasswordWarning] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // --- simple client-side captcha for login (mixed-case + digits) ---
+  const generateCaptcha = (len = 6) => {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let out = '';
+    for (let i = 0; i < len; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    return out;
+  };
+  const [captcha, setCaptcha] = useState<string>(() => generateCaptcha(6));
+  const [captchaInput, setCaptchaInput] = useState('');
+
+  const renderCaptcha = (code: string) => {
+    try {
+      const canvas = document.getElementById('login-captcha-canvas') as HTMLCanvasElement | null;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const w = canvas.width = 150;
+      const h = canvas.height = 42;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0,0,w,h);
+      // noise lines
+      for (let i=0;i<4;i++){
+        ctx.strokeStyle = `rgba(0,0,0,${0.05 + Math.random()*0.15})`;
+        ctx.beginPath();
+        ctx.moveTo(Math.random()*w, Math.random()*h);
+        ctx.lineTo(Math.random()*w, Math.random()*h);
+        ctx.stroke();
+      }
+      const spacing = w / (code.length + 1);
+      for (let i=0;i<code.length;i++){
+        const ch = code[i];
+        ctx.font = `${18 + Math.round(Math.random()*6)}px sans-serif`;
+        ctx.fillStyle = `rgb(${50+Math.round(Math.random()*120)}, ${30+Math.round(Math.random()*120)}, ${30+Math.round(Math.random()*120)})`;
+        const x = spacing*(i+1) + (Math.random()*6-3);
+        const y = 24 + (Math.random()*6-3);
+        const ang = (Math.random()*24-12) * Math.PI/180;
+        ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.fillText(ch, 0, 0); ctx.restore();
+      }
+    } catch (e) { /* ignore canvas errors */ }
+  };
+
+  const refreshCaptcha = () => {
+    const next = generateCaptcha(6);
+    setCaptcha(next);
+    setCaptchaInput('');
+    setTimeout(()=>renderCaptcha(next), 40);
+  };
+
+  // render on mount/update
+  useEffect(()=>{ renderCaptcha(captcha); }, [captcha]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+    // validate captcha first
+    if ((captchaInput || '').trim() === '') {
+      setError('Vui lòng nhập mã xác thực hiển thị dưới đây');
+      setLoading(false);
+      return;
+    }
+    if (captchaInput.trim() !== captcha) {
+      setError('Mã xác thực không đúng, vui lòng thử lại');
+      refreshCaptcha();
+      setLoading(false);
+      return;
+    }
     try {
       // 1) Kiểm tra identifier (account hoặc email)
       const idTrim = String(identifier || '').trim();
@@ -111,14 +376,14 @@ function LoginForm() {
       // Basic length check (Firebase requires >= 6 for email/password accounts)
       if (pwdTrim.length < 6) {
         setError('Mật khẩu quá ngắn (tối thiểu 6 ký tự)');
-        setDebugInfo((d:any) => ({ ...d, pwdLen: pwdTrim.length }));
+        // setDebugInfo((d:any) => ({ ...d, pwdLen: pwdTrim.length }));
         return;
       }
 
   // Debug: log resolved email and password length (không in password)
   console.debug('Attempting signInWithEmailAndPassword for', { emailToUse, pwdLen: pwdTrim.length });
   // expose debug info on the UI to help troubleshooting (dev only)
-  setDebugInfo({ emailToUse, pwdLen: pwdTrim.length });
+  // setDebugInfo({ emailToUse, pwdLen: pwdTrim.length });
 
       // Set persistence based on remember checkbox
       try {
@@ -172,7 +437,7 @@ function LoginForm() {
       // Special-case: detect network blocked errors seen in DevTools (blocked by extension)
       if ((err?.message || '').includes('blocked') || (err?.message || '').includes('ERR_BLOCKED_BY_CLIENT')) {
         setError('Các kết nối tới Google bị chặn bởi extension/proxy; thử tắt extension (adblock/privacy) hoặc dùng tab ẩn danh.');
-        setDebugInfo((d:any) => ({ ...d, errCode: err?.code, errMessage: err?.message }));
+        // setDebugInfo((d:any) => ({ ...d, errCode: err?.code, errMessage: err?.message }));
         return;
       }
       const code = err?.code || '';
@@ -182,16 +447,19 @@ function LoginForm() {
       else if (code === 'auth/invalid-credential') setError('Thông tin đăng nhập không hợp lệ (vui lòng thử lại)');
       else setError(err.message || 'Đăng nhập thất bại');
       // show raw error code/message in debugInfo for easier diagnosis
-      setDebugInfo((d:any) => ({ ...d, errCode: err?.code, errMessage: err?.message }));
+      // setDebugInfo((d:any) => ({ ...d, errCode: err?.code, errMessage: err?.message }));
+    }
+    finally {
+      setLoading(false);
     }
   };
 
   // Direct REST test to Identity Toolkit - helps determine if requests are being modified by extensions/proxies
-  const runDirectApiTest = async () => {
+  /*const runDirectApiTest = async () => {
     try {
       const payload = { email: identifier || '', password: password || '', returnSecureToken: true };
       const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`;
-      setDebugInfo((d:any)=>({...d, directTest: { url, requestBody: payload }}));
+      // setDebugInfo((d:any)=>({...d, directTest: { url, requestBody: payload }}));
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -200,14 +468,14 @@ function LoginForm() {
       const text = await res.text();
       let json: any = null;
       try { json = JSON.parse(text); } catch(e){ json = text; }
-      setDebugInfo((d:any)=>({...d, directTest: { status: res.status, response: json }}));
+      // setDebugInfo((d:any)=>({...d, directTest: { status: res.status, response: json }}));
       if (!res.ok) setError(`Direct API test returned ${res.status} — xem debug dưới`);
     } catch (e: any) {
       console.error('Direct API test failed:', e);
       setError('Direct API test thất bại — có thể do extension/proxy. Thử lại trong tab ẩn danh.');
-      setDebugInfo((d:any)=>({...d, directTestErr: e?.message || String(e)}));
+      // setDebugInfo((d:any)=>({...d, directTestErr: e?.message || String(e)}));
     }
-  };
+  };*/
 
   return (
     <form onSubmit={handleSubmit} className="auth-form">
@@ -226,6 +494,17 @@ function LoginForm() {
         <a href="#" className="auth-link">Quên mật khẩu?</a>
       </div>
 
+      {/* CAPTCHA: canvas + input */}
+      <div style={{ display:'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
+        <canvas id="login-captcha-canvas" width={150} height={42} style={{ borderRadius:6, border:'1px solid #e5e7eb' }} />
+        <div style={{ display:'flex', gap:6 }}>
+          <input className="auth-input" placeholder="Nhập mã hiển thị" value={captchaInput} onChange={(e)=>setCaptchaInput(e.target.value)} />
+          <div style={{ display:'flex', gap:8 }}>
+            <button type="button" className="auth-link-btn" onClick={refreshCaptcha}>Làm mới</button>
+          </div>
+        </div>
+      </div>
+
   {error && <div className="form-error">{error}</div>}
   {plainPasswordWarning && <div className="form-warn" style={{color:'#7a3'}}>{plainPasswordWarning}</div>}
 
@@ -238,7 +517,7 @@ function LoginForm() {
         <pre style={{ fontSize: 12, marginTop: 8, background: '#fff8', padding: 8, textAlign: 'left', overflowX: 'auto' }}>{JSON.stringify(debugInfo, null, 2)}</pre>
       )} */}
 
-      <button type="submit" className="auth-btn">Đăng Nhập</button>
+      <button type="submit" className="auth-btn" disabled={loading}>{loading ? (<><span className="spinner"/> Đang đăng nhập</>) : 'Đăng Nhập'}</button>
     </form>
   );
 }
@@ -246,6 +525,9 @@ function LoginForm() {
 // Main Login Page
 export default function LoginPage() {
   const navigate = useNavigate();
+  // Default to email/password login. Phone form opens in a modal when requested.
+  const [mode, setMode] = useState<'email'|'phone'>('email');
+  const [phoneFormVisible, setPhoneFormVisible] = useState(false);
 
   // Handle Google Sign In
   const handleGoogleSignIn = async () => {
@@ -311,29 +593,23 @@ export default function LoginPage() {
     }
   };
 
-  // Handle Phone Sign In
-  const handlePhoneSignIn = async () => {
-    const phoneNumber = prompt('Nhập số điện thoại (bắt đầu với +84):');
-    if (!phoneNumber) return;
-    
-    try {
-      showInfo('Đang gửi mã xác thực...');
-      // Note: RecaptchaVerifier needs to be set up properly in production
-      // This is a simplified version
-      showError('Tính năng đăng nhập bằng số điện thoại đang được phát triển. Vui lòng sử dụng phương thức khác.');
-    } catch (error: any) {
-      console.error('Phone sign in error:', error);
-      showError('Đăng nhập số điện thoại thất bại: ' + (error.message || 'Lỗi không xác định'));
-    }
-  };
+  // Note: We render a PhoneForm UI; actual SMS flow requires Recaptcha + firebase signInWithPhoneNumber
 
   return (
-    <div className="wrapper">
+    <div className="auth-wrapper">
       <Toaster />
       <Header />
       <div className="auth-content">
         <div className="auth-card">
           <h1 className="auth-title">Chào Mừng Trở Lại!</h1>
+
+          <div className="auth-tabs">
+            {/* <button className={`tab ${mode === 'email' ? 'active' : ''}`} onClick={() => { setMode('email'); }}>Email</button> */}
+            {/* Phone tab behaves as a button to open the phone modal (no inline form) */}
+            {/* <button className={`tab`} onClick={() => { setPhoneFormVisible(true); }}>Số điện thoại</button> */}
+          </div>
+
+          { /* Always show LoginForm in card by default */ }
           <LoginForm />
           
           {/* Social Login Section */}
@@ -370,7 +646,7 @@ export default function LoginPage() {
             <button 
               type="button" 
               className="auth-social-btn phone"
-              onClick={handlePhoneSignIn}
+              onClick={() => { setMode('phone'); setPhoneFormVisible(true); }}
             >
               <svg viewBox="0 0 24 24">
                 <path fill="currentColor" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
@@ -387,6 +663,16 @@ export default function LoginPage() {
       </div>
       <FloatingButtons />
       <Footer />
+      {/* Phone Modal */}
+      {phoneFormVisible && (
+        <div className="phone-modal" role="dialog" aria-modal="true">
+          <div className="phone-modal-card">
+            <button className="modal-close" aria-label="Đóng" onClick={() => setPhoneFormVisible(false)}>×</button>
+            <h2 style={{ marginTop: 0 }}>Đăng nhập bằng Số điện thoại</h2>
+              <PhoneForm onBack={() => setPhoneFormVisible(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

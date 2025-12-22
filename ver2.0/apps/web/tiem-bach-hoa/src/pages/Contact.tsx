@@ -116,7 +116,7 @@ export default function ContactPage() {
     );
 
     // Popup hover with delay
-    let popupTimeout: NodeJS.Timeout;
+    let popupTimeout: number;
     marker.on("mouseover", () => {
       clearTimeout(popupTimeout);
       marker.openPopup();

@@ -1,13 +1,17 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
+import LoginWarning from "../components/LoginWarning";
 import "../../css/order-tracking.css";
 
 // Format tiền tệ
-const formatCurrency = (amount) => Number(amount).toLocaleString('vi-VN') + ' VNĐ';
+const formatCurrency = (amount: any) => Number(amount).toLocaleString('vi-VN') + ' VNĐ';
 
 // --- Component Thanh Trạng Thái (Timeline) ---
-function TrackingTimeline({ currentStep }) {
+function TrackingTimeline({ currentStep }: any) {
   const steps = [
     { name: "Đã Đặt Hàng", date: "11/11/2025" },
     { name: "Đang Xử Lý", date: "11/11/2025" },
@@ -36,7 +40,7 @@ function TrackingTimeline({ currentStep }) {
 }
 
 // --- Component Bản Đồ Vận Đơn ---
-function LiveTrackingMapComponent({ currentLocation, ETA }) {
+function LiveTrackingMapComponent({ currentLocation, ETA }: any) {
   const checkpoints = [
     { location: "Kho Xử Lý TP.HCM", status: "Đã rời khỏi", time: "11:00 AM" },
     { location: "Bưu cục Cầu Giấy, HN", status: "Đang trung chuyển", time: "08:00 AM" },

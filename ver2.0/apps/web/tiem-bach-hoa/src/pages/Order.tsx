@@ -8,10 +8,10 @@ import { auth } from "../firebase";
 import "../../css/order-history.css";
 
 // Format tiền tệ
-const formatCurrency = (amount) => Number(amount).toLocaleString('vi-VN') + ' VNĐ';
+const formatCurrency = (amount: any) => Number(amount).toLocaleString('vi-VN') + ' VNĐ';
 
 // Hàm lấy màu cho trạng thái
-const getStatusColor = (status) => {
+const getStatusColor = (status: any) => {
   switch (status) {
     case 'Đang Giao Hàng': return 'status-delivering';
     case 'Đã Hoàn Thành': return 'status-completed';

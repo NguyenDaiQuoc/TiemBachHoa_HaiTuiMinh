@@ -41,6 +41,7 @@ export default function CategoriesPage() {
                     activeSlug={activeSlug} 
                     setActiveSlug={setActiveSlug} 
                     setCategoryTree={setCategoryTree} // Truyền hàm setCategoryTree xuống
+                    categoryTree={categoryTree} // Truyền categoryTree xuống
                 />
 
                 {/* 2. Content (Truyền Tree để Content kiểm tra Parent/Child) */}

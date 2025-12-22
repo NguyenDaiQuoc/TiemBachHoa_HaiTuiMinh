@@ -5,7 +5,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 
-function PersonalCouponCard({ coupon }) {
+function PersonalCouponCard({ coupon }: any) {
   const handleCopy = () => {
     alert(`Đã sao chép mã: ${coupon.code}`);
   };
@@ -86,7 +86,7 @@ export default function MyCouponsPage() {
     },
   ];
 
-  const activeFilter = "Sẵn Dùng";
+  const activeFilter: string = "Sẵn Dùng";
   const filters = ["Sẵn Dùng", "Đã Dùng", "Hết Hạn", "Tất Cả"];
 
   const filteredCoupons = personalCoupons.filter(

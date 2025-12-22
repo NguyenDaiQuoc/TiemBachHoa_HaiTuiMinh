@@ -118,7 +118,7 @@ export default function FAQPage() {
   );
 }
 
-function AccordionItem({ question, answer }) {
+function AccordionItem({ question, answer }: any) {
   const [open, setOpen] = useState(false);
 
   return (

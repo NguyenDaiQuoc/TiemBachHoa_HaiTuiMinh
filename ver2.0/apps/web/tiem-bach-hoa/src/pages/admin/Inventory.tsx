@@ -330,7 +330,7 @@ export default function InventoryPage() {
       setViewInvoiceItems(docs);
       setViewInvoiceNumber(invoiceNum);
       // derive meta from first doc (supplier, date, notes, invoiceImage)
-      const first = docs[0] || null;
+      const first: any = docs[0] || null;
       setViewInvoiceMeta(first ? {
         supplier: first.supplier || '',
         date: first.date || first.createdAt || '',
@@ -652,7 +652,7 @@ export default function InventoryPage() {
           };
 
           // if we created a warehouse doc, attach its id to the inventory record
-          if (!it.productId && warehouseId) payload.warehouseId = warehouseId;
+          if (!it.productId && warehouseId) (payload as any).warehouseId = warehouseId;
 
           // write inventory entry
           await addDoc(collection(db, 'inventory_in'), payload);

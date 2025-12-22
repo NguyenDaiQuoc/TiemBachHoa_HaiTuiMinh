@@ -18,7 +18,7 @@ type WarehouseItem = {
   [key: string]: any;
 };
 
-export default function WarehousePage(): JSX.Element {
+export default function WarehousePage(): React.ReactElement {
   const [items, setItems] = useState<WarehouseItem[]>([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);

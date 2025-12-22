@@ -43,9 +43,27 @@ function RegisterForm() {
   const [account, setAccount] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pwScore, setPwScore] = useState(0);
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const calcPasswordScore = (pw: string) => {
+    let score = 0;
+    if (pw.length >= 8) score += 2; // length bonus
+    else if (pw.length >= 6) score += 1;
+    if (/[a-z]/.test(pw)) score += 1;
+    if (/[A-Z]/.test(pw)) score += 1;
+    if (/[0-9]/.test(pw)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+    return Math.min(score, 6);
+  };
+
+  const onPasswordChange = (e: any) => {
+    const v = e?.target?.value || '';
+    setPassword(v);
+    setPwScore(calcPasswordScore(v));
+  };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -82,7 +100,13 @@ function RegisterForm() {
       <AuthInput label="Họ và Tên" placeholder="Ví dụ: Nguyễn Văn A" required value={fullName} onChange={(e:any)=>setFullName(e.target.value)} />
       <AuthInput label="Tài khoản (account)" placeholder="Tên đăng nhập" required value={account} onChange={(e:any)=>setAccount(e.target.value)} />
       <AuthInput label="Email" placeholder="Địa chỉ email hợp lệ" type="email" required value={email} onChange={(e:any)=>setEmail(e.target.value)} />
-      <AuthInput label="Mật Khẩu" placeholder="Tối thiểu 6 ký tự" type="password" required value={password} onChange={(e:any)=>setPassword(e.target.value)} />
+      <AuthInput label="Mật Khẩu" placeholder="Tối thiểu 6 ký tự" type="password" required value={password} onChange={onPasswordChange} />
+      <div className="pw-strength">
+        <div className="pw-bar" data-score={pwScore} aria-hidden="true">
+          <div className="pw-fill" style={{ width: `${(pwScore/6)*100}%` }}></div>
+        </div>
+        <div className="pw-label">Độ mạnh mật khẩu: {['Rất yếu','Yếu','Trung bình','Khá','Mạnh','Rất mạnh','Tuyệt vời'][pwScore]}</div>
+      </div>
       <AuthInput label="Xác nhận Mật Khẩu" placeholder="Nhập lại mật khẩu" type="password" required value={confirm} onChange={(e:any)=>setConfirm(e.target.value)} />
 
       <div className="auth-terms">

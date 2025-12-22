@@ -31,7 +31,7 @@ export default function WishlistPage() {
     { id: 4, name: "Xà Phòng Thủ Công Than Tre", price: 80000, stock: 8 },
   ];
 
-  const formatCurrency = (n) => Number(n).toLocaleString("vi-VN") + " VNĐ";
+  const formatCurrency = (n: any) => Number(n).toLocaleString("vi-VN") + " VNĐ";
 
   return (
     <>

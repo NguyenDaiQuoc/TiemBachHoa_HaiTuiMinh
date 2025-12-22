@@ -112,6 +112,31 @@
   color: #555;
 }
 
+/* Password strength meter */
+.pw-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.pw-bar {
+  width: 100%;
+  height: 10px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+.pw-fill {
+  height: 100%;
+  background: linear-gradient(90deg,#f97316,#10b981);
+  transition: width 240ms ease;
+}
+.pw-label {
+  font-size: 0.85rem;
+  color: #374151;
+}
+
 /* Social Login Section */
 .auth-divider {
   display: flex;
