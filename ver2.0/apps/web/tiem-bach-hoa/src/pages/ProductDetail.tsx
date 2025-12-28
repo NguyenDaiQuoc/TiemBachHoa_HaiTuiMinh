@@ -169,6 +169,9 @@ export default function ProductDetailPage() {
 
   // ⭐ State: Quản lý biến thể đang được chọn - Dùng skuID để nhận dạng ⭐
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<ProductData[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -201,7 +204,11 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (productDetail) {
       if (productDetail.variations && productDetail.variations.length > 0) {
-        setSelectedVariation(productDetail.variations[0]);
+        const first = productDetail.variations[0];
+        setSelectedVariation(first);
+        setSelectedColor(first.color || null);
+        setSelectedSize(first.size || null);
+        setSelectedCondition(first.condition || null);
       } else {
         setSelectedVariation(null);
       }
@@ -212,6 +219,43 @@ export default function ProductDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productDetail]);
+
+  // Derived attribute option sets with current filters
+  const attributeOptions = useMemo(() => {
+    if (!productDetail) return { colors: [], sizes: [], conditions: [] };
+    const vars = productDetail.variations || [];
+
+    const colors = new Set<string>();
+    const sizes = new Set<string>();
+    const conditions = new Set<string>();
+
+    vars.forEach(v => {
+      colors.add(v.color || '');
+      sizes.add(v.size || '');
+      conditions.add(v.condition || '');
+    });
+
+    return {
+      colors: Array.from(colors).filter(c=>c !== '').sort(),
+      sizes: Array.from(sizes).filter(s=>s !== '').sort(),
+      conditions: Array.from(conditions).filter(c=>c !== '').sort(),
+    };
+  }, [productDetail]);
+
+  // When attribute selections change, pick a matching variation (if any)
+  useEffect(() => {
+    if (!productDetail) return;
+    const vars = productDetail.variations || [];
+    const matched = vars.filter(v => {
+      if (selectedColor && v.color !== selectedColor) return false;
+      if (selectedSize && v.size !== selectedSize) return false;
+      if (selectedCondition && v.condition !== selectedCondition) return false;
+      return true;
+    });
+    if (matched.length > 0) {
+      setSelectedVariation(matched[0]);
+    }
+  }, [selectedColor, selectedSize, selectedCondition, productDetail]);
 
   // Khi productDetail thay đổi, load reviews và related products
   useEffect(() => {
@@ -331,9 +375,25 @@ export default function ProductDetailPage() {
     if (!children || children.length === 0) return;
     const child = children[Math.max(0, Math.min(index, children.length - 1))] as HTMLElement;
     if (child) {
-      // Use scrollLeft instead of scrollIntoView to prevent page scroll interference
-      const scrollLeft = child.offsetLeft - (container.offsetWidth / 2) + (child.offsetWidth / 2);
-      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+      // Use a smooth animated scroll (requestAnimationFrame) to reduce jerk
+      const target = child.offsetLeft - (container.offsetWidth / 2) + (child.offsetWidth / 2);
+      const start = container.scrollLeft;
+      const distance = target - start;
+      const duration = 420; // ms
+      let startTime: number | null = null;
+
+      const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const step = (ts: number) => {
+        if (startTime === null) startTime = ts;
+        const elapsed = ts - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const eased = easeInOutCubic(progress);
+        container.scrollLeft = start + distance * eased;
+        if (progress < 1) window.requestAnimationFrame(step);
+      };
+
+      window.requestAnimationFrame(step);
     }
   };
 
@@ -530,7 +590,7 @@ export default function ProductDetailPage() {
         {/* Breadcrumb (Giữ nguyên) */}
         <div className="breadcrumb">
           <span onClick={() => navigate('/')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Trang chủ</span> /
-          <span onClick={() => navigate(`/categories/${categorySlugs[0] || 'all'}/all`)} style={{ cursor: 'pointer', textDecoration: 'underline' }}> Sản phẩm</span> /
+          <span onClick={() => navigate(`/products?category=${categorySlugs[0] || ''}`)} style={{ cursor: 'pointer', textDecoration: 'underline' }}> Sản phẩm</span> /
           {name}
         </div>
 
@@ -593,29 +653,80 @@ export default function ProductDetailPage() {
               {description}
             </p>
 
-            {/* ⭐ HIỂN THỊ CÁC BIẾN THỂ (Dùng Màu sắc và Kích thước làm tên hiển thị) ⭐ */}
+            {/* ⭐ HIỂN THỊ CÁC THUỘC TÍNH BIẾN THỂ (Color / Size / Condition) ⭐ */}
             {variations.length > 0 && (
-              <div className="product-detail-flavors">
-                <span className="label">Biến Thể (Màu/Size):</span>
-                <div className="flavor-options">
-                  {variations.map((variation) => {
-                    const variantLabel = `${variation.color} / ${variation.size}`;
-                    return (
-                      <span
-                        key={variation.skuID}
-                        className={`flavor ${selectedVariation?.skuID === variation.skuID ? "selected" : ""} ${variation.stock <= 0 ? "out-of-stock" : ""}`}
-                        onClick={() => {
-                          if (variation.stock > 0) {
-                            setSelectedVariation(variation);
-                          }
-                        }}
-                      >
-                        {variantLabel}
-                        {variation.stock <= 0 && <span className="stock-label"> (Hết)</span>}
-                      </span>
-                    );
-                  })}
-                </div>
+              <div className="product-detail-attributes">
+                <div style={{marginBottom:8}}><strong>Chọn thuộc tính:</strong></div>
+
+                {/* Color */}
+                {attributeOptions.colors.length > 0 && (
+                  <div style={{marginBottom:8}}>
+                    <div className="label">Màu:</div>
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                      {attributeOptions.colors.map(col => {
+                        // determine availability given other selections
+                        const available = (productDetail.variations || []).some(v => (selectedSize ? v.size === selectedSize : true) && (selectedCondition ? v.condition === selectedCondition : true) && v.color === col && v.stock > 0);
+                        return (
+                          <button
+                            key={col}
+                            className={`attr-btn ${selectedColor === col ? 'selected' : ''} ${!available ? 'disabled' : ''}`}
+                            disabled={!available}
+                            title={!available ? 'Không có biến thể tương ứng' : col}
+                            onClick={() => setSelectedColor(prev => prev === col ? null : col)}
+                          >
+                            {col}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Size */}
+                {attributeOptions.sizes.length > 0 && (
+                  <div style={{marginBottom:8}}>
+                    <div className="label">Kích thước:</div>
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                      {attributeOptions.sizes.map(sz => {
+                        const available = (productDetail.variations || []).some(v => (selectedColor ? v.color === selectedColor : true) && (selectedCondition ? v.condition === selectedCondition : true) && v.size === sz && v.stock > 0);
+                        return (
+                          <button
+                            key={sz}
+                            className={`attr-btn ${selectedSize === sz ? 'selected' : ''} ${!available ? 'disabled' : ''}`}
+                            disabled={!available}
+                            title={!available ? 'Không có biến thể tương ứng' : sz}
+                            onClick={() => setSelectedSize(prev => prev === sz ? null : sz)}
+                          >
+                            {sz}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Condition */}
+                {attributeOptions.conditions.length > 0 && (
+                  <div style={{marginBottom:8}}>
+                    <div className="label">Tình trạng:</div>
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                      {attributeOptions.conditions.map(cond => {
+                        const available = (productDetail.variations || []).some(v => (selectedColor ? v.color === selectedColor : true) && (selectedSize ? v.size === selectedSize : true) && v.condition === cond && v.stock > 0);
+                        return (
+                          <button
+                            key={cond}
+                            className={`attr-btn ${selectedCondition === cond ? 'selected' : ''} ${!available ? 'disabled' : ''}`}
+                            disabled={!available}
+                            title={!available ? 'Không có biến thể tương ứng' : cond}
+                            onClick={() => setSelectedCondition(prev => prev === cond ? null : cond)}
+                          >
+                            {cond}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

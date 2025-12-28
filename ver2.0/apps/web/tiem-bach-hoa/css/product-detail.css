@@ -194,6 +194,26 @@
   font-weight: 500;
 }
 
+/* Attribute buttons (color/size/condition) */
+.attr-btn {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e6e6e6;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.attr-btn.selected {
+  background: #4a6d56;
+  color: white;
+  border-color: #4a6d56;
+}
+.attr-btn.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(30%);
+}
+
 .quantity-buy {
   display: flex;
   align-items: center;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, doc, updateDoc, Timestamp, where } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { adminDb as db } from '../../firebase';
 import AdminSidebar from '../../components/admin/Sidebar';
 import '../../../css/admin/blogs.css';
 

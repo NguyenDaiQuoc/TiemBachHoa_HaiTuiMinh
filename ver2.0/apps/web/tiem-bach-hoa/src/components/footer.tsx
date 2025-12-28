@@ -85,7 +85,7 @@ export default function Footer() {
 
       <div className="footer_bottom">
         <p className="footer_copyright">
-          © 2025 Bách Hóa Nhà Hai Đứa. All rights reserved.
+          © 2025 Bách Hóa Hai Tụi Mình. All rights reserved.
         </p>
       </div>
     </footer>

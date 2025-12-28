@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { auth } from "../firebase";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { auth } from "../firebase-auth";
+import { db } from "../firebase";
+import { doc, onSnapshot, getDoc, collection, query, orderBy } from 'firebase/firestore';
+import { showError } from '../utils/toast';
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
@@ -18,7 +23,16 @@ function TrackingTimeline({ currentStep }: any) {
     { name: "Đang Giao Hàng", date: "12/11/2025" },
     { name: "Đã Giao Thành Công", date: "" },
   ];
-  const stepIndex = steps.findIndex(step => step.name === currentStep);
+  const normalize = (s: string) => (s || '').toString().toLowerCase();
+  const stepIndex = (() => {
+    const cs = normalize(currentStep || '');
+    if (!cs) return -1;
+    if (cs.includes('đặt') || cs.includes('mới')) return 0;
+    if (cs.includes('chờ') || cs.includes('xử lý') || cs.includes('processing')) return 1;
+    if (cs.includes('vận') || cs.includes('giao') || cs.includes('vận chuyển')) return 2;
+    if (cs.includes('đã giao') || cs.includes('hoàn thành')) return 3;
+    return steps.findIndex(step => normalize(step.name) === cs);
+  })();
 
   return (
     <div className="timeline-wrapper">
@@ -95,9 +109,17 @@ type OrderTrackingProps = {
 
 // --- Component Chính ---
 export default function OrderTracking({ orderId, currentStatus, totalAmount, currentLocation, ETA }: OrderTrackingProps) {
+  const params = useParams();
+  const idFromRoute = params.orderId;
+  // Allow passing orderId via props, route param, or query string (?orderId=...)
+  const qp = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search).get('orderId') : null;
+  const orderIdToUse = orderId || idFromRoute || qp;
   const navigate = useNavigate();
   const [showLoginWarning, setShowLoginWarning] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [orderData, setOrderData] = useState<any>(null);
+  const [trackingEvents, setTrackingEvents] = useState<any[]>([]);
+  const mapRef = useRef<any>(null);
 
   // Listen to auth state changes like Cart.tsx
   useEffect(() => {
@@ -112,39 +134,127 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
     return () => unsubscribe();
   }, []);
 
-  const shippingAddress = "Số 123, đường Hai Bà Trưng, Phường Bến Nghé, Q.1, TP.HCM";
-  const orderItems = [
-    { name: "Nến Thơm Organic Vỏ Cam Quế", price: 180000, quantity: 2 },
-    { name: "Bánh quy Yến mạch (Hộp)", price: 150000, quantity: 1 },
-  ];
+  // Load order by id and listen to tracking events (with error handling)
+  useEffect(() => {
+    if (!orderIdToUse) return;
+    const dRef = doc(db, 'orders', orderIdToUse);
+    const off = onSnapshot(dRef, (snap) => {
+      if (!snap.exists()) return;
+      setOrderData({ id: snap.id, ...snap.data() });
+    }, (err) => {
+      console.error('order snap err', err);
+      showError('Không thể tải thông tin đơn hàng: ' + (err?.message || err));
+    });
+
+    // listen to trackingEvents subcollection
+    const evColl = collection(db, 'orders', orderIdToUse, 'trackingEvents');
+    const evQuery = query(evColl, orderBy('ts', 'asc'));
+    const offEvents = onSnapshot(evQuery, (snap) => {
+      try {
+        const arr: any[] = [];
+        snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+        setTrackingEvents(arr);
+      } catch (err: any) {
+        console.error('tracking events snap err', err);
+        showError('Lỗi khi xử lý dữ liệu lịch sử hành trình: ' + (err?.message || err));
+      }
+    }, (err) => {
+      console.error('tracking events snap err', err);
+      showError('Không thể lắng nghe lịch sử hành trình: ' + (err?.message || err));
+    });
+
+    return () => { off(); offEvents(); };
+  }, [orderIdToUse]);
+
+  const shippingAddress = orderData?.shippingAddress || orderData?.address || "";
+  const orderItems = orderData?.items || [];
+  const computedTotal = orderData?.total || orderData?.amount || orderData?.subtotal || (Array.isArray(orderItems) ? orderItems.reduce((s:any,i:any)=> s + ((i.price||i.unitPrice||i.amount||0) * (i.quantity||i.qty||1)), 0) : 0);
+  const paymentMethod = orderData?.paymentMethod || orderData?.payment || '---';
+  const customerName = orderData?.customerName || orderData?.customer || orderData?.userName || '';
+  const customerPhone = orderData?.phone || orderData?.mobile || orderData?.customerPhone || '';
+  // currentLocation text: last tracking event location or shippingLocation
+  let currentLocationText = '---';
+  const locEvents = trackingEvents.filter((t:any)=>t.location);
+  if (locEvents.length > 0) {
+    const last = locEvents[locEvents.length - 1];
+    currentLocationText = `${last.location.lat.toFixed(5)}, ${last.location.lng.toFixed(5)}`;
+  } else if (orderData?.shippingLocation) {
+    currentLocationText = `${orderData.shippingLocation.lat?.toFixed ? orderData.shippingLocation.lat.toFixed(5) : orderData.shippingLocation.lat}, ${orderData.shippingLocation.lng?.toFixed ? orderData.shippingLocation.lng.toFixed(5) : orderData.shippingLocation.lng}`;
+  }
+  const displayETA = orderData?.ETA || orderData?.eta || ETA || '---';
 
   return (
     <div className="tracking-wrapper">
       <Header />
 
       <div className="tracking-content">
-        <h1>Theo Dõi Đơn Hàng Của Bạn</h1>
-        <p>Mã đơn hàng: <span className="highlight-green">{orderId}</span></p>
+        <div style={{display:'flex', alignItems:'center', gap:12}}>
+          <button className="btn-secondary" onClick={() => window.history.back()}>← Quay lại</button>
+          <h1 style={{margin:0}}>Theo Dõi Đơn Hàng Của Bạn</h1>
+        </div>
+        <p>Mã đơn hàng: <span className="highlight-green">{orderIdToUse}</span></p>
 
         {/* Timeline */}
         <div className="timeline-card">
-          <h2>Trạng Thái Hiện Tại: {currentStatus}</h2>
-          <TrackingTimeline currentStep={currentStatus} />
+          <h2>Trạng Thái Hiện Tại: {orderData?.status || currentStatus || '---'}</h2>
+          <TrackingTimeline currentStep={orderData?.status || currentStatus} />
+          {customerName ? <div style={{marginTop:8}}>Khách hàng: <strong>{customerName}</strong> {customerPhone ? <span>— {customerPhone}</span> : null}</div> : null}
         </div>
 
         {/* Map */}
-        <LiveTrackingMapComponent currentLocation={currentLocation} ETA={ETA} />
+        <div className="map-card">
+          <h3>Bản đồ hành trình</h3>
+          {
+            (() => {
+              // build points from tracking events that have location
+              const pts = trackingEvents.filter((t:any)=>t.location).map((t:any)=>[t.location.lat, t.location.lng]);
+              // fallback to order shippingLocation if no tracking points available
+              if (pts.length === 0 && orderData?.shippingLocation && orderData.shippingLocation.lat && orderData.shippingLocation.lng) {
+                pts.push([orderData.shippingLocation.lat, orderData.shippingLocation.lng]);
+              }
+              if (pts.length === 0) {
+                return <div className="map-placeholder">Chưa có dữ liệu vị trí để hiển thị bản đồ.</div>;
+              }
+              const center: any = pts[0];
+              return (
+                <div style={{height:400}}>
+                  <MapContainer whenCreated={m=>mapRef.current = m} style={{height:'100%', width:'100%'}} center={[center[0], center[1]]} zoom={13}>
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Polyline positions={pts} color="#4A6D56" />
+                    {
+                      pts.map((p:any, idx:number) => {
+                        const ev = trackingEvents.filter((t:any)=>t.location)[idx];
+                        return (
+                          <Marker key={idx} position={[p[0], p[1]]}>
+                            <Popup>
+                              <div style={{minWidth:180}}>
+                                <div><strong>{ev?.status || 'Vị trí'}</strong></div>
+                                <div style={{fontSize:12}}>{ev?.note || ''}</div>
+                                {ev?.image ? <div style={{marginTop:6}}><a target="_blank" rel="noreferrer" href={ev.image}><img src={ev.image} style={{width:180}} alt="proof"/></a></div> : null}
+                                <div style={{marginTop:6}}><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p[0] + ',' + p[1])}`}>Mở Maps</a></div>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        )
+                      })
+                    }
+                  </MapContainer>
+                </div>
+              );
+            })()
+          }
+        </div>
 
         {/* Chi tiết đơn hàng */}
         <div className="tracking-grid">
           <div className="tracking-info">
             <h3>Thông Tin Thanh Toán & Giao Nhận</h3>
             <p>Địa Chỉ Nhận: {shippingAddress}</p>
-            <p>Hình Thức Thanh Toán: COD</p>
+            <p>Hình Thức Thanh Toán: {paymentMethod}</p>
             <div className="summary">
               <div className="summary-row">
                 <span>Tổng Sản Phẩm:</span>
-                <span>{formatCurrency(totalAmount)}</span>
+                <span>{orderItems.length}</span>
               </div>
               <div className="summary-row">
                 <span>Phí Vận Chuyển:</span>
@@ -152,24 +262,24 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
               </div>
               <div className="summary-row total">
                 <span>Tổng Tiền Thanh Toán:</span>
-                <span className="highlight-green">{formatCurrency(totalAmount)}</span>
+                <span className="highlight-green">{formatCurrency(computedTotal)}</span>
               </div>
             </div>
           </div>
 
           <div className="tracking-products">
             <h3>Sản Phẩm Trong Đơn</h3>
-            {orderItems.map((item, index) => (
-              <div key={index} className="product-row">
-                <span>{item.name} (x{item.quantity})</span>
-                <span>{formatCurrency(item.price * item.quantity)}</span>
-              </div>
-            ))}
+              {Array.isArray(orderItems) && orderItems.length > 0 ? orderItems.map((item:any, index:number) => (
+                <div key={index} className="product-row">
+                  <span>{item.name || item.title || item.productName} (x{item.quantity || item.qty || 1})</span>
+                  <span>{formatCurrency((item.price || item.unitPrice || item.amount || 0) * (item.quantity || item.qty || 1))}</span>
+                </div>
+              )) : (<div>Không có sản phẩm chi tiết</div>)}
           </div>
         </div>
 
         <div className="tracking-support">
-          <p>Bạn cần hỗ trợ thêm về đơn hàng? Đội ngũ Nhà Hai Đứa luôn sẵn sàng!</p>
+          <p>Bạn cần hỗ trợ thêm về đơn hàng? Đội ngũ Hai Tụi Mình luôn sẵn sàng!</p>
           <button className="btn-support">Liên Hệ Hỗ Trợ (Zalo/Hotline)</button>
         </div>
       </div>

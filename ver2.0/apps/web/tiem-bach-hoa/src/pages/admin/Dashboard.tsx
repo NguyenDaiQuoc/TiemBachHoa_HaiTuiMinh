@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, db } from "../../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { adminAuth as auth, adminDb as db } from "../../firebase-admin";
+import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,6 +14,7 @@ import {
 } from "chart.js";
 import { Line, Pie } from "react-chartjs-2";
 import "../../../css/admin/dashboard.css";
+import { showError } from '../../utils/toast';
 
 // ⭐️ IMPORT SIDEBAR MỚI ⭐️
 import AdminSidebar from "../../components/admin/Sidebar"; 
@@ -110,6 +111,8 @@ function ChartPlaceholder({ title, type }: { title: string; type: "line" | "pie"
 export default function Dashboard() { // Đã đổi tên thành Dashboard
   const navigate = useNavigate();
   const [adminName, setAdminName] = useState("Admin");
+  const [totalFavorites, setTotalFavorites] = useState<number | null>(null);
+  const [topFavProducts, setTopFavProducts] = useState<Array<{ productId: string; count: number; name?: string; image?: string }>>([]);
 
   useEffect(() => {
     // 1) Kiểm tra session Firebase (luôn luôn có)
@@ -142,13 +145,108 @@ export default function Dashboard() { // Đã đổi tên thành Dashboard
     return () => unsubscribe();
   }, [navigate]);
 
+  useEffect(() => {
+    // Fetch favorites metrics (top favorited products, total favorites)
+    const fetchFavMetrics = async () => {
+      try {
+        const favSnap = await getDocs(collection(db, 'favorites'));
+        setTotalFavorites(favSnap.size);
+
+        const counts: Record<string, number> = {};
+        favSnap.docs.forEach(d => {
+          const data: any = d.data();
+          const pid = data.productId;
+          if (!pid) return;
+          counts[pid] = (counts[pid] || 0) + 1;
+        });
+
+        const entries = Object.entries(counts).map(([productId, count]) => ({ productId, count }));
+        entries.sort((a, b) => b.count - a.count);
+        const top = entries.slice(0, 5);
+
+        // Resolve product names/images for top products if available
+        const withMeta = await Promise.all(top.map(async (t) => {
+          try {
+            const pSnap = await getDoc(doc(db, 'products', t.productId));
+            if (pSnap.exists()) {
+              const d: any = pSnap.data();
+              return { ...t, name: d.name || t.productId, image: d.image || '' };
+            }
+            return { ...t, name: t.productId, image: '' };
+          } catch (e) {
+            return { ...t, name: t.productId, image: '' };
+          }
+        }));
+
+        setTopFavProducts(withMeta as any);
+      } catch (err) {
+        console.error('fetchFavMetrics error', err);
+      }
+    };
+
+    fetchFavMetrics();
+  }, []);
+
   // --- KPI ---
-  const kpiData = [
-    { title: "Tổng Doanh Thu (Tháng này)", value: 125400000, change: 15.2, isMoney: true },
-    { title: "Số Lượng Đơn Hàng", value: 850, change: 8.5 },
-    { title: "Khách Hàng Mới", value: 120, change: -2.1 },
-    { title: "Tỉ Lệ Chuyển Đổi", value: 2.5, change: 0.5 },
-  ];
+  const [kpiData, setKpiData] = React.useState<Array<{ title: string; value: number; change: number; isMoney?: boolean }>>([]);
+
+  useEffect(() => {
+    const computeKpis = async () => {
+      try {
+        // Month start / end
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+        // Fetch orders in month
+        const ordersSnap = await getDocs(collection(db, 'orders'));
+        const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        let totalRevenue = 0;
+        let ordersThisMonth = 0;
+        let paidOrders = 0;
+        const customersSet = new Set<string>();
+
+        orders.forEach((o: any) => {
+          const created = o.createdAt;
+          let createdTs = 0;
+          if (created && created.seconds) createdTs = created.seconds * 1000;
+          else if (created) createdTs = new Date(created).getTime();
+          if (createdTs >= monthStart.getTime() && createdTs < monthEnd.getTime()) {
+            ordersThisMonth++;
+            totalRevenue += Number(o.total || o.amount || 0) || 0;
+            if ((o.status || '').toString().includes('Thanh Toán') || (o.status || '').toString().includes('Đã')) paidOrders++;
+          }
+          if (o.userID || o.userId || o.customerId) customersSet.add(o.userID || o.userId || o.customerId || (o.customerEmail || ''));
+        });
+
+        // New customers this month
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const newCustomers = usersSnap.docs.filter(d => {
+          const u = d.data();
+          const c = u.createdAt;
+          let t = 0;
+          if (!c) return false;
+          if (c.seconds) t = c.seconds * 1000; else t = new Date(c).getTime();
+          return t >= monthStart.getTime() && t < monthEnd.getTime();
+        }).length;
+
+        const conversion = ordersThisMonth === 0 ? 0 : Math.round((paidOrders / ordersThisMonth) * 100);
+
+        setKpiData([
+          { title: 'Tổng Doanh Thu (Tháng này)', value: totalRevenue, change: 0, isMoney: true },
+          { title: 'Số Lượng Đơn Hàng', value: ordersThisMonth, change: 0 },
+          { title: 'Khách Hàng Mới', value: newCustomers, change: 0 },
+          { title: 'Tỉ Lệ Chuyển Đổi (%)', value: conversion, change: 0 },
+        ]);
+      } catch (err) {
+        console.error('compute KPI error', err);
+        showError('Không thể tải số liệu Dashboard');
+      }
+    };
+
+    computeKpis();
+  }, []);
 
   // --- TOP PRODUCTS ---
   const topProducts = [
@@ -174,6 +272,11 @@ export default function Dashboard() { // Đã đổi tên thành Dashboard
 
         <div className="dashboard-kpi-grid">
           {kpiData.map((d, i) => <MetricCard key={i} {...d} />)}
+          <div className="dashboard-metric-card">
+            <p className="metric-title">Tổng Yêu Thích</p>
+            <h3 className="metric-value">{totalFavorites !== null ? totalFavorites.toLocaleString('vi-VN') : '—'}</h3>
+            <div className="metric-change-subtext">Số lượt thêm vào yêu thích</div>
+          </div>
         </div>
 
         <div className="dashboard-charts-grid">
@@ -184,17 +287,17 @@ export default function Dashboard() { // Đã đổi tên thành Dashboard
           <div className="top-products-card">
             <h3 className="top-products-title">Top 5 Sản Phẩm Bán Chạy (Tháng)</h3>
             <ul className="top-products-list">
-              {topProducts.map((p) => (
-                <li key={p.productCode} className="top-product-item">
-                  <img src={p.image} className="top-product-image" />
+              {topFavProducts.length > 0 ? topFavProducts.map((p) => (
+                <li key={p.productId} className="top-product-item">
+                  {p.image ? <img src={p.image} className="top-product-image" /> : <div style={{width:48,height:48,background:'#f3f4f6'}}/>}
                   <div className="top-product-info">
                     <p className="top-product-name">{p.name}</p>
-                    <p className="top-product-codes">
-                      Danh mục: {p.categoryCode} | Mã SP: {p.productCode}
-                    </p>
+                    <p className="top-product-codes">Lượt yêu thích: {p.count}</p>
                   </div>
                 </li>
-              ))}
+              )) : (
+                <li className="top-product-item">Chưa có dữ liệu yêu thích</li>
+              )}
             </ul>
           </div>
 

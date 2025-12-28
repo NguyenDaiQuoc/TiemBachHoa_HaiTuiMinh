@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import AdminSidebar from "../../components/admin/Sidebar";
-import { db } from "../../firebase";
-import { exportToExcel, exportToPDF, exportToCSV } from "../../utils/exportUtils";
+import { adminDb as db } from "../../firebase-admin";
 import "../../../css/admin/analytics.css";
 
 const formatCurrency = (amount: number) =>
@@ -279,19 +278,19 @@ export default function AdminReportsPage() {
 
   const handleExportExcel = () => {
     const data = prepareExportData();
-    exportToExcel(data, `bao-cao-don-hang-${range}-ngay`);
+    import('../../utils/exportUtils').then(m => m.exportToExcel(data, `bao-cao-don-hang-${range}-ngay`)).catch(err => console.error('Export failed', err));
   };
 
   const handleExportPDF = () => {
     const data = prepareExportData();
     const columns = ['Mã đơn', 'Khách hàng', 'Điện thoại', 'Tổng tiền', 'Trạng thái', 'Ngày đặt'];
-    exportToPDF(data, `bao-cao-don-hang-${range}-ngay`, columns, 'Báo Cáo Đơn Hàng');
+    import('../../utils/exportUtils').then(m => m.exportToPDF(data, `bao-cao-don-hang-${range}-ngay`, columns, 'Báo Cáo Đơn Hàng')).catch(err => console.error('Export failed', err));
   };
 
   const handleExportCSV = () => {
     const data = prepareExportData();
     const columns = ['Mã đơn', 'Khách hàng', 'Điện thoại', 'Tổng tiền', 'Trạng thái', 'Ngày đặt'];
-    exportToCSV(data, `bao-cao-don-hang-${range}-ngay`, columns);
+    import('../../utils/exportUtils').then(m => m.exportToCSV(data, `bao-cao-don-hang-${range}-ngay`, columns)).catch(err => console.error('Export failed', err));
   };
 
   return (

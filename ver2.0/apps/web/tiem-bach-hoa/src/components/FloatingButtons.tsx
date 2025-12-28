@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { db, auth } from "../firebase";
+import { auth } from "../firebase-auth";
+import { db } from "../firebase-firestore";
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, getDoc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, setDoc, addDoc, query, where } from "firebase/firestore";
 

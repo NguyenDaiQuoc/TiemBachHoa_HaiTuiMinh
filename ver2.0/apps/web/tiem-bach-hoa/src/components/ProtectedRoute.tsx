@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { auth } from '../firebase';
+import { auth } from '../firebase-auth';
+import { adminAuth } from '../firebase-admin';
 import { showError } from '../utils/toast';
 
 interface Props {
@@ -10,7 +11,8 @@ interface Props {
 
 export default function ProtectedRoute({ children, requireAdmin = false }: Props) {
   // Synchronously compute allowed access to avoid blank flicker on refresh
-  const user = auth.currentUser;
+  // Dùng adminAuth cho admin routes, auth cho user routes
+  const user = requireAdmin ? adminAuth.currentUser : auth.currentUser;
   let allowed = false;
   if (user) allowed = true;
   else {

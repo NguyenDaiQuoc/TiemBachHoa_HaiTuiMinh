@@ -18,7 +18,6 @@ export function useAuthPersistence() {
             const until = Number(rem || '0');
             // Nếu hết hạn thì logout
             if (until > 0 && Date.now() > until) {
-              console.log('remember_until expired, signing out');
               localStorage.removeItem('remember_until');
               await auth.signOut();
             }

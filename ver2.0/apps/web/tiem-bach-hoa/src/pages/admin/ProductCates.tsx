@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, doc, deleteDoc, setDoc } from "firebase/firestore";
-import { db } from "../../firebase";
+import { adminDb as db } from "../../firebase-admin";
 import AdminSidebar from "../../components/admin/Sidebar";
 import AdminCategoryFormPage from "./CategoryForm"; // ⭐️ IMPORT COMPONENT FORM MỚI ⭐️
 import "../../../css/admin/productcates.css";
@@ -127,9 +127,24 @@ export default function ProdCates() {
           icon: data.icon || '📁',
         } as CategoryData;
       });
-      // ... (Hết logic xử lý dữ liệu) ...
-      const tree = buildCategoryTree(flatCategories);
-      setCategoriesTree(tree);
+      // Tính lại product_count bằng cách đếm các products trên toàn bộ collection
+      try {
+        const prodSnapshot = await getDocs(collection(db, "products"));
+        const counts: Record<string, number> = {};
+        prodSnapshot.docs.forEach(d => {
+          const p: any = d.data();
+          const slugs: string[] = p.categorySlugs || [];
+          slugs.forEach(s => { counts[s] = (counts[s] || 0) + 1; });
+        });
+        // Merge counts vào flatCategories
+        const merged = flatCategories.map(fc => ({ ...fc, product_count: counts[fc.slug] || 0 }));
+        const tree = buildCategoryTree(merged);
+        setCategoriesTree(tree);
+      } catch (countErr) {
+        console.error('Không thể tính product counts:', countErr);
+        const tree = buildCategoryTree(flatCategories);
+        setCategoriesTree(tree);
+      }
 
     } catch (error) {
       console.error("Lỗi khi tải danh mục sản phẩm:", error);

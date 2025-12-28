@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 // 1. IMPORT THÊM useLocation để lấy đường dẫn hiện tại
 import { useNavigate, useLocation } from "react-router-dom";
-import { auth, db } from "../../firebase";
+import { adminAuth as auth, adminDb as db } from "../../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import "../../../css/admin/sidebar.css";
 import "../../../css/admin/responsive.css"

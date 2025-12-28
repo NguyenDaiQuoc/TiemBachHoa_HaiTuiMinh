@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 import SalesFloatingButton from "../components/SalesFloatingButton";
 import LoginWarning from "../components/LoginWarning";
-import { auth } from "../firebase";
+import { auth } from "../firebase-auth";
 
 import "../../css/address.css";
 

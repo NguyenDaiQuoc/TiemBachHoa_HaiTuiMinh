@@ -15,7 +15,7 @@
 .ship-wrapper {
   min-height: 100vh;
   background: var(--bg-secondary);
-  font-family: sans-serif;
+  
 }
 
 .ship-topbar {

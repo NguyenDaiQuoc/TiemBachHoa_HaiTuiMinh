@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, getDoc, addDoc, doc, updateDoc, serverTimestamp, increment, setDoc, deleteDoc, query, where } from 'firebase/firestore';
-import { db, auth, storage } from '../../firebase';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { adminDb as db, adminAuth as auth, adminStorage as storage } from '../../firebase';
+import { ref as storageRef } from 'firebase/storage';
+import uploadWithRetries from '../../utils/storage';
 import AdminSidebar from '../../components/admin/Sidebar';
 import '../../../css/admin/inventory.css';
 import { showSuccess, showError } from '../../utils/toast';
@@ -408,35 +409,32 @@ export default function InventoryPage() {
           const perEntryLast = new Array<number>(uploadEntries.length).fill(0);
           let uploadedBytes = 0;
 
-          const uploadPromises = uploadEntries.map((entry, idx) => new Promise<{url:string, entry:any}>( (resolve, reject) => {
-            const safeName = entry.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-            const path = entry.isInvoice ? `inventory_images/${finalInvoice}/invoice_${Date.now()}_${safeName}` : `inventory_images/${finalInvoice}/${Date.now()}_${idx}_${safeName}`;
-            const sRef = storageRef(storage, path);
-            const task = uploadBytesResumable(sRef, entry.file);
-            const progressKey = entry.isInvoice ? `invoice-${idx}-${entry.file.name}` : `line-${entry.lineIndex}-${idx}-${entry.file.name}`;
-            task.on('state_changed', (snap) => {
-              // per-entry aggregate for overall progress
-              perEntryLast[idx] = snap.bytesTransferred;
-              uploadedBytes = perEntryLast.reduce((a,b)=>a+b,0);
-              setUploadProgress(Math.round((uploadedBytes / totalBytes) * 100));
-              // per-file progress (percentage)
-              try {
-                const pct = snap.totalBytes ? Math.round((snap.bytesTransferred / snap.totalBytes) * 100) : 0;
-                setFileUploadProgress(prev => ({ ...prev, [progressKey]: pct, [entry.file.name]: pct }));
-              } catch (e) { /* ignore */ }
-            }, (err) => {
-              console.warn('Upload failed', err);
-              // Show specific error message for storage permission issues
-              if (err?.code === 'storage/unauthorized') {
+          const uploadPromises = uploadEntries.map((entry, idx) => new Promise<{url:string, entry:any}>( async (resolve, reject) => {
+            try {
+              const safeName = entry.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+              const path = entry.isInvoice ? `inventory_images/${finalInvoice}/invoice_${Date.now()}_${safeName}` : `inventory_images/${finalInvoice}/${Date.now()}_${idx}_${safeName}`;
+              const sRef = storageRef(storage, path);
+              const result = await uploadWithRetries(sRef, entry.file, {
+                maxRetries: 3,
+                onProgress: (snapPct) => {
+                  // convert per-file pct to bytes-estimate for aggregate
+                  perEntryLast[idx] = Math.round((snapPct/100) * (entry.file.size || 0));
+                  uploadedBytes = perEntryLast.reduce((a,b)=>a+b,0);
+                  setUploadProgress(Math.round((uploadedBytes / totalBytes) * 100));
+                  const progressKey = entry.isInvoice ? `invoice-${idx}-${entry.file.name}` : `line-${entry.lineIndex}-${idx}-${entry.file.name}`;
+                  setFileUploadProgress(prev => ({ ...prev, [progressKey]: snapPct, [entry.file.name]: snapPct }));
+                }
+              });
+              resolve({ url: result.url, entry });
+            } catch (err: any) {
+              console.warn('Upload failed (inventory entry) after retries', err);
+              if (err?.code === 'storage/unauthorized' || err?.original?.code === 'storage/unauthorized') {
                 showError('Không có quyền upload file. Vui lòng kiểm tra Storage Rules!');
+              } else {
+                showError(`Lỗi upload: ${err?.message || String(err)}`);
               }
               reject(err);
-            }, async () => {
-              try {
-                const url = await getDownloadURL(task.snapshot.ref);
-                resolve({ url, entry });
-              } catch (err) { reject(err); }
-            });
+            }
           }));
 
           const results = await Promise.all(uploadPromises);
@@ -986,7 +984,25 @@ export default function InventoryPage() {
                                       <img key={`u-${ui}`} src={u} alt={`img-${ui}`} style={{width:64,height:64,objectFit:'cover',borderRadius:6,cursor:'pointer'}} onClick={()=>{ setLightboxImages(it.images||[]); setLightboxStart(ui); setLightboxOpen(true); }} />
                                     ))}
                                   </div>
-                                  {/* previews only in the line list; image uploads happen in the product entry form before adding the line */}
+                                  {/* Allow adding/changing images for this line when editing */}
+                                  <div style={{marginTop:6, display:'flex', gap:8, alignItems:'center'}}>
+                                    <input type="file" accept="image/*" multiple onChange={(e)=>{
+                                      const files = e.target.files ? Array.from(e.target.files) : [];
+                                      setLineItems(prev => prev.map((row, r) => r === idx ? ({ ...row, files: files, images: row.images || [] }) : row));
+                                    }} />
+                                    {it.images && it.images.length > 0 && (
+                                      <div style={{display:'flex',gap:6}}>
+                                        {it.images.map((u:string, ui:number) => (
+                                          <div key={`img-rem-${ui}`} style={{position:'relative'}}>
+                                            <img src={u} alt={`img-${ui}`} style={{width:48,height:48,objectFit:'cover',borderRadius:6}} />
+                                            <button type="button" title="Xóa ảnh" onClick={()=>{
+                                                  setLineItems(prev=> prev.map((row,r)=> r===idx ? ({ ...row, images: (row.images||[]).filter((_: any,i: number)=>i!==ui) }) : row));
+                                                }} style={{position:'absolute',right:0,top:0,background:'rgba(0,0,0,0.6)',color:'#fff',border:'none',borderRadius:4}}>✕</button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
                                 </td>
                                 <td><button type="button" className="inventory-btn-ghost" onClick={()=>removeLineItem(idx)}>Xóa</button></td>
                               </tr>

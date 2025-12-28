@@ -21,7 +21,7 @@ import { showSuccess, showError } from '../utils/toast';
 import { Toaster } from 'react-hot-toast';
 
 // Input component dùng chung
-function AuthInput({ label, placeholder, type = "text", required = false, value, onChange }: any) {
+function AuthInput({ label, placeholder, type = "text", required = false, value, onChange, autoComplete }: any) {
   const inputId = `login-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div className="auth-input-group">
@@ -36,7 +36,8 @@ function AuthInput({ label, placeholder, type = "text", required = false, value,
         type={type} 
         placeholder={placeholder} 
         required={required} 
-        className="auth-input" 
+        className="auth-input"
+        autoComplete={autoComplete}
       />
     </div>
   );
@@ -321,50 +322,21 @@ function LoginForm() {
       return;
     }
     try {
-      // 1) Kiểm tra identifier (account hoặc email)
+      // 1) Kiểm tra identifier (phải là email)
       const idTrim = String(identifier || '').trim();
       if (!idTrim) {
-        setError('Vui lòng nhập tài khoản hoặc email');
+        setError('Vui lòng nhập email');
         return;
       }
 
-      // 2) Resolve email từ identifier
-      let emailToUse = '';
-      if (idTrim.includes('@')) {
-        emailToUse = idTrim;
-      } else {
-        const q = query(collection(db, 'users'), where('account', '==', idTrim));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          emailToUse = String(snap.docs[0].data().email || '').trim();
-          } else {
-            try {
-              const q2 = query(collection(db, 'users'), where('email', '==', idTrim));
-              const snap2 = await getDocs(q2);
-              if (!snap2.empty) {
-                const data = snap2.docs[0].data() as any;
-                emailToUse = String(data.email || '').trim();
-                // Warn if a plaintext password field exists in the user document
-                if (data.password) {
-                  setPlainPasswordWarning('Lưu ý: tài khoản này có trường password trong Firestore (plaintext). Hãy xóa trường này để bảo mật.');
-                }
-              }
-            } catch (q2err: any) {
-              console.error('Error reading users collection:', q2err);
-              if ((q2err?.message || '').includes('ERR_BLOCKED_BY_CLIENT')) {
-                setError('Yêu cầu mạng bị chặn bởi extension/proxy. Hãy thử trong chế độ ẩn danh hoặc tắt extension chặn mạng (adblock).');
-              } else {
-                setError('Không thể truy vấn thông tin tài khoản (kiểm tra kết nối)');
-              }
-              return;
-            }
-          }
-      }
-
-      if (!emailToUse) {
-        setError('Không tìm thấy tài khoản hoặc email');
+      // 2) Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(idTrim)) {
+        setError('Vui lòng nhập địa chỉ email hợp lệ');
         return;
       }
+
+      const emailToUse = idTrim;
 
       // 3) Chỉ khi có email thì mới kiểm tra password (theo yêu cầu)
       // Trim password to avoid accidental leading/trailing spaces
@@ -381,7 +353,6 @@ function LoginForm() {
       }
 
   // Debug: log resolved email and password length (không in password)
-  console.debug('Attempting signInWithEmailAndPassword for', { emailToUse, pwdLen: pwdTrim.length });
   // expose debug info on the UI to help troubleshooting (dev only)
   // setDebugInfo({ emailToUse, pwdLen: pwdTrim.length });
 
@@ -392,15 +363,8 @@ function LoginForm() {
         console.warn('setPersistence failed', persErr);
       }
 
-      // Kiểm tra định dạng email cơ bản
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(emailToUse)) {
-        setError('Địa chỉ email không hợp lệ');
-        return;
-      }
-
       // Log the request shape (without the password) to help debug network issues
-      console.debug('Calling Firebase signInWithEmailAndPassword', { email: emailToUse, returnSecureToken: true });
+      // debug logs removed for production readiness
       await signInWithEmailAndPassword(auth, emailToUse, pwdTrim);
 
       // Save auth state to localStorage for instant restoration on app reload
@@ -479,8 +443,8 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="auth-form">
-      <AuthInput label="Tài khoản hoặc Email" placeholder="Email hoặc account" type="text" required value={identifier} onChange={(e:any)=>setIdentifier(e.target.value)} />
-      <AuthInput label="Mật Khẩu" placeholder="Nhập mật khẩu" type="password" required value={password} onChange={(e:any)=>setPassword(e.target.value)} />
+      <AuthInput label="Email" placeholder="Nhập địa chỉ email" type="email" required value={identifier} onChange={(e:any)=>setIdentifier(e.target.value)} autoComplete="email" />
+      <AuthInput label="Mật Khẩu" placeholder="Nhập mật khẩu" type="password" required value={password} onChange={(e:any)=>setPassword(e.target.value)} autoComplete="current-password" />
 
       <div className="auth-options">
         <label className="auth-checkbox-label">

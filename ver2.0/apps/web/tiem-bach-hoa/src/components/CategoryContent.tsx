@@ -22,18 +22,47 @@ function ProductCard({ product, currentUser, onShowLoginWarning }: { product: an
     const oldPriceVal = typeof product.oldPrice === 'number' ? product.oldPrice : (product.oldPrice ? Number(product.oldPrice) : undefined);
     const formatPrice = (v: number | undefined) => v == null ? '' : v.toLocaleString('vi-VN') + ' đ';
 
-    const isAvailable = (product.status && product.status.toString() === 'Đang bán') || (typeof product.stock === 'number' && product.stock > 0);
+    // Always show as available - products loaded from Firestore are already filtered
+    const isAvailable = true;
 
     // normalize image field
     const imageUrl = Array.isArray(product.image) ? (product.image[0] || '') : (typeof product.image === 'string' ? product.image : '');
 
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.stopPropagation();
+        console.log('[CategoryContent ProductCard] Add to cart clicked', { 
+            hasCurrentUser: !!currentUser, 
+            isAnonymous: currentUser?.isAnonymous,
+            productId: product.id 
+        });
         // Check currentUser from prop (from parent state listener)
         if (!currentUser || (currentUser as any).isAnonymous) {
+            console.log('[CategoryContent ProductCard] User not logged in, showing warning');
             if (onShowLoginWarning) onShowLoginWarning();
             return;
         }
+
+        // Animation effect - fly image to cart icon
+        const target = e.currentTarget as HTMLElement;
+        const img = target.closest('.cate-product-card')?.querySelector('img');
+        if (img) {
+            const clone = img.cloneNode(true) as HTMLElement;
+            clone.style.position = 'fixed';
+            clone.style.zIndex = '9999';
+            clone.style.width = '80px';
+            clone.style.height = '80px';
+            clone.style.objectFit = 'cover';
+            clone.style.borderRadius = '8px';
+            
+            const rect = img.getBoundingClientRect();
+            clone.style.left = rect.left + 'px';
+            clone.style.top = rect.top + 'px';
+            clone.classList.add('fly-to-cart');
+            
+            document.body.appendChild(clone);
+            setTimeout(() => clone.remove(), 800);
+        }
+
         try {
             await addToCart({ productId: product.id, name: product.name, price: priceVal, qty: 1, image: imageUrl });
             showSuccess('Đã thêm vào giỏ hàng');
@@ -44,11 +73,39 @@ function ProductCard({ product, currentUser, onShowLoginWarning }: { product: an
 
     const handleBuyNow = async (e: React.MouseEvent) => {
         e.stopPropagation();
+        console.log('[CategoryContent ProductCard] Buy now clicked', { 
+            hasCurrentUser: !!currentUser, 
+            isAnonymous: currentUser?.isAnonymous,
+            productId: product.id 
+        });
         // Check currentUser from prop (from parent state listener)
         if (!currentUser || (currentUser as any).isAnonymous) {
+            console.log('[CategoryContent ProductCard] User not logged in, showing warning');
             if (onShowLoginWarning) onShowLoginWarning();
             return;
         }
+
+        // Animation effect - fly image to cart icon
+        const target = e.currentTarget as HTMLElement;
+        const img = target.closest('.cate-product-card')?.querySelector('img');
+        if (img) {
+            const clone = img.cloneNode(true) as HTMLElement;
+            clone.style.position = 'fixed';
+            clone.style.zIndex = '9999';
+            clone.style.width = '80px';
+            clone.style.height = '80px';
+            clone.style.objectFit = 'cover';
+            clone.style.borderRadius = '8px';
+            
+            const rect = img.getBoundingClientRect();
+            clone.style.left = rect.left + 'px';
+            clone.style.top = rect.top + 'px';
+            clone.classList.add('fly-to-cart');
+            
+            document.body.appendChild(clone);
+            setTimeout(() => clone.remove(), 800);
+        }
+
         try {
             await addToCart({ productId: product.id, name: product.name, price: priceVal, qty: 1, image: imageUrl });
             navigate('/cart');
@@ -148,21 +205,15 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
     const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
     const [showLoginWarning, setShowLoginWarning] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [authChecked, setAuthChecked] = useState(false);
 
     // Listen to auth state changes like Cart.tsx
     useEffect(() => {
-        console.log('[CategoryContent] Setting up auth listener');
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            console.log('[CategoryContent] Auth state changed:', {
-                hasUser: !!user,
-                uid: user?.uid,
-                email: user?.email,
-                time: new Date().toLocaleTimeString()
-            });
             setCurrentUser(user);
+            setAuthChecked(true);
         });
         return () => {
-            console.log('[CategoryContent] Cleaning up auth listener');
             unsubscribe();
         };
     }, []);
@@ -231,7 +282,7 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
             setDisplayedProducts(newest);
             return;
         }
-            console.log('[CategoryContent] Computing displayed products, currentUser:', { hasUser: !!currentUser, uid: currentUser?.uid });
+            // compute displayed products for authenticated users
 
         // Authenticated: scan recent orders and compute counts for products in this category
         (async () => {
@@ -296,6 +347,19 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
     // Trường hợp 2: Đã chọn danh mục Cấp 2 (Tải sản phẩm)
     // Giới hạn 3 sản phẩm đầu tiên; displayedProducts được tính ở effect phía trên
 
+    // Show loading while checking auth
+    if (!authChecked) {
+        return (
+            <div className="category-content-container product-view">
+                <h2 className="content-title product-title">{displayTitle}</h2>
+                <div style={{padding: '2rem', textAlign: 'center'}}>
+                    <div style={{fontSize: '2rem', marginBottom: '1rem'}}>⏳</div>
+                    <p>Đang tải...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="category-content-container product-view">
             <h2 className="content-title product-title">{displayTitle}</h2>
@@ -313,7 +377,7 @@ export default function CategoryContent({ activeSlug, categoryTree }: { activeSl
             )}
 
             {/* ⭐️ THAY THẾ thẻ <a> BẰNG component Link ⭐️ */}
-            <Link to={`/categories/${activeSlug}/all`} className="view-all-link">
+            <Link to={`/products?category=${activeSlug}`} className="view-all-link">
                 Xem tất cả sản phẩm thuộc {displayTitle} →
             </Link>
         </div>

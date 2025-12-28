@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, serverTimestamp, arrayUnion, getDocs, limit } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { adminDb as db } from '../../firebase';
 import { showSuccess, showError } from '../../utils/toast';
 
 type NotificationItem = {

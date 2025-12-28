@@ -2,8 +2,6 @@
 .auth-wrapper {
   min-height: 100vh;
   background-color: #FBF8F5;
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
 }

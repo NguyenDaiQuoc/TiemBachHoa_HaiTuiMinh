@@ -18,11 +18,46 @@ export const exportToPDF = async (
   columns: string[],
   title?: string
 ) => {
-  // Dynamically import jsPDF and html2canvas
-  const { jsPDF } = await import('jspdf');
-  const autoTable = (await import('jspdf-autotable')).default;
+  // Prefer dynamic ESM import; if bundler still includes jsPDF, fall back to loading UMD from CDN
+  const loadScript = (src: string) =>
+    new Promise<void>((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(s);
+    });
 
-  const doc = new jsPDF();
+  let jsPDFCtor: any = null;
+  let autoTable: any = null;
+
+  try {
+    const mod = await import('jspdf');
+    jsPDFCtor = mod.jsPDF || mod.default || mod;
+  } catch (e) {
+    // Load UMD build from CDN
+    await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js');
+    // UMD exposes `window.jspdf` with `jsPDF` constructor
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as any;
+    jsPDFCtor = (w.jspdf && w.jspdf.jsPDF) || w.jsPDF || null;
+  }
+
+  try {
+    const at = await import('jspdf-autotable');
+    autoTable = at.default || at;
+  } catch (e) {
+    // Load autotable UMD; this file registers itself against jspdf global
+    await loadScript('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.js');
+    const w = window as any;
+    autoTable = w.jspdfAutoTable || w.autotable || null;
+  }
+
+  if (!jsPDFCtor) throw new Error('Failed to load jsPDF');
+
+  const doc = new jsPDFCtor();
   
   // Add title if provided
   if (title) {

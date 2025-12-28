@@ -3,7 +3,7 @@ rules_version = '2';
 // Craft rules based on data in your Firestore database
 // allow write: if firestore.get(
 //    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
- rules_version = '2';
+
 
  // Storage rules with role checks (reads are public; writes restricted by role)
 service firebase.storage {

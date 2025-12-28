@@ -6,7 +6,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 import LoginWarning from "../components/LoginWarning";
-import { auth } from "../firebase";
+import { auth } from "../firebase-auth";
 import { db } from '../firebase';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { clearCart } from '../utils/cart';

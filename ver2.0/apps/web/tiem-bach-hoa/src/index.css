@@ -1590,7 +1590,8 @@ html {
   height: 3rem;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
-  background-image: url("sale_background.png");
+  /* Use public/ path so Vite can resolve at build time */
+  background-image: url('/images/sale_background.png');
 }
 
 /* TEXT */

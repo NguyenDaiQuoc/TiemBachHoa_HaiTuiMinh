@@ -130,7 +130,7 @@ export default function MyCouponsPage() {
         </div>
 
         <div className="coupon-more">
-          <a href="#">→ Xem ưu đãi chung của Tiệm Bách Hóa Nhà Hai Đứa</a>
+          <a href="#">→ Xem ưu đãi chung của Tiệm Bách Hóa Hai Tụi Mình</a>
         </div>
       </div>
 

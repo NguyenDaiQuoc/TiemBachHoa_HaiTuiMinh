@@ -18,7 +18,7 @@ export default function TermsAndConditionsPage() {
         <p className="terms-updated">Cập nhật lần cuối: 11/11/2025</p>
         <p className="terms-intro">
           Vui lòng đọc kỹ các điều khoản này trước khi sử dụng dịch vụ của
-          Tiệm Bách Hóa Nhà Hai Đứa. Việc bạn truy cập và sử dụng website đồng
+          Tiệm Bách Hóa Hai Tụi Mình. Việc bạn truy cập và sử dụng website đồng
           nghĩa với việc bạn đồng ý với toàn bộ nội dung dưới đây.
         </p>
 

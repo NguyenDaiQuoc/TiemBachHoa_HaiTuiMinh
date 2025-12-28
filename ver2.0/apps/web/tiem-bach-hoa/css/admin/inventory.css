@@ -248,8 +248,7 @@
 /* Layout tổng */
 .po-wrapper {
   display: flex;
-  min-height: 100vh;
-  font-family: sans-serif;
+  min-height: 100vh;  
   background: #f7f7f7;
 }
 

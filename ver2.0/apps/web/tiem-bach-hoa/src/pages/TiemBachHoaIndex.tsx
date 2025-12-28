@@ -5,7 +5,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 import LoginWarning from "../components/LoginWarning";
-import { db, auth } from "../firebase";
+import { db } from "../firebase-firestore";
+import { auth } from "../firebase-auth";
 import { collection, getDocs, query, orderBy, where, limit } from "firebase/firestore";
 import { addToCart } from "../utils/cart";
 import { showSuccess, showError } from "../utils/toast";
@@ -375,7 +376,7 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
             <div
               className="floating-panel expanded"
               style={{
-                backgroundImage: "url('/sale_background.png')",
+                backgroundImage: "url('/images/sale_background.png')",
                 alignItems: "center",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
@@ -679,7 +680,7 @@ export default function TiemBachHoaIndex() {
           />
         </div>
         <div className="story-content">
-          <h2 className="story-title">Câu chuyện nhà Hai Đứa</h2>
+          <h2 className="story-title">Câu chuyện Hai Tụi Mình</h2>
           <p className="story-text">
             Tụi mình tin rằng một ngôi nhà đầy đủ tiện nghi và đồ dùng chất lượng giúp mỗi ngày trở của bạn nên dễ dàng và vui hơn 🫶...
 

@@ -178,3 +178,24 @@
     color: #3C5D45;
     text-decoration: underline;
 }
+
+/* --- ANIMATION: Fly to Cart --- */
+@keyframes flyToCart {
+    0% {
+        transform: scale(1) translate(0, 0);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(0.5) translate(200px, -200px);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0) translate(400px, -400px);
+        opacity: 0;
+    }
+}
+
+.fly-to-cart {
+    animation: flyToCart 0.8s ease-in-out;
+    pointer-events: none;
+}

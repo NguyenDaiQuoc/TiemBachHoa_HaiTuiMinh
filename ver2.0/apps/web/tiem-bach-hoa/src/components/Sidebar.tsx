@@ -55,7 +55,8 @@ function TreeItem({ category, activeSlug, setActiveSlug, level = 0 }: {
             setIsOpen(!isOpen);
         } else {
             setActiveSlug(category.slug);
-            navigate(`/categories/${category.slug}`);
+            // Navigate to product listing filtered by this category
+            navigate(`/products?category=${category.slug}`);
         }
     };
 
@@ -74,6 +75,9 @@ function TreeItem({ category, activeSlug, setActiveSlug, level = 0 }: {
                 {category.icon && <img src={category.icon} className="item-icon" alt={category.name} />}
 
                 <span className="item-name">{category.name}</span>
+                {typeof category.product_count === 'number' && (
+                    <span className="count-badge" title={`${category.product_count} sản phẩm`}>{category.product_count}</span>
+                )}
             </div>
 
             {hasChildren && isOpen && (
@@ -139,7 +143,30 @@ export default function Sidebar({ activeSlug, setActiveSlug, setCategoryTree, ca
 
                 // Lọc các mục không hiển thị
                 const filteredList = firestoreCategories.filter(c => c.status !== 'hidden');
-                
+
+                // --- TÍNH SỐ LƯỢNG SẢN PHẨM THEO SLUG ---
+                try {
+                    const productsRef = collection(db, 'products');
+                    const productsSnap = await getDocs(productsRef);
+                    const counts: Record<string, number> = {};
+                    productsSnap.docs.forEach(pdoc => {
+                        const pdata = pdoc.data() as any;
+                        const slugs: string[] = Array.isArray(pdata.categorySlugs) ? pdata.categorySlugs : [];
+                        slugs.forEach(s => {
+                            const key = s;
+                            counts[key] = (counts[key] || 0) + 1;
+                        });
+                    });
+
+                    // Áp dụng counts lên filteredList (map bằng slug)
+                    filteredList.forEach(f => {
+                        const slug = f.slug || '';
+                        f.product_count = counts[slug] || f.product_count || 0;
+                    });
+                } catch (cntErr) {
+                    console.warn('Không thể tính số lượng sản phẩm cho Sidebar', cntErr);
+                }
+
                 // Xây dựng cây danh mục (Cấu trúc phân cấp 2 cấp)
                 const tree = buildCategoryTree(filteredList, null);
 

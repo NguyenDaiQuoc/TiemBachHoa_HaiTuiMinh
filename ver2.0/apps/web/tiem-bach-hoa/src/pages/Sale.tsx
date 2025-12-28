@@ -5,7 +5,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 import "../../css/sale.css";
-import { db } from "../firebase";
+import { db } from "../firebase-firestore";
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 
 interface Banner {

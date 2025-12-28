@@ -28,3 +28,9 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 // Export apiKey for diagnostic/test purposes only (do not leak in production logs)
 export const firebaseApiKey = firebaseConfig.apiKey;
+
+// Initialize ADMIN app với tên riêng để tránh conflict auth với user
+const adminApp = initializeApp(firebaseConfig, 'admin');
+export const adminAuth = getAuth(adminApp);
+export const adminDb = getFirestore(adminApp);
+export const adminStorage = getStorage(adminApp);

@@ -6,8 +6,9 @@ import FloatingButtons from "../components/FloatingButtons";
 import LoginWarning from "../components/LoginWarning";
 // import SalesFloatingButton from "../components/SalesFloatingButton";
 import "../../css/cart.css";
-import { auth, db } from "../firebase";
-import { doc, setDoc, onSnapshot } from "firebase/firestore";
+import { auth } from "../firebase-auth";
+import { db } from "../firebase-firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { fetchActiveDeals, applyDealsToPrice } from '../utils/deals';
 import { removeFromCart, clearCart } from "../utils/cart";
 import { showSuccess, showError } from "../utils/toast";
@@ -73,38 +74,69 @@ export default function CartPage() {
 
   // Subscribe to cart from Firestore
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      setLoading(false);
-      setCartItems([]);
-      setShowLoginWarning(true);
-      return;
-    }
-
-    const cartRef = doc(db, "cart", user.uid);
+    let mounted = true;
+    let pollInterval: any = null;
     let activeDeals: any[] = [];
+
+    const loadCart = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        if (!mounted) return;
+        setLoading(false);
+        setCartItems([]);
+        setShowLoginWarning(true);
+        return;
+      }
+
+      try {
+        const cartRef = doc(db, "cart", user.uid);
+        const cartSnap = await getDoc(cartRef);
+        if (!mounted) return;
+        if (cartSnap.exists()) {
+          const data = cartSnap.data();
+          const items = Array.isArray(data.items) ? data.items : [];
+          // attach appliedPrice
+          const applied = items.map((it:any) => {
+            const { price } = applyDealsToPrice(it.price || it.newPrice || 0, String(it.productId || it.id || ''), activeDeals);
+            return { ...it, appliedPrice: price };
+          });
+          setCartItems(applied);
+        } else {
+          setCartItems([]);
+        }
+      } catch (err) {
+        console.error('Error loading cart:', err);
+        setCartItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     (async ()=>{
       activeDeals = await fetchActiveDeals();
+      await loadCart();
+      // poll every 2s
+      pollInterval = setInterval(() => loadCart(), 2000);
     })();
 
-    const unsubscribe = onSnapshot(cartRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        const items = data.items || [];
-        // attach appliedPrice
-        const applied = items.map((it:any) => {
-          const { price } = applyDealsToPrice(it.price, String(it.productId || it.id || ''), activeDeals);
-          return { ...it, appliedPrice: price };
-        });
-        setCartItems(applied);
-      } else {
-        setCartItems([]);
+    const onCartUpdated = (e: any) => {
+      try {
+        const uid = e?.detail?.uid;
+        const user = auth.currentUser;
+        if (!uid || (user && uid === user.uid)) {
+          loadCart();
+        }
+      } catch (err) {
+        loadCart();
       }
-      setLoading(false);
-    });
+    };
+    window.addEventListener('cart-updated', onCartUpdated as EventListener);
 
-    return () => unsubscribe();
+    return () => {
+      mounted = false;
+      if (pollInterval) clearInterval(pollInterval);
+      window.removeEventListener('cart-updated', onCartUpdated as EventListener);
+    };
   }, []);
 
   const subtotal = cartItems.reduce(

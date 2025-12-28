@@ -9,11 +9,9 @@
 
 /* Wrapper tổng */
 .nf-wrapper {
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
   background: var(--secondary-bg);
-  font-family: sans-serif;
+  
 }
 
 /* Header */

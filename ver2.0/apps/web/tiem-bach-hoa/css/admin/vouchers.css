@@ -13,7 +13,7 @@
 /* Layout */
 .page-wrapper {
   min-height: 100vh;
-  font-family: sans-serif;
+  
   background: var(--bg-light);
   padding: 32px;
 }

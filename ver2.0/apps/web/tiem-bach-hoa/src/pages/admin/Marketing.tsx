@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { db, storage, auth } from "../../firebase";
+import { adminDb as db, adminStorage as storage, adminAuth as auth } from "../../firebase-admin";
 import {
   collection,
   getDocs,
@@ -13,9 +13,8 @@ import {
 } from "firebase/firestore";
 import {
   ref as storageRef,
-  uploadBytesResumable,
-  getDownloadURL,
 } from "firebase/storage";
+import uploadWithRetries from "../../utils/storage";
 import { showSuccess, showError } from "../../utils/toast";
 import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/marketing.css";
@@ -450,31 +449,19 @@ const BannerFormModal: React.FC<{
     setUploadProgress(0);
 
     try {
-      const uploadTask = uploadBytesResumable(sRef, file);
-      
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          setUploadProgress(progress);
-        },
-        (error) => {
-          console.error('Upload failed:', error);
-          showError('Lỗi khi tải ảnh lên: ' + error.message);
-          setUploading(false);
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          setFormData(prev => ({ ...prev, imageUrl: downloadURL }));
-          showSuccess('Tải ảnh banner thành công!');
-          setUploading(false);
-          setUploadProgress(0);
-        }
-      );
+      const { url: downloadURL } = await uploadWithRetries(sRef, file as any, {
+        maxRetries: 3,
+        onProgress: (pct: number) => setUploadProgress(pct),
+      });
+
+      setFormData(prev => ({ ...prev, imageUrl: downloadURL }));
+      showSuccess('Tải ảnh banner thành công!');
     } catch (error: any) {
-      console.error('Upload error:', error);
-      showError('Lỗi upload: ' + error.message);
+      console.error('Upload failed:', error);
+      showError('Lỗi khi tải ảnh lên: ' + (error?.message || JSON.stringify(error)));
+    } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -523,33 +510,26 @@ const BannerFormModal: React.FC<{
       
       const path = `banners/ai_generated_${Date.now()}.png`;
       const sRef = storageRef(storage, path);
-      
+
       setUploadProgress(0);
       setUploading(true);
 
-      const uploadTask = uploadBytesResumable(sRef, blob);
-      
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          setUploadProgress(progress);
-        },
-        (error) => {
-          console.error('Upload to Firebase failed:', error);
-          showError('Lỗi khi lưu ảnh: ' + error.message);
-          setUploading(false);
-          setGeneratingAI(false);
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          setFormData(prev => ({ ...prev, imageUrl: downloadURL }));
-          showSuccess('✅ Tạo ảnh AI và lưu thành công!');
-          setUploading(false);
-          setGeneratingAI(false);
-          setUploadProgress(0);
-        }
-      );
+      try {
+        const { url: downloadURL } = await uploadWithRetries(sRef, blob as any, {
+          maxRetries: 3,
+          onProgress: (pct: number) => setUploadProgress(pct),
+        });
+
+        setFormData(prev => ({ ...prev, imageUrl: downloadURL }));
+        showSuccess('✅ Tạo ảnh AI và lưu thành công!');
+      } catch (error: any) {
+        console.error('Upload to Firebase failed:', error);
+        showError('Lỗi khi lưu ảnh: ' + (error?.message || JSON.stringify(error)));
+      } finally {
+        setUploading(false);
+        setGeneratingAI(false);
+        setUploadProgress(0);
+      }
 
     } catch (error: any) {
       console.error('AI generation error:', error);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 // Import các hàm CRUD cần thiết từ Firebase Firestore
-import { db, storage, auth } from "../../firebase";
+import { adminDb as db, adminStorage as storage, adminAuth as auth } from "../../firebase-admin";
 import {
   collection,
   getDocs,
@@ -15,9 +15,8 @@ import {
 } from "firebase/firestore";
 import {
   ref as storageRef,
-  uploadBytesResumable,
-  getDownloadURL,
 } from "firebase/storage";
+import uploadWithRetries from '../../utils/storage';
 import { showSuccess, showError } from "../../utils/toast";
 
 // Giả sử đường dẫn này là đúng
@@ -138,7 +137,8 @@ const VariationForm: React.FC<{
   index: number;
   onChange: (index: number, v: Variation) => void;
   onRemove: (index: number) => void;
-}> = ({ variation, index, onChange, onRemove }) => {
+  onSetUploadError?: (err:any) => void;
+}> = ({ variation, index, onChange, onRemove, onSetUploadError }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -189,30 +189,18 @@ const VariationForm: React.FC<{
     setUploadProgress(0);
 
     try {
-      const uploadTask = uploadBytesResumable(sRef, file);
-      
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          setUploadProgress(progress);
-        },
-        (error) => {
-          console.error('Upload failed:', error);
-          showError('Lỗi khi tải ảnh lên: ' + error.message);
-          setUploading(false);
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          onChange(index, { ...variation, image: downloadURL });
-          showSuccess('Tải ảnh biến thể thành công!');
-          setUploading(false);
-          setUploadProgress(0);
-        }
-      );
+      const result = await uploadWithRetries(sRef, file, {
+        maxRetries: 3,
+        onProgress: (pct) => setUploadProgress(pct),
+      });
+      onChange(index, { ...variation, image: result.url });
+      showSuccess('Tải ảnh biến thể thành công!');
+      setUploading(false);
+      setUploadProgress(0);
     } catch (error: any) {
-      console.error('Upload error:', error);
-      showError('Lỗi upload: ' + error.message);
+      console.error('Upload error (with retries):', error);
+      const code = error?.code || error?.original?.code || 'unknown';
+      showError(`Lỗi upload (${code}): ${error?.message || String(error)}`);
       setUploading(false);
     }
   };
@@ -230,6 +218,19 @@ const VariationForm: React.FC<{
         <label>Giá Gốc:</label><input type="number" name="oldPrice" value={variation.oldPrice} onChange={handleVChange} />
         <label>Giá Mới:</label><input type="number" name="newPrice" value={variation.newPrice} onChange={handleVChange} />
         <label>Giảm (%):</label><input type="number" name="discount" value={variation.discount} onChange={handleVChange} />
+      </div>
+      <div className="variation-row">
+        <label>Trạng thái:</label>
+        <select name="condition" value={variation.condition} onChange={handleVChange}>
+          <option value="Mới">Mới</option>
+          <option value="Gần như mới">Gần như mới</option>
+          <option value="Tốt">Tốt</option>
+          <option value="Bình thường">Bình thường</option>
+          <option value="Cũ">Cũ</option>
+        </select>
+        <label>Trọng lượng (kg):</label>
+        <input type="number" step="0.01" name="weight" value={variation.weight} onChange={handleVChange} />
+        <label>Chất liệu:</label><input type="text" name="material" value={variation.material} onChange={handleVChange} />
       </div>
       <label>URL Ảnh Biến Thể:</label><input type="text" name="image" value={variation.image} onChange={handleVChange} placeholder="Hoặc tải ảnh bên dưới" />
       
@@ -282,6 +283,9 @@ const ProductFormModal: React.FC<{
   // State để lưu trữ tên file/URL giả lập sau khi "upload"
   const [uploadedImages, setUploadedImages] = useState<string[]>(product.image);
   const [uploadedVideos, setUploadedVideos] = useState<string[]>(product.video);
+  const [uploadingMain, setUploadingMain] = useState(false);
+  const [mainUploadProgress, setMainUploadProgress] = useState(0);
+  const [lastUploadError, setLastUploadError] = useState<any>(null);
   const [warehouseOptions, setWarehouseOptions] = useState<Array<any>>([]);
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
   const [categoryOptions, setCategoryOptions] = useState<Array<{slug:string,name:string}>>([]);
@@ -415,7 +419,7 @@ const ProductFormModal: React.FC<{
 
   const handleAddVariation = () => {
     const newVar: Variation = {
-      color: '', condition: 'new 100%', defect: '', dimension: '', discount: formData.discountInput,
+      color: '', condition: 'Mới', defect: '', dimension: '', discount: formData.discountInput,
       image: '', material: '', newPrice: formData.newPriceInput, oldPrice: formData.oldPriceInput,
       size: '', skuID: Date.now(), stock: 0, weight: 0.1
     };
@@ -427,21 +431,49 @@ const ProductFormModal: React.FC<{
   };
 
 
-  // --- HÀM XỬ LÝ UPLOAD FILE GIẢ LẬP (Mô phỏng Storage Upload) ---
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fileType: 'image' | 'video') => {
-    if (!e.target.files) return;
+  // --- HÀM XỬ LÝ UPLOAD FILE THẬT LÊN Firebase Storage ---
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fileType: 'image' | 'video') => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    // Kiểm tra auth admin
+    if (!auth.currentUser) {
+      showError('Vui lòng đăng nhập admin trước khi tải file lên!');
+      return;
+    }
 
     const files = Array.from(e.target.files);
-    const newUrls = files.map(file => {
-      // TRONG THỰC TẾ: Chỗ này sẽ gọi Firebase Storage và trả về URL
-      // Hiện tại: Mô phỏng URL/tên file
-      return `[Mô phỏng: ${file.name} - ${Date.now()}]`;
-    });
 
-    if (fileType === 'image') {
-      setUploadedImages(prev => [...prev, ...newUrls]);
-    } else {
-      setUploadedVideos(prev => [...prev, ...newUrls]);
+    // sequential upload to simplify progress tracking
+    setUploadingMain(true);
+    setMainUploadProgress(0);
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = fileType === 'image'
+          ? `product_images/main/${Date.now()}_${i}_${safeName}`
+          : `product_videos/${Date.now()}_${i}_${safeName}`;
+
+        const sRef = storageRef(storage, path);
+        const res = await uploadWithRetries(sRef, file, {
+          maxRetries: 3,
+          onProgress: (pct) => {
+            const overall = Math.round(((i / files.length) * 100) + (pct / files.length));
+            setMainUploadProgress(overall);
+          }
+        });
+
+        if (fileType === 'image') setUploadedImages(prev => [...prev, res.url]); else setUploadedVideos(prev => [...prev, res.url]);
+      }
+
+      showSuccess('Tải file lên thành công');
+    } catch (error: any) {
+      console.error('Upload error (with retries):', error);
+      setLastUploadError(error);
+      const code = error?.code || error?.original?.code || 'unknown';
+      showError(`Lỗi upload (${code}): ${error?.message || String(error)}`);
+      setUploadingMain(false);
     }
   };
 
@@ -639,6 +671,7 @@ const ProductFormModal: React.FC<{
                   index={index}
                   onChange={handleVariationChange}
                   onRemove={handleRemoveVariation}
+                    onSetUploadError={setLastUploadError}
                 />
               ))}
             </div>
@@ -646,7 +679,27 @@ const ProductFormModal: React.FC<{
 
 
           <div className="modal-actions">
-            <button type="submit" className="btn-save">Lưu</button>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              {uploadingMain && (
+                <div style={{width:200}}>
+                  <div style={{height:8, background:'#eee', borderRadius:4, overflow:'hidden'}}>
+                    <div style={{width:`${mainUploadProgress}%`, height:'100%', background:'#4caf50'}} />
+                  </div>
+                  <div style={{fontSize:12,color:'#666',marginTop:6}}>{mainUploadProgress}% đang tải lên...</div>
+                </div>
+              )}
+              <button type="submit" className="btn-save" disabled={uploadingMain}>{uploadingMain ? 'Đang tải...' : 'Lưu'}</button>
+            </div>
+            {lastUploadError && (
+              <div style={{marginTop:8, padding:8, background:'#fff4f4', border:'1px solid #ffdddd', borderRadius:6}}>
+                <div style={{fontWeight:700, color:'#b00000'}}>Lỗi upload (chi tiết)</div>
+                <pre style={{maxHeight:160, overflow:'auto', fontSize:12, marginTop:6, whiteSpace:'pre-wrap'}}>{JSON.stringify(lastUploadError, Object.getOwnPropertyNames(lastUploadError || {}), 2)}</pre>
+                <div style={{display:'flex',gap:8,marginTop:8}}>
+                  <button type="button" className="btn-ghost" onClick={async ()=>{ try { await navigator.clipboard.writeText(JSON.stringify(lastUploadError, null, 2)); showSuccess('Đã copy lỗi vào clipboard'); } catch(e){ showError('Không thể copy'); } }}>Copy lỗi</button>
+                  <button type="button" className="btn-ghost" onClick={()=>setLastUploadError(null)}>Đóng</button>
+                </div>
+              </div>
+            )}
             <button type="button" onClick={onClose} className="btn-cancel">Hủy</button>
           </div>
         </form>
@@ -674,7 +727,8 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<FormProductData | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(10);
+  const [showAll, setShowAll] = useState(true);
+  const DEFAULT_PER_PAGE = 10;
 
   const statuses = ['Tất cả', 'Đang bán', 'Hết hàng', 'Tạm ẩn'];
 
@@ -814,6 +868,7 @@ export default function AdminProductsPage() {
 
     setIsModalOpen(false);
     setLoading(true);
+    let saveError: any = null;
 
     const imageArray = formData.image; // Đã là mảng URL/tên file
     const videoArray = formData.video; // Đã là mảng URL/tên file
@@ -867,18 +922,20 @@ export default function AdminProductsPage() {
 
       await fetchProducts();
 
-    } catch (error: any) {
-      console.error("Lỗi khi lưu sản phẩm:", error);
-      
-      // Improved error messages
+    } catch (err: any) {
+      console.error('One or more uploads failed in ProductFormModal (with retries)', err);
+      saveError = err;
+      setError(err?.message || String(err));
+      showError('Một hoặc nhiều file tải lên thất bại. Xem chi tiết trong console hoặc phần "Lỗi upload".');
+    } finally {
       let errorMessage = 'Lỗi không xác định';
-      if (error?.code === 'permission-denied') {
+      if (saveError?.code === 'permission-denied') {
         errorMessage = 'Bạn không có quyền thực hiện thao tác này. Vui lòng kiểm tra:\n' +
                       '1. Tài khoản của bạn có được thêm vào collection "admins" hoặc có role="admin" trong collection "users"\n' +
                       '2. Firestore rules đã được deploy đúng cách\n' +
                       '3. Bạn đã đăng nhập với tài khoản admin';
-      } else if (error?.message) {
-        errorMessage = error.message;
+      } else if (saveError?.message) {
+        errorMessage = saveError.message;
       }
       
       alert(`Lỗi: Không thể lưu sản phẩm.\n\nChi tiết: ${errorMessage}\n\nUser ID: ${auth.currentUser?.uid || 'N/A'}`);
@@ -941,6 +998,7 @@ export default function AdminProductsPage() {
 
 
   // LOGIC PHÂN TRANG 
+  const productsPerPage = showAll ? (filteredProducts.length || DEFAULT_PER_PAGE) : DEFAULT_PER_PAGE;
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
@@ -981,8 +1039,14 @@ export default function AdminProductsPage() {
 
       <main className="admin-product-content">
         <header className="admin-product-content-header">
-          <h1 className="admin-product-content-title">Quản Lý Sản Phẩm ({products.length})</h1>
-          <button className="admin-product-btn-add" onClick={handleAddProduct}>+ Thêm Sản Phẩm Mới</button>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <h1 className="admin-product-content-title">Quản Lý Sản Phẩm ({products.length})</h1>
+              <label style={{display:'flex',alignItems:'center',gap:6,fontSize:14}}>
+                <input type="checkbox" checked={showAll} onChange={(e)=>{ setShowAll(e.target.checked); setCurrentPage(1); }} />
+                <span>Hiển thị tất cả</span>
+              </label>
+            </div>
+            <button className="admin-product-btn-add" onClick={handleAddProduct}>+ Thêm Sản Phẩm Mới</button>
         </header>
 
         <div className="admin-product-toolbar">

@@ -16,7 +16,7 @@ import { showSuccess, showError } from '../utils/toast';
 import { Toaster } from 'react-hot-toast';
 
 // Input component dùng chung
-function AuthInput({ label, placeholder, type = "text", required = false, value, onChange }: any) {
+function AuthInput({ label, placeholder, type = "text", required = false, value, onChange, autoComplete }: any) {
   const inputId = `register-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div className="auth-input-group">
@@ -31,7 +31,8 @@ function AuthInput({ label, placeholder, type = "text", required = false, value,
         type={type} 
         placeholder={placeholder} 
         required={required} 
-        className="auth-input" 
+        className="auth-input"
+        autoComplete={autoComplete}
       />
     </div>
   );
@@ -97,17 +98,17 @@ function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="auth-form">
-      <AuthInput label="Họ và Tên" placeholder="Ví dụ: Nguyễn Văn A" required value={fullName} onChange={(e:any)=>setFullName(e.target.value)} />
-      <AuthInput label="Tài khoản (account)" placeholder="Tên đăng nhập" required value={account} onChange={(e:any)=>setAccount(e.target.value)} />
-      <AuthInput label="Email" placeholder="Địa chỉ email hợp lệ" type="email" required value={email} onChange={(e:any)=>setEmail(e.target.value)} />
-      <AuthInput label="Mật Khẩu" placeholder="Tối thiểu 6 ký tự" type="password" required value={password} onChange={onPasswordChange} />
+      <AuthInput label="Họ và Tên" placeholder="Ví dụ: Nguyễn Văn A" required value={fullName} onChange={(e:any)=>setFullName(e.target.value)} autoComplete="name" />
+      <AuthInput label="Tài khoản (account)" placeholder="Tên đăng nhập" required value={account} onChange={(e:any)=>setAccount(e.target.value)} autoComplete="username" />
+      <AuthInput label="Email" placeholder="Địa chỉ email hợp lệ" type="email" required value={email} onChange={(e:any)=>setEmail(e.target.value)} autoComplete="email" />
+      <AuthInput label="Mật Khẩu" placeholder="Tối thiểu 6 ký tự" type="password" required value={password} onChange={onPasswordChange} autoComplete="new-password" />
       <div className="pw-strength">
         <div className="pw-bar" data-score={pwScore} aria-hidden="true">
           <div className="pw-fill" style={{ width: `${(pwScore/6)*100}%` }}></div>
         </div>
         <div className="pw-label">Độ mạnh mật khẩu: {['Rất yếu','Yếu','Trung bình','Khá','Mạnh','Rất mạnh','Tuyệt vời'][pwScore]}</div>
       </div>
-      <AuthInput label="Xác nhận Mật Khẩu" placeholder="Nhập lại mật khẩu" type="password" required value={confirm} onChange={(e:any)=>setConfirm(e.target.value)} />
+      <AuthInput label="Xác nhận Mật Khẩu" placeholder="Nhập lại mật khẩu" type="password" required value={confirm} onChange={(e:any)=>setConfirm(e.target.value)} autoComplete="new-password" />
 
       <div className="auth-terms">
         <input 

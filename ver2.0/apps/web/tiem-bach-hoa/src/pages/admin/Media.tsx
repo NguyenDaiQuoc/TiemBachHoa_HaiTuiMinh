@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, deleteDoc, doc, query, orderBy, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
-import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
-import { storage } from '../../firebase';
+import { adminDb as db, adminAuth as auth } from '../../firebase';
+import { ref, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
+import { adminStorage as storage } from '../../firebase';
+import uploadWithRetries from '../../utils/storage';
 import AdminSidebar from '../../components/admin/Sidebar';
 import '../../../css/admin/media.css';
 
@@ -54,10 +55,9 @@ export default function MediaPage() {
         const file = files[i];
         const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'other';
         
-        // Upload to Firebase Storage
+        // Upload to Firebase Storage (with retries)
         const storageRef = ref(storage, `media/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
+        const { url: downloadURL } = await uploadWithRetries(storageRef, file as any, { maxRetries: 3 });
 
         // Save metadata to Firestore
         await addDoc(collection(db, 'media'), {

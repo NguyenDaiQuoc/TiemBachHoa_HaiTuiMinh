@@ -4,7 +4,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import FloatingButtons from "../components/FloatingButtons";
 import LoginWarning from "../components/LoginWarning";
-import { auth } from "../firebase";
+import { auth } from "../firebase-auth";
 import "../../css/payment.css";
 
 // Hàm lấy Icon theo loại thẻ

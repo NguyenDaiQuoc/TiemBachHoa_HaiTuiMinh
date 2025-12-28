@@ -32,7 +32,7 @@ export default function StoryPage() {
               <div className="story-text-block">
                 <h2 className="story-section-title">🌟 Khởi Đầu Từ Đam Mê</h2>
                 <p className="story-paragraph">
-                  Năm 2023, hai chúng mình – Quốc và Xuân – là hai người bạn thân từ thời đại học. 
+                  Năm 2025, hai chúng mình – Quốc và Xuân – là hai người bạn thân. 
                   Quốc yêu thích công nghệ và luôn tìm kiếm những sản phẩm điện tử tiện ích với giá tốt. 
                   Còn Xuân thì đam mê mỹ phẩm và đồ gia dụng, thường xuyên săn sale để mang về những 
                   món đồ chất lượng cho gia đình.
@@ -121,25 +121,25 @@ export default function StoryPage() {
               <div className="story-timeline-item">
                 <div className="story-timeline-dot"></div>
                 <div className="story-timeline-content">
-                  <h4 className="story-timeline-title">Tháng 3/2023</h4>
+                  <h4 className="story-timeline-title">Tháng 3/2025</h4>
                   <p className="story-timeline-text">
-                    Ra mắt website đầu tiên với 50 sản phẩm. Bắt đầu với một kho nhỏ và 2 nhân viên.
+                    Ra mắt fanpage đầu tiên với 50 sản phẩm. Bắt đầu với một kho nhỏ và 2 nhân viên.
                   </p>
                 </div>
               </div>
               <div className="story-timeline-item">
                 <div className="story-timeline-dot"></div>
                 <div className="story-timeline-content">
-                  <h4 className="story-timeline-title">Tháng 8/2023</h4>
+                  <h4 className="story-timeline-title">Tháng 8/2025</h4>
                   <p className="story-timeline-text">
-                    Đạt 1000+ đơn hàng đầu tiên. Mở rộng danh mục lên 300+ sản phẩm.
+                    Đạt 1000+ đơn hàng đầu tiên. Mở rộng danh mục lên 200+ sản phẩm.
                   </p>
                 </div>
               </div>
               <div className="story-timeline-item">
                 <div className="story-timeline-dot"></div>
                 <div className="story-timeline-content">
-                  <h4 className="story-timeline-title">Tháng 12/2024</h4>
+                  <h4 className="story-timeline-title">Tháng 12/2025</h4>
                   <p className="story-timeline-text">
                     Ra mắt chương trình VIP với 6 hạng thành viên và ưu đãi lên đến 7.5%.
                   </p>
@@ -150,7 +150,7 @@ export default function StoryPage() {
                 <div className="story-timeline-content">
                   <h4 className="story-timeline-title">Hiện tại - 2025</h4>
                   <p className="story-timeline-text">
-                    Phục vụ 10,000+ khách hàng tin tưởng với 800+ sản phẩm đa dạng.
+                    Phục vụ 1,000+ khách hàng tin tưởng với 500+ sản phẩm đa dạng.
                   </p>
                 </div>
               </div>
@@ -168,7 +168,7 @@ export default function StoryPage() {
                     alt="Quốc" 
                   />
                 </div>
-                <h3 className="story-team-name">Nguyễn Văn Quốc</h3>
+                <h3 className="story-team-name">Nguyễn Đại Quốc</h3>
                 <p className="story-team-role">Đồng Sáng Lập & Giám Đốc Công Nghệ</p>
                 <p className="story-team-bio">
                   Chuyên gia về điện tử và công nghệ. Đảm bảo website vận hành mượt mà và 
@@ -182,7 +182,7 @@ export default function StoryPage() {
                     alt="Xuân" 
                   />
                 </div>
-                <h3 className="story-team-name">Trần Thị Xuân</h3>
+                <h3 className="story-team-name">Nguyễn Diệp Nghiêm Xuân</h3>
                 <p className="story-team-role">Đồng Sáng Lập & Giám Đốc Vận Hành</p>
                 <p className="story-team-bio">
                   Chuyên gia về mỹ phẩm và gia dụng. Đảm bảo chất lượng sản phẩm và 

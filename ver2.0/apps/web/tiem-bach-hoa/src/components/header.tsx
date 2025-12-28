@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 // Import các icon cần thiết cho Social Links
 import { Phone, ShoppingBag, Facebook, Instagram } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth, db } from '../firebase';
-import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { showSuccess } from '../utils/toast';
 import { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -25,9 +25,9 @@ const moreMenuData = [
 
 function TopSocialBar() {
   const socialLinks = [
-    { name: "Hotline: 0912.345.678", icon: <Phone size={14} />, link: "tel:0912345678" },
+    { name: "Hotline: 0931.454.176", icon: <Phone size={14} />, link: "tel:0912345678" },
     { name: "Shopee: HaiTuiMinhShop", icon: <ShoppingBag size={14} />, link: "https://shopee.vn/haituiminh" },
-    { name: "Facebook", icon: <Facebook size={14} />, link: "https://facebook.com/haituiminh" },
+    { name: "Facebook", icon: <Facebook size={14} />, link: "https://www.facebook.com/profile.php?id=61576489061227" },
     { name: "Instagram", icon: <Instagram size={14} />, link: "https://instagram.com/haituiminh" },
   ];
 
@@ -169,42 +169,97 @@ export default function Header() {
     return () => unsub();
   }, []);
 
-
-  // Subscribe to cart documents for the current userID (user doc id should be the same as auth uid)
+  // Suppress known extension spam/errors from polluting console (MetaMask/Solana inpage scripts)
   useEffect(() => {
-    let unsubCart: (() => void) | null = null;
-    setCartLoading(true);
-    // Only subscribe for non-anonymous authenticated users. Anonymous users or guests won't have cart read permission.
-    if (currentUser && !currentUser.isAnonymous) {
+    const onUnhandled = (ev: PromiseRejectionEvent) => {
       try {
-        const q = query(collection(db, 'cart'), where('userID', '==', currentUser.uid));
-        unsubCart = onSnapshot(q, (snap) => {
-          const items: any[] = [];
-          snap.forEach((d) => {
-            const data = d.data();
-            if (Array.isArray(data.items)) items.push(...data.items);
-          });
-          setCartItems(items);
-          setCartLoading(false);
-        }, (err) => {
-          // Permission errors are expected if rules disallow reads; log a concise warning and fall back to empty cart.
-          console.warn('cart onSnapshot warning', err?.message || err);
-          setCartItems([]);
-          setCartLoading(false);
-        });
-      } catch (err) {
-        console.warn('subscribe cart failed', (err as any)?.message || err);
-        setCartItems([]);
-        setCartLoading(false);
+        const reason = (ev && (ev.reason || ev.detail || ev)) as any;
+        const text = String(reason && (reason.message || reason.stack || reason)).toLowerCase();
+        if (text.includes('metamask') || text.includes('inpage') || text.includes('solana') || text.includes('phantom') || text.includes('solanaaction')) {
+          // suppress default logging for extension-related noise
+          ev.preventDefault();
+          console.warn('Suppressed extension error:', text.split('\n')[0]);
+        }
+      } catch (e) {
+        // ignore
       }
-    } else {
-      // not logged in or anonymous -> empty cart
+    };
+    window.addEventListener('unhandledrejection', onUnhandled as EventListener);
+    return () => window.removeEventListener('unhandledrejection', onUnhandled as EventListener);
+  }, []);
+
+
+  // Load cart using polling approach (avoids onSnapshot permission issues)
+  const loadCart = useCallback(async () => {
+    if (!currentUser || currentUser.isAnonymous) {
       setCartItems([]);
       setCartLoading(false);
+      return;
     }
 
-    return () => { if (unsubCart) unsubCart(); };
+    try {
+      const cartRef = doc(db, 'cart', currentUser.uid);
+      const cartSnap = await getDoc(cartRef);
+      
+      if (cartSnap.exists()) {
+        const data = cartSnap.data();
+        const rawItems = Array.isArray(data.items) ? data.items : [];
+        // Normalize items so older docs using `quantity` or different price keys still work
+        const items = rawItems.map((it: any) => {
+          const qty = Number(it.qty ?? it.quantity ?? 1) || 1;
+          const price = Number(it.price ?? it.newPrice ?? it.appliedPrice ?? 0) || 0;
+          return {
+            ...it,
+            qty,
+            price,
+          };
+        });
+        setCartItems(items);
+      } else {
+        setCartItems([]);
+      }
+    } catch (error) {
+      console.error('[Header] Error loading cart:', error, { currentUser: currentUser?.uid });
+      setCartItems([]);
+    } finally {
+      setCartLoading(false);
+    }
   }, [currentUser]);
+
+  // Load cart when user changes
+  useEffect(() => {
+    setCartLoading(true);
+    loadCart();
+  }, [currentUser, loadCart]);
+
+  // Poll cart every 2 seconds when user is logged in
+  useEffect(() => {
+    if (!currentUser || currentUser.isAnonymous) return;
+
+    const interval = setInterval(() => {
+      loadCart();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [currentUser, loadCart]);
+
+  // Listen for explicit cart-updated events (dispatched after addToCart)
+  useEffect(() => {
+    const onCartUpdated = (e: any) => {
+      // If event is for this user or no detail, just reload
+      try {
+        const uid = e?.detail?.uid;
+        if (!uid || (currentUser && uid === currentUser.uid)) {
+          loadCart();
+        }
+      } catch (err) {
+        loadCart();
+      }
+    };
+
+    window.addEventListener('cart-updated', onCartUpdated as EventListener);
+    return () => window.removeEventListener('cart-updated', onCartUpdated as EventListener);
+  }, [currentUser, loadCart]);
 
 
   // compute monthly spend for current user
@@ -248,6 +303,11 @@ export default function Header() {
     if (v.includes('kim') || v.includes('diamond')) return '#0EA5E9';
     return '#111827';
   };
+
+  // Prefer values from Firestore users document (userRecord), fallback to auth user
+  const displayName = userRecord?.fullName || currentUser?.displayName || (currentUser?.email ? currentUser.email.split('@')[0] : 'User');
+  const avatarUrl = userRecord?.profilePictureURL || (currentUser as any)?.photoURL || '';
+  const emailForDisplay = userRecord?.email || currentUser?.email || '';
 
   return (
     <div className="main-header-wrapper">
@@ -346,10 +406,10 @@ export default function Header() {
                           )}
                           <div>
                             <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span>{(userRecord?.fullName || currentUser.displayName || currentUser.email || '').split(' ').pop() || 'User'}</span>
+                              <span>{displayName}</span>
                               <span style={{ width: 16, height: 16, borderRadius: 4, background: vipColor(userRecord?.vip), display: 'inline-block' }} title={userRecord?.vip || ''}></span>
                             </div>
-                            <div style={{ fontSize: 12, color: '#6b7280' }}>{userRecord?.email || currentUser.email}</div>
+                            <div style={{ fontSize: 12, color: '#6b7280' }}>{emailForDisplay}</div>
                             {/* VIP progress summary */}
                             <div style={{ marginTop: 8 }}>
                               <div style={{ fontSize: 12, color: '#374151' }}>Chi tiêu tháng: <strong>{formatCurrency(monthlySpend || 0)}</strong></div>
@@ -364,7 +424,7 @@ export default function Header() {
                           </div>
                         </div>
                         <a href="/profile">Thông tin cá nhân</a>
-                        <a href="/wish-list">❤️ Danh mục yêu thích</a>
+                        <a href="/wish-list"> Danh mục yêu thích</a>
                         <a href="/order-history">Đơn mua hàng</a>
                         <a href="/coupons">Mã giảm giá</a>
                         <a className="user-logout" href="#" onClick={(e) => { 

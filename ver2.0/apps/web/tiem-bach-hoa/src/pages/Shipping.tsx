@@ -15,7 +15,7 @@ export default function ShippingPolicyPage() {
         {/* Header Title */}
         <div className="ship-topbar">
           <div className="ship-topbar-inner">
-            <span className="ship-brand">Tiệm Bách Hóa Nhà Hai Đứa</span>
+            <span className="ship-brand">Tiệm Bách Hóa Hai Tụi Mình</span>
           </div>
         </div>
 

@@ -18,6 +18,7 @@ export interface CartItem {
  */
 export async function addToCart(item: CartItem): Promise<void> {
   const user = auth.currentUser;
+  
   if (!user) throw new Error('User not authenticated');
 
   const cartRef = doc(db, 'cart', user.uid);
@@ -55,6 +56,13 @@ export async function addToCart(item: CartItem): Promise<void> {
         lastUpdated: serverTimestamp(),
       });
     }
+    // success
+    // Notify UI that cart changed so header can refresh immediately
+    try {
+      (window as any).dispatchEvent(new CustomEvent('cart-updated', { detail: { uid: user.uid } }));
+    } catch (e) {
+      // ignore if environment doesn't support CustomEvent
+    }
   } catch (error) {
     console.error('Error adding to cart:', error);
     throw error;
@@ -86,6 +94,28 @@ export async function removeFromCart(index: number): Promise<void> {
   } catch (error) {
     console.error('Error removing from cart:', error);
     throw error;
+  }
+}
+
+/**
+ * Fetch current cart items for user
+ */
+export async function fetchCart(): Promise<CartItem[]> {
+  const user = auth.currentUser;
+  if (!user) return [];
+
+  const cartRef = doc(db, 'cart', user.uid);
+  
+  try {
+    const cartSnap = await getDoc(cartRef);
+    if (cartSnap.exists()) {
+      const data = cartSnap.data();
+      return Array.isArray(data.items) ? data.items : [];
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching cart:', error);
+    return [];
   }
 }
 

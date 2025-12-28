@@ -70,7 +70,7 @@ service cloud.firestore {
     }
 
     // -- Orders ---------------------------------------------------------------
-    // Orders may be created by clients (allow public create but validate shape).
+    // Orders may be created by clients (allow create with shape validation).
     // Reading/updating orders is limited to order owner or admin.
     match /orders/{orderId} {
       allow create: if (
@@ -81,9 +81,39 @@ service cloud.firestore {
         && (request.resource.data.totalAmount is number)
       );
 
-      // Allow authenticated read for admin UI notifications. Creation remains validated.
+      // Allow authenticated read (admins and authenticated users). Admin UI will use admin rules elsewhere.
       allow read: if isAuthenticated();
-      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+
+      // Allow updates/deletes by admin OR by the order owner (accept both userId and userID fields),
+      // but restrict non-admin updates to a small, safe set of writable fields (status, updatedAt, shipping fields, proofImages).
+      allow update, delete: if isAdmin()
+        || (
+          isAuthenticated()
+          && (
+            (resource.data.userId == request.auth.uid)
+            || (resource.data.userID == request.auth.uid)
+          )
+          // restrict keys a non-admin can change
+          && (request.resource.data.keys().hasOnly(['status','updatedAt','shippingLocation','shippingAddress','proofImages']) || request.resource.data.keys().hasOnly(['status','updatedAt']))
+        );
+
+      // Subcollection for tracking events: allow owner to create/read their order events and allow admin full access.
+      match /trackingEvents/{eventId} {
+        allow read: if isAdmin() || (
+          isAuthenticated() && (
+            get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid
+            || get(/databases/$(database)/documents/orders/$(orderId)).data.userID == request.auth.uid
+          )
+        );
+        allow create: if isAdmin() || (
+          isAuthenticated() && (
+            get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid
+            || get(/databases/$(database)/documents/orders/$(orderId)).data.userID == request.auth.uid
+          )
+        );
+        // Only admins can update or delete existing tracking events
+        allow update, delete: if isAdmin();
+      }
     }
 
     // -- Users ----------------------------------------------------------------
@@ -124,10 +154,22 @@ service cloud.firestore {
 
     // -- Cart -----------------------------------------------------------------
     // Cart items can only be read/written by the cart owner or admin.
+    // cartId is the user's uid, so we can check cartId == request.auth.uid
     match /cart/{cartId} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.userID == request.auth.uid);
+      // Allow read if user owns this cart (cartId matches their uid)
+      allow read: if isAdmin() || (isAuthenticated() && cartId == request.auth.uid);
+      // Allow create if authenticated and userID matches auth uid
       allow create: if isAuthenticated() && request.resource.data.userID == request.auth.uid;
-      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.userID == request.auth.uid);
+      // Allow update/delete if user owns this cart (check cartId, not resource.data)
+      allow update, delete: if isAdmin() || (isAuthenticated() && cartId == request.auth.uid);
+    }
+
+    // -- Favorites ------------------------------------------------------------
+    // Favorites can only be read/written by the owner or admin.
+    match /favorites/{favoriteId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
     // -- Admin-only fallback -------------------------------------------------

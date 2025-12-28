@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../../../css/admin/adminindex.css";
 import { useNavigate } from "react-router-dom";
-import { auth, db } from "../../firebase";
+import { adminAuth as auth, adminDb as db } from "../../firebase-admin";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 

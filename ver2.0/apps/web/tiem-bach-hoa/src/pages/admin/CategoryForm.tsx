@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { collection, doc, setDoc, serverTimestamp, getDocs } from "firebase/firestore";
 // 1. IMPORT THÊM HÀM TỪ FIREBASE STORAGE
 // Cần đảm bảo bạn import 'storage' (Firebase Storage instance)
-import { db, storage, auth } from "../../firebase"; // hoặc "/src/firebase" tùy theo đường dẫn tương đối
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { adminDb as db, adminStorage as storage, adminAuth as auth } from "../../firebase-admin"; // hoặc "/src/firebase" tùy theo đường dẫn tương đối
+import { ref } from "firebase/storage";
+import uploadWithRetries from '../../utils/storage';
 import { v4 as uuidv4 } from 'uuid';
 import "../../../css/admin/categoryform.css";
 
@@ -136,9 +137,8 @@ export default function AdminCategoryFormPage({ initialData, onSave, onCancel }:
         }
 
         try {
-            const snapshot = await uploadBytes(imageRef, file, { contentType });
-            const downloadURL = await getDownloadURL(snapshot.ref);
-            return downloadURL;
+                const { url: downloadURL } = await uploadWithRetries(imageRef, file as any, { maxRetries: 3, onProgress: (pct:number) => setUploadProgress(pct) });
+                return downloadURL;
         } catch (err: any) {
             console.error("Lỗi tải ảnh lên Storage:", err);
             // Provide actionable message for permission error

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 // Đảm bảo đường dẫn CSS của bạn đúng
 import "../../css/product.css";
 import { addToCart } from '../utils/cart';
@@ -19,6 +19,10 @@ import {
   where,
   orderBy,
   getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
 import { fetchActiveDeals, applyDealsToPrice } from '../utils/deals';
@@ -167,7 +171,7 @@ const fetchCategories = async (setCategoryList: (list: CategoryFilterItem[]) => 
 };
 
 const fetchProducts = async (
-  slug: string,
+  slug: string | null,
   sort: SortOption,
   setProducts: (data: ProductData[]) => void,
   setTotalProducts: (count: number) => void,
@@ -176,11 +180,9 @@ const fetchProducts = async (
   try {
     const productsRef = collection(db, "products");
 
-    // 1. Dựng truy vấn cơ sở (Lọc theo Category Slug)
-    let productQuery = query(
-      productsRef,
-      where("categorySlugs", "array-contains", slug)
-    );
+    // 1. Dựng truy vấn cơ sở
+    // Nếu slug là null => lấy toàn bộ sản phẩm, ngược lại lọc theo slug
+    let productQuery = slug ? query(productsRef, where("categorySlugs", "array-contains", slug)) : query(productsRef);
 
     // 2. Chỉ orderBy theo createdAt, các loại sắp xếp khác thực hiện Client-side
     if (sort === 'newest' || sort === 'best-seller') {
@@ -206,6 +208,27 @@ const fetchProducts = async (
     setProducts([]);
     setTotalProducts(0);
     setAllProductsForCounting([]);
+  }
+};
+
+// Fetch counts per category slug by scanning all products
+const fetchProductCounts = async (): Promise<Record<string, number>> => {
+  try {
+    const productsRef = collection(db, "products");
+    const q = query(productsRef);
+    const snapshot = await getDocs(q);
+    const counts: Record<string, number> = {};
+    snapshot.docs.forEach(d => {
+      const data: any = d.data();
+      const slugs: string[] = data.categorySlugs || [];
+      slugs.forEach(s => {
+        counts[s] = (counts[s] || 0) + 1;
+      });
+    });
+    return counts;
+  } catch (err) {
+    console.error('fetchProductCounts error', err);
+    return {};
   }
 };
 
@@ -411,13 +434,23 @@ function FilterSidebar({ categoryList, currentCategorySlug, priceFilters, handle
 // ===========================================
 export default function ProductListingPage() {
   const navigate = useNavigate();
-  const { categorySlug } = useParams<{ categorySlug: string }>();
+  const location = useLocation();
+  // Read category filter from query param: /products?category=slug
+  const categoryParam = useMemo(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      return params.get('category') || null;
+    } catch (e) {
+      return null;
+    }
+  }, [location.search]);
 
   // State Data
   const [products, setProducts] = useState<ProductData[]>([]);
   const [categoryList, setCategoryList] = useState<CategoryFilterItem[]>([]);
   const [allProductsForCounting, setAllProductsForCounting] = useState<ProductData[]>([]);
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
+  const [favoritesMap, setFavoritesMap] = useState<Record<string, string>>({}); // productId -> favoriteDocId
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showLoginWarning, setShowLoginWarning] = useState(false);
@@ -433,9 +466,30 @@ export default function ProductListingPage() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
+      if (user) fetchUserFavorites(user.uid);
     });
     return () => unsubscribe();
   }, []);
+
+  const fetchUserFavorites = async (uid: string) => {
+    try {
+      const q = query(collection(db, 'favorites'), where('userId', '==', uid));
+      const snap = await getDocs(q);
+      const productIds = new Set<string>();
+      const map: Record<string, string> = {};
+      snap.docs.forEach(d => {
+        const data: any = d.data();
+        if (data.productId) {
+          productIds.add(data.productId);
+          map[data.productId] = d.id;
+        }
+      });
+      setWishlist(productIds);
+      setFavoritesMap(map);
+    } catch (err) {
+      console.error('fetchUserFavorites', err);
+    }
+  };
 
   // ----------------------------------------------------
   // I. LOGIC ĐẾM SẢN PHẨM THEO MỨC GIÁ (useMemo)
@@ -463,22 +517,32 @@ export default function ProductListingPage() {
   // II. USE EFFECTS (GỌI HÀM FIREBASE)
   // ----------------------------------------------------
 
-  // Fetch Category List chỉ 1 lần
+  // Fetch Category List chỉ 1 lần và cập nhật counts
   useEffect(() => {
-    fetchCategories(setCategoryList);
+    (async () => {
+      await fetchCategories(setCategoryList);
+      const counts = await fetchProductCounts();
+      // Merge counts vào categoryList hiện có (nếu có)
+      setCategoryList(prev => prev.map(c => ({ ...c, product_count: counts[c.slug] || 0 })));
+    })();
   }, []);
 
   // Fetch Products khi Slug/Sort thay đổi
   useEffect(() => {
-    const currentSlug = categorySlug || 'hang-moi-ve';
+    const currentSlug = categoryParam || null; // null => all products
 
     // Cập nhật TÊN DANH MỤC cho UI
-    const foundCategory = categoryList.find(c => c.slug === currentSlug);
-    const name = foundCategory?.name || formatSlugToTitle(currentSlug) || "Tất cả Sản Phẩm";
-    setCurrentCategoryName(name);
+    if (!currentSlug) {
+      setCurrentCategoryName("Tất cả Sản Phẩm");
+    } else {
+      const foundCategory = categoryList.find(c => c.slug === currentSlug);
+      const name = foundCategory?.name || formatSlugToTitle(currentSlug) || "Tất cả Sản Phẩm";
+      setCurrentCategoryName(name);
+    }
 
     // Gọi Fetch Products
     setLoading(true);
+    setCurrentPage(1);
     fetchProducts(
       currentSlug,
       sortOption,
@@ -487,14 +551,14 @@ export default function ProductListingPage() {
       setAllProductsForCounting
     ).finally(() => setLoading(false));
 
-  }, [categorySlug, sortOption, categoryList]);
+  }, [categoryParam, sortOption, categoryList]);
 
   // ----------------------------------------------------
   // III. LOGIC THAO TÁC (ACTIONS)
   // ----------------------------------------------------
 
   const handleFilterChange = (slug: string) => {
-    navigate(`/categories/${slug}/all`);
+    navigate(`/products?category=${slug}`);
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -503,10 +567,55 @@ export default function ProductListingPage() {
     setCurrentPage(1); // RESET VỀ TRANG 1
   };
 
-  const handleToggleWishlist = (productId: string) => {
-    const newWishlist = new Set(wishlist);
-    newWishlist.has(productId) ? newWishlist.delete(productId) : newWishlist.add(productId);
-    setWishlist(newWishlist);
+  const handleToggleWishlist = async (productId: string) => {
+    if (!currentUser) {
+      setShowLoginWarning(true);
+      return;
+    }
+
+    // Find product data for metadata
+    const product = products.find(p => p.id === productId);
+
+    // If already wished -> remove
+    if (wishlist.has(productId)) {
+      const favId = favoritesMap[productId];
+      try {
+        if (favId) await deleteDoc(doc(db, 'favorites', favId));
+        const newSet = new Set(wishlist);
+        newSet.delete(productId);
+        setWishlist(newSet);
+        const newMap = { ...favoritesMap };
+        delete newMap[productId];
+        setFavoritesMap(newMap);
+        showSuccess('Đã xóa khỏi yêu thích');
+      } catch (err) {
+        console.error('remove favorite error', err);
+        showError('Không thể xóa yêu thích');
+      }
+      return;
+    }
+
+    // Add favorite
+    try {
+      const payload = {
+        userId: currentUser.uid,
+        productId,
+        name: product?.name || '',
+        price: product?.newPrice || product?.price || 0,
+        image: product?.image || '',
+        slug: product?.slug || '',
+        createdAt: serverTimestamp(),
+      };
+      const ref = await addDoc(collection(db, 'favorites'), payload as any);
+      const newSet = new Set(wishlist);
+      newSet.add(productId);
+      setWishlist(newSet);
+      setFavoritesMap({ ...favoritesMap, [productId]: ref.id });
+      showSuccess('Đã thêm vào yêu thích');
+    } catch (err) {
+      console.error('add favorite error', err);
+      showError('Không thể thêm yêu thích');
+    }
   };
 
   const handleAddToCart = async (product: ProductData, event?: React.MouseEvent) => {
@@ -561,7 +670,6 @@ export default function ProductListingPage() {
 
   // LOGIC MUA NGAY: Thêm vào giỏ và chuyển hướng đến trang checkout
   const handleBuyNow = (product: ProductData) => {
-    console.log(`Mua ngay sản phẩm: ${product.name}. Điều hướng đến trang thanh toán.`);
     // Logic thêm vào giỏ hàng
 
     // Điều hướng
@@ -573,7 +681,7 @@ export default function ProductListingPage() {
   // IV. LOGIC PHÂN TRANG & RENDER UI
   // ----------------------------------------------------
 
-  const totalPages = Math.ceil(totalProducts / productsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalProducts / productsPerPage));
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
 
@@ -608,7 +716,7 @@ export default function ProductListingPage() {
           <aside className="product-filter">
             <FilterSidebar
               categoryList={categoryList}
-              currentCategorySlug={categorySlug}
+              currentCategorySlug={categoryParam || undefined}
               handleFilterChange={handleFilterChange}
               priceFilters={priceFilters}
             />

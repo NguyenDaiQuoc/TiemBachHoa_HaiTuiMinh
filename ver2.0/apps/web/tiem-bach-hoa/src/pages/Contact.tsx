@@ -140,7 +140,7 @@ export default function ContactPage() {
       <main className="contact-container">
         <h1 className="contact-title">Liên Hệ Với Chúng Tôi</h1>
         <p className="contact-desc">
-          “Nhà Hai Đứa” luôn sẵn sàng lắng nghe và hỗ trợ bạn.
+          “Hai Tụi Mình” luôn sẵn sàng lắng nghe và hỗ trợ bạn.
         </p>
 
         <div className="contact-grid">

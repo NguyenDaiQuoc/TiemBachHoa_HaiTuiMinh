@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { adminDb as db } from '../../firebase';
 import AdminSidebar from '../../components/admin/Sidebar';
 import '../../../css/admin/inventory.css';
 import { showSuccess, showError } from '../../utils/toast';

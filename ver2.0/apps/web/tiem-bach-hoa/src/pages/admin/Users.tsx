@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/users.css";
-import { db } from "../../firebase";
+import { adminDb as db } from "../../firebase-admin";
 import { collection, onSnapshot, query, orderBy, doc, where, Timestamp, getDocs, limit, orderBy as fbOrderBy, updateDoc } from 'firebase/firestore';
-import { exportToExcel, exportToPDF, exportToCSV } from "../../utils/exportUtils";
 
 // (Formatting helpers are inside the component)
 
@@ -136,19 +135,19 @@ export default function AdminCustomerPage() {
 
   const handleExportExcel = (rows: any[]) => {
     const data = prepareExportData(rows);
-    exportToExcel(data, `khach-hang-${new Date().toISOString().slice(0,10)}`);
+    import('../../utils/exportUtils').then(m => m.exportToExcel(data, `khach-hang-${new Date().toISOString().slice(0,10)}`)).catch(err => console.error('Export failed', err));
   };
 
   const handleExportPDF = (rows: any[]) => {
     const data = prepareExportData(rows);
     const columns = ['UID', 'Tên khách', 'Email', 'Điện thoại', 'Chi tiêu tháng', 'Hạng', 'Chiết khấu (%)'];
-    exportToPDF(data, `khach-hang-${new Date().toISOString().slice(0,10)}`, columns, 'Danh Sách Khách Hàng');
+    import('../../utils/exportUtils').then(m => m.exportToPDF(data, `khach-hang-${new Date().toISOString().slice(0,10)}`, columns, 'Danh Sách Khách Hàng')).catch(err => console.error('Export failed', err));
   };
 
   const handleExportCSV = (rows: any[]) => {
     const data = prepareExportData(rows);
     const columns = ['UID', 'Tên khách', 'Email', 'Điện thoại', 'Chi tiêu tháng', 'Hạng', 'Chiết khấu (%)'];
-    exportToCSV(data, `khach-hang-${new Date().toISOString().slice(0,10)}`, columns);
+    import('../../utils/exportUtils').then(m => m.exportToCSV(data, `khach-hang-${new Date().toISOString().slice(0,10)}`, columns)).catch(err => console.error('Export failed', err));
   };
 
   const openDetails = async (u:any) => {

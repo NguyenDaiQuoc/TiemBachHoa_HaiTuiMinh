@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import AdminSidebar from "../../components/admin/Sidebar";
 import "../../../css/admin/deals.css";
 import { collection, query, orderBy, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { adminDb as db } from '../../firebase';
 
 const formatCurrency = (amount:any) => Number(amount).toLocaleString('vi-VN') + ' VNĐ';
 
