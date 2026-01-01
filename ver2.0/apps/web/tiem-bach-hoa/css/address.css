@@ -189,3 +189,119 @@
   color: #444;
   text-align: center;
 }
+
+/* =======================================
+   MODAL STYLES FOR ADDRESS FORM
+======================================= */
+.ab-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10,10,10,0.45);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  padding: 24px;
+}
+
+.ab-modal {
+  width: 100%;
+  max-width: 720px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  position: relative;
+  transform-origin: center;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.ab-modal h3 {
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: var(--accent-green);
+}
+
+.ab-modal-close {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  border: none;
+  background: transparent;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+}
+
+.ab-modal .form-group {
+  margin-bottom: 10px;
+}
+
+.ab-modal .form-group label { display:block; font-weight:600; margin-bottom:6px; }
+.ab-modal .form-group input[type="text"], .ab-modal .form-group input[type="tel"], .ab-modal .form-group input[type="email"] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* checkbox should not be full-width; keep it auto-sized for inline layout */
+.ab-modal .form-group input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  margin: 0;
+}
+
+.ab-modal .checkbox-inline input[type="checkbox"] { width: auto; margin-right: 6px; }
+
+.ab-modal .grid-2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width:720px) { .ab-modal .grid-2 { grid-template-columns: 1fr 1fr; } }
+
+.ab-modal .checkbox-inline { display: flex; align-items: center; gap:8px; font-weight:600; }
+
+.ab-modal .btn-primary { background: var(--accent-green); color: #fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
+.ab-modal .btn-secondary { background: transparent; border:1px solid #ddd; padding:10px 14px; border-radius:8px; cursor:pointer; }
+
+.ab-modal input:focus { border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(74,109,86,0.08); }
+
+/* Mobile / small-screen: present as bottom sheet for better UX */
+@media (max-width: 719px) {
+  .ab-modal-overlay {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 12px 12px 0 12px;
+    background: linear-gradient(rgba(10,10,10,0.45), rgba(10,10,10,0.45));
+    backdrop-filter: blur(2px);
+  }
+
+  .ab-modal {
+    width: 100%;
+    max-width: none;
+    border-radius: 12px 12px 0 0;
+    padding: 16px;
+    box-shadow: 0 -8px 20px rgba(0,0,0,0.18);
+    transform: translateY(0);
+    animation: ab-slide-up 220ms ease-out;
+    max-height: 88vh;
+    margin: 0 auto;
+  }
+
+  .ab-modal-close { right: 12px; top: 6px; }
+
+  @keyframes ab-slide-up {
+    from { transform: translateY(18%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+/* Slight scale-in for larger screens */
+@media (min-width: 720px) {
+  .ab-modal { animation: ab-scale-in 160ms ease-out; }
+  @keyframes ab-scale-in { from { transform: scale(0.98); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+}
+

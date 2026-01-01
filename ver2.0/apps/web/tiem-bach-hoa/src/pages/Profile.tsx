@@ -6,12 +6,13 @@ import FloatingButtons from "../components/FloatingButtons";
 import LoginWarning from "../components/LoginWarning";
 import { auth } from "../firebase-auth";
 import { db } from "../firebase-firestore";
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp, collection, query, where, orderBy, getDocs, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp, collection, query, where, orderBy, getDocs, deleteDoc, onSnapshot, addDoc, writeBatch } from "firebase/firestore";
 import { signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { showSuccess, showError } from "../utils/toast";
 import { addToCart as addToCartUtil } from "../utils/cart";
 import { Toaster } from "react-hot-toast";
 import "../../css/profile.css";
+import "../../css/address.css";
 
 // --- Sidebar ---
 function ProfileSidebar({ activeTab, setActiveTab }: any) {
@@ -138,71 +139,143 @@ function PersonalInfoContent({ userData, currentUser, onEdit, isEditing, onSave,
 }
 
 // --- Nội dung: Sổ địa chỉ ---
-function AddressContent({ userData, onEdit, isEditing, onSave, onCancel, editData, setEditData }: any) {
-  if (isEditing) {
-    return (
-      <div className="content-card">
-        <h2 className="content-title">Chỉnh Sửa Địa Chỉ</h2>
-        <div className="info-list">
-          <div className="info-item">
-            <p className="info-label">Tên người nhận</p>
-            <input 
-              type="text" 
-              className="auth-input" 
-              value={editData.receiverName || ''} 
-              onChange={(e) => setEditData({...editData, receiverName: e.target.value})}
-              placeholder="Nhập tên người nhận hàng"
-            />
-          </div>
-          <div className="info-item">
-            <p className="info-label">Địa chỉ giao hàng</p>
-            <textarea 
-              className="auth-input" 
-              value={editData.address || ''} 
-              onChange={(e) => setEditData({...editData, address: e.target.value})}
-              placeholder="Nhập địa chỉ chi tiết (số nhà, đường, phường, quận, thành phố)"
-              rows={4}
-            />
-          </div>
-          <div className="info-item">
-            <p className="info-label">Số điện thoại liên hệ</p>
-            <input 
-              type="tel" 
-              className="auth-input" 
-              value={editData.phone || ''} 
-              onChange={(e) => setEditData({...editData, phone: e.target.value})}
-              placeholder="Nhập số điện thoại"
-            />
-          </div>
-        </div>
-        <div style={{display: 'flex', gap: '12px', marginTop: '16px'}}>
-          <button className="btn-edit" onClick={onSave}>Lưu Địa Chỉ</button>
-          <button className="btn-edit" onClick={onCancel} style={{background: '#ef4444', borderColor: '#ef4444'}}>Hủy</button>
-        </div>
-      </div>
-    );
-  }
+function AddressContent({ currentUser }: any) {
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [form, setForm] = useState({ recipient: '', phone: '', detail: '', city: '', district: '', isDefault: false });
+
+  useEffect(() => {
+    if (!currentUser) {
+      setAddresses([]);
+      setLoading(false);
+      return;
+    }
+
+    const col = collection(db, 'users', currentUser.uid, 'addresses');
+    const q = query(col);
+    const unsub = onSnapshot(q, (snap) => {
+      const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      setAddresses(docs);
+      setLoading(false);
+    }, (err) => {
+      console.error('addresses onSnapshot', err);
+      setAddresses([]);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, [currentUser]);
+
+  const openAdd = () => { setEditing(null); setForm({ recipient: '', phone: '', detail: '', city: '', district: '', isDefault: false }); setShowForm(true); };
+  const openEdit = (a: any) => { setEditing(a); setForm({ recipient: a.recipient || '', phone: a.phone || '', detail: a.detail || '', city: a.city || '', district: a.district || '', isDefault: !!a.isDefault }); setShowForm(true); };
+
+  const handleSave = async () => {
+    if (!currentUser) { alert('Vui lòng đăng nhập để quản lý địa chỉ'); return; }
+    try {
+      if (form.isDefault) {
+        const colRef = collection(db, 'users', currentUser.uid, 'addresses');
+        const snap = await getDocs(colRef);
+        const batch = writeBatch(db);
+        snap.docs.forEach(d => {
+          if ((d.data() as any).isDefault) batch.update(d.ref, { isDefault: false });
+        });
+        await batch.commit();
+      }
+
+      if (editing) {
+        const docRef = doc(db, 'users', currentUser.uid, 'addresses', editing.id);
+        await updateDoc(docRef, { recipient: form.recipient, phone: form.phone, detail: form.detail, city: form.city, district: form.district, isDefault: form.isDefault });
+      } else {
+        const colRef = collection(db, 'users', currentUser.uid, 'addresses');
+        await addDoc(colRef, { recipient: form.recipient, phone: form.phone, detail: form.detail, city: form.city, district: form.district, isDefault: form.isDefault });
+      }
+      setShowForm(false);
+    } catch (err) {
+      console.error('save address', err);
+      alert('Lưu địa chỉ thất bại');
+    }
+  };
+
+  const handleDelete = async (a: any) => {
+    if (!currentUser) { alert('Vui lòng đăng nhập'); return; }
+    if (!confirm('Xóa địa chỉ này?')) return;
+    try {
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'addresses', a.id));
+    } catch (err) { console.error('delete address', err); alert('Xóa thất bại'); }
+  };
+
+  const handleSetDefault = async (a: any) => {
+    if (!currentUser) { alert('Vui lòng đăng nhập'); return; }
+    try {
+      const colRef = collection(db, 'users', currentUser.uid, 'addresses');
+      const snap = await getDocs(colRef);
+      const batch = writeBatch(db);
+      snap.docs.forEach(d => batch.update(d.ref, { isDefault: d.id === a.id }));
+      await batch.commit();
+    } catch (err) { console.error('set default', err); alert('Thất bại'); }
+  };
 
   return (
     <div className="content-card">
       <h2 className="content-title">Sổ Địa Chỉ Giao Hàng</h2>
-      <div className="info-list">
-        <div className="info-item">
-          <p className="info-label">Tên người nhận</p>
-          <p className="info-value">{userData?.receiverName || 'Chưa cập nhật'}</p>
-        </div>
-        <div className="info-item">
-          <p className="info-label">Địa chỉ</p>
-          <p className="info-value">{userData?.address || 'Chưa có địa chỉ'}</p>
-        </div>
-        <div className="info-item">
-          <p className="info-label">Số điện thoại</p>
-          <p className="info-value">{userData?.phone || 'Chưa cập nhật'}</p>
-        </div>
-      </div>
-      <button className="btn-edit" onClick={onEdit}>
-        {!userData?.address ? 'Thêm Địa Chỉ' : 'Chỉnh Sửa Địa Chỉ'}
+
+      <button className="ab-add-btn" onClick={openAdd} style={{marginBottom: 12}}>
+        <span className="ab-add-icon">+</span> Thêm Địa Chỉ Mới
       </button>
+
+      <div className="ab-grid">
+        {loading ? (<div>Đang tải địa chỉ...</div>) : (
+          addresses.map((item) => (
+            <div key={item.id} className={`ab-card ${item.isDefault ? 'ab-card-default' : ''}`}>
+              <div className="ab-card-header">
+                <h3 className="ab-card-title">
+                  {item.recipient}
+                  {item.isDefault && <span className="ab-badge-default">Mặc định</span>}
+                </h3>
+
+                <div className="ab-actions">
+                  <button className="ab-action-edit" onClick={() => openEdit(item)}>Sửa</button>
+                  <span className="ab-divider">|</span>
+                  <button className="ab-action-delete" onClick={() => handleDelete(item)}>Xóa</button>
+                </div>
+              </div>
+
+              <p className="ab-info"><strong>SĐT:</strong> {item.phone}</p>
+              <p className="ab-info"><strong>Địa chỉ:</strong> {item.detail}</p>
+
+              {!item.isDefault && (
+                <button className="ab-set-default" onClick={() => handleSetDefault(item)}>Đặt làm mặc định</button>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {!loading && addresses.length === 0 && (
+        <div className="ab-empty-box">Bạn chưa lưu địa chỉ nào. Hãy thêm địa chỉ đầu tiên!</div>
+      )}
+
+      {showForm && (
+        <div className="ab-modal-overlay">
+          <div className="ab-modal">
+            <h3>{editing ? 'Sửa địa chỉ' : 'Thêm địa chỉ'}</h3>
+            <div className="form-group"><label>Người nhận</label><input value={form.recipient} onChange={e=>setForm({...form,recipient:e.target.value})} /></div>
+            <div className="form-group"><label>Số điện thoại</label><input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} /></div>
+            <div className="form-group"><label>Địa chỉ chi tiết</label><input value={form.detail} onChange={e=>setForm({...form,detail:e.target.value})} /></div>
+            <div className="grid-2">
+              <div className="form-group"><label>Tỉnh / Thành phố</label><input value={form.city} onChange={e=>setForm({...form,city:e.target.value})} /></div>
+              <div className="form-group"><label>Quận / Huyện</label><input value={form.district} onChange={e=>setForm({...form,district:e.target.value})} /></div>
+            </div>
+            <div className="form-group"><label><input type="checkbox" checked={form.isDefault} onChange={e=>setForm({...form,isDefault:e.target.checked})} /> Đặt làm mặc định</label></div>
+            <div style={{display:'flex',gap:8,marginTop:8}}>
+              <button className="btn-primary" onClick={handleSave}>{editing ? 'Lưu' : 'Thêm'}</button>
+              <button className="btn-secondary" onClick={()=>setShowForm(false)}>Hủy</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -865,15 +938,7 @@ export default function ProfilePage() {
         return <OrdersContent orders={orders} loading={ordersLoading} />;
       case 'address': 
         return (
-          <AddressContent
-            userData={userData}
-            onEdit={handleEditAddress}
-            isEditing={isEditing}
-            onSave={handleSaveAddress}
-            onCancel={handleCancelEdit}
-            editData={editData}
-            setEditData={setEditData}
-          />
+          <AddressContent currentUser={currentUser} />
         );
       case 'favorites': 
         return (

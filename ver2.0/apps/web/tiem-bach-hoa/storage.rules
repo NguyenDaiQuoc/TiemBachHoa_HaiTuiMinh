@@ -18,6 +18,21 @@ service firebase.storage {
       allow read: if true;
     }
 
+    // Order-level proofs: restrict writes to admins (or trusted server-side service)
+    match /orders/{orderId}/proofs/{allPaths=**} {
+      // Proof images are public for viewing by customers/admins who have the URL.
+      // Change to `request.auth != null` if you want only authenticated users to view.
+      allow read: if true;
+      // Require custom claim `admin` to write/delete. Use Firebase Admin SDK to set claims.
+      allow write, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Tracking event images: uploaded by admins/authorized couriers only
+    match /orders/{orderId}/tracking/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+
     // Inventory images: require an authenticated user to upload.
     match /inventory_images/{allPaths=**} {
       allow write: if request.auth != null;

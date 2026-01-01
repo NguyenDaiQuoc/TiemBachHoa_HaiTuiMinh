@@ -65,6 +65,7 @@ interface ProductData {
   description: string;
   // ⭐ CẬP NHẬT: Thêm trường slug ⭐
   slug: string;
+  averageRating?: number;
   variations?: Array<{
     color: string;
     size: string;
@@ -120,6 +121,7 @@ const mapProductFromFirestore = (docId: string, docData: any): ProductData => {
     description: docData.description || '',
     createdAt: docData.createdAt instanceof Timestamp ? docData.createdAt.toMillis() : Date.now(),
     slug: productSlug, // ⭐ Gán slug vào ProductData ⭐
+    averageRating: typeof docData.averageRating === 'number' ? docData.averageRating : 0,
   };
 };
 
@@ -173,6 +175,7 @@ const fetchCategories = async (setCategoryList: (list: CategoryFilterItem[]) => 
 const fetchProducts = async (
   slug: string | null,
   sort: SortOption,
+  ratingFilter: number | null,
   setProducts: (data: ProductData[]) => void,
   setTotalProducts: (count: number) => void,
   setAllProductsForCounting: (data: ProductData[]) => void
@@ -183,6 +186,11 @@ const fetchProducts = async (
     // 1. Dựng truy vấn cơ sở
     // Nếu slug là null => lấy toàn bộ sản phẩm, ngược lại lọc theo slug
     let productQuery = slug ? query(productsRef, where("categorySlugs", "array-contains", slug)) : query(productsRef);
+
+    // Apply rating filter if provided (>= selected rating)
+    if (ratingFilter !== null && ratingFilter !== undefined) {
+      productQuery = query(productQuery, where('averageRating', '>=', ratingFilter));
+    }
 
     // 2. Chỉ orderBy theo createdAt, các loại sắp xếp khác thực hiện Client-side
     if (sort === 'newest' || sort === 'best-seller') {
@@ -362,16 +370,17 @@ function ProductCard({
 // ===========================================
 // 4. COMPONENT FilterSidebar (Giữ nguyên)
 // ===========================================
-function FilterSidebar({ categoryList, currentCategorySlug, priceFilters, handleFilterChange }: {
+function FilterSidebar({ categoryList, currentCategorySlug, priceFilters, handleFilterChange, ratingFilter, handleRatingChange, ratingCounts, selectedPriceFilter, handlePriceChange }: {
   categoryList: CategoryFilterItem[];
   currentCategorySlug: string | undefined;
   priceFilters: PriceFilterItem[];
   handleFilterChange: (slug: string) => void;
+  ratingFilter: number | null;
+  handleRatingChange: (r: number | null) => void;
+  ratingCounts: { [key: number]: number };
+  selectedPriceFilter?: PriceFilterItem | null;
+  handlePriceChange?: (p: PriceFilterItem | null) => void;
 }) {
-  const ratingFilterGroups = [
-    { title: "Đánh Giá", items: ["⭐️⭐️⭐️⭐️⭐️", "⭐️⭐️⭐️⭐️ trở lên"] },
-  ];
-
   return (
     <div className="filter-sidebar">
       <h3 className="filter-title">Bộ Lọc</h3>
@@ -402,7 +411,17 @@ function FilterSidebar({ categoryList, currentCategorySlug, priceFilters, handle
         <ul className="filter-group-list">
           {priceFilters.map((filter) => (
             <li key={filter.name} className="filter-item">
-              <input type="checkbox" id={filter.name} className="filter-checkbox" />
+              <input
+                type="checkbox"
+                id={filter.name}
+                className="filter-checkbox"
+                checked={Boolean((typeof (selectedPriceFilter as any) !== 'undefined' && selectedPriceFilter && selectedPriceFilter.name === filter.name))}
+                onChange={() => {
+                  if (!handlePriceChange) return;
+                  const currentlySelected = selectedPriceFilter && selectedPriceFilter.name === filter.name;
+                  handlePriceChange(currentlySelected ? null : filter);
+                }}
+              />
               <label htmlFor={filter.name} className="filter-label">{filter.name} ({filter.count})</label>
             </li>
           ))}
@@ -410,20 +429,33 @@ function FilterSidebar({ categoryList, currentCategorySlug, priceFilters, handle
         <hr className="filter-divider" />
       </div>
 
-      {/* 3. ĐÁNH GIÁ */}
-      {ratingFilterGroups.map((group) => (
-        <div key={group.title} className="filter-group">
-          <p className="filter-group-title">{group.title}</p>
-          <ul className="filter-group-list">
-            {group.items.map((item) => (
-              <li key={item} className="filter-item">
-                <input type="checkbox" id={item} className="filter-checkbox" />
-                <label htmlFor={item} className="filter-label">{item}</label>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      {/* 3. ĐÁNH GIÁ (Rating Filter) */}
+      <div className="filter-group">
+        <p className="filter-group-title">Đánh Giá</p>
+        <ul className="filter-group-list">
+          <li className="filter-item">
+            <input type="radio" name="rating-filter" id="rating-all" checked={ratingFilter === null} onChange={() => handleRatingChange(null)} />
+            <label htmlFor="rating-all" className="filter-label">Tất cả</label>
+          </li>
+          <li className="filter-item">
+            <input type="radio" name="rating-filter" id="rating-5" checked={ratingFilter === 5} onChange={() => handleRatingChange(5)} />
+            <label htmlFor="rating-5" className="filter-label">⭐️ 5 ({ratingCounts[5] || 0} sản phẩm)</label>
+          </li>
+          <li className="filter-item">
+            <input type="radio" name="rating-filter" id="rating-4" checked={ratingFilter === 4} onChange={() => handleRatingChange(4)} />
+            <label htmlFor="rating-4" className="filter-label">⭐️ 4 trở lên ({ratingCounts[4] || 0} sản phẩm)</label>
+          </li>
+          <li className="filter-item">
+            <input type="radio" name="rating-filter" id="rating-3" checked={ratingFilter === 3} onChange={() => handleRatingChange(3)} />
+            <label htmlFor="rating-3" className="filter-label">⭐️ 3 trở lên ({ratingCounts[3] || 0} sản phẩm)</label>
+          </li>
+          <li className="filter-item">
+            <input type="radio" name="rating-filter" id="rating-2" checked={ratingFilter === 2} onChange={() => handleRatingChange(2)} />
+            <label htmlFor="rating-2" className="filter-label">⭐️ 2 trở lên ({ratingCounts[2] || 0} sản phẩm)</label>
+          </li>
+        </ul>
+      </div>
+
       <button className="filter-apply-btn">Áp Dụng</button>
     </div>
   );
@@ -454,6 +486,8 @@ export default function ProductListingPage() {
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [ratingFilter, setRatingFilter] = useState<number | null>(null);
+  const [selectedPriceFilter, setSelectedPriceFilter] = useState<PriceFilterItem | null>(null);
 
   // State UI & Pagination
   const [currentCategoryName, setCurrentCategoryName] = useState("Hàng Mới Về");
@@ -513,6 +547,20 @@ export default function ProductListingPage() {
     });
   }, [allProductsForCounting]);
 
+  // Rating counts (for the current category/allProductsForCounting)
+  const ratingCounts = useMemo(() => {
+    const thresholds = [5,4,3,2];
+    const counts: { [key:number]: number } = {};
+    thresholds.forEach(t => counts[t] = 0);
+    allProductsForCounting.forEach(p => {
+      const r = typeof p.averageRating === 'number' ? p.averageRating : 0;
+      thresholds.forEach(t => {
+        if (r >= t) counts[t] = (counts[t] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [allProductsForCounting]);
+
   // ----------------------------------------------------
   // II. USE EFFECTS (GỌI HÀM FIREBASE)
   // ----------------------------------------------------
@@ -546,19 +594,44 @@ export default function ProductListingPage() {
     fetchProducts(
       currentSlug,
       sortOption,
+      ratingFilter,
       setProducts,
       setTotalProducts,
       setAllProductsForCounting
     ).finally(() => setLoading(false));
 
-  }, [categoryParam, sortOption, categoryList]);
+  }, [categoryParam, sortOption, categoryList, ratingFilter]);
+  
 
   // ----------------------------------------------------
   // III. LOGIC THAO TÁC (ACTIONS)
   // ----------------------------------------------------
 
   const handleFilterChange = (slug: string) => {
-    navigate(`/products?category=${slug}`);
+    // Toggle category filter: nếu đang chọn cùng slug thì bỏ filter, ngược lại chọn slug mới
+    try {
+      const current = categoryParam || null;
+      if (current === slug) {
+        // remove category param -> show all products
+        navigate('/products');
+      } else {
+        navigate(`/products?category=${slug}`);
+      }
+    } catch (err) {
+      // fallback
+      navigate(`/products?category=${slug}`);
+    }
+    setCurrentPage(1);
+  };
+
+  const handleRatingChange = (r: number | null) => {
+    setRatingFilter(r);
+    setCurrentPage(1);
+  };
+
+  const handlePriceChange = (p: PriceFilterItem | null) => {
+    setSelectedPriceFilter(p);
+    setCurrentPage(1);
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -601,7 +674,7 @@ export default function ProductListingPage() {
         userId: currentUser.uid,
         productId,
         name: product?.name || '',
-        price: product?.newPrice || product?.price || 0,
+        price: product?.newPrice ?? product?.oldPrice ?? 0,
         image: product?.image || '',
         slug: product?.slug || '',
         createdAt: serverTimestamp(),
@@ -681,11 +754,23 @@ export default function ProductListingPage() {
   // IV. LOGIC PHÂN TRANG & RENDER UI
   // ----------------------------------------------------
 
-  const totalPages = Math.max(1, Math.ceil(totalProducts / productsPerPage));
+  // Apply price filter client-side on the fetched `products` list
+  const filteredProducts = useMemo(() => {
+    if (!selectedPriceFilter) return products;
+    return products.filter(p => {
+      const v = p.newPrice || 0;
+      const min = selectedPriceFilter.min || 0;
+      const max = selectedPriceFilter.max === Infinity ? Infinity : (selectedPriceFilter.max || Infinity);
+      return v >= min && v <= max;
+    });
+  }, [products, selectedPriceFilter]);
+
+  const filteredTotal = filteredProducts.length;
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / productsPerPage));
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
 
-  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
   const paginate = (pageNumber: number) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
@@ -696,12 +781,6 @@ export default function ProductListingPage() {
   if (loading) {
     return (
       <div className="product-page"><Header /><main className="product-main"><h1 className="product-category-title">Đang tải...</h1><p style={{ textAlign: 'center', padding: '50px' }}>Đang tải sản phẩm và bộ lọc...</p></main><Footer /></div>
-    );
-  }
-
-  if (!loading && products.length === 0) {
-    return (
-      <div className="product-page"><Header /><main className="product-main"><div className="breadcrumb">Trang chủ / Sản phẩm / {currentCategoryName}</div><h1 className="product-category-title">{currentCategoryName}</h1><p style={{ textAlign: 'center', padding: '50px' }}>Xin lỗi, hiện tại không có sản phẩm nào thuộc danh mục này.</p></main><Footer /></div>
     );
   }
 
@@ -719,12 +798,21 @@ export default function ProductListingPage() {
               currentCategorySlug={categoryParam || undefined}
               handleFilterChange={handleFilterChange}
               priceFilters={priceFilters}
+              ratingFilter={ratingFilter}
+              handleRatingChange={handleRatingChange}
+              ratingCounts={ratingCounts}
+              selectedPriceFilter={selectedPriceFilter}
+              handlePriceChange={handlePriceChange}
             />
           </aside>
 
           <section className="product-list-section">
             <div className="product-list-top">
-              <span className="product-count">Hiển thị {indexOfFirstProduct + 1} - {indexOfFirstProduct + currentProducts.length} trên {totalProducts} sản phẩm</span>
+              {(() => {
+                const displayStart = filteredTotal === 0 ? 0 : indexOfFirstProduct + 1;
+                const displayEnd = filteredTotal === 0 ? 0 : indexOfFirstProduct + currentProducts.length;
+                return <span className="product-count">Hiển thị {displayStart} - {displayEnd} trên {filteredTotal} sản phẩm</span>;
+              })()}
               <div className="product-sort">
                 <label htmlFor="sort">Sắp xếp theo:</label>
                 <select id="sort" className="product-sort-select" value={sortOption} onChange={handleSortChange}>
@@ -737,17 +825,21 @@ export default function ProductListingPage() {
             </div>
 
             <div className="product-grid">
-              {currentProducts.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  {...p}
-                  isWished={wishlist.has(p.id)}
-                  handleToggleWishlist={handleToggleWishlist}
-                  handleAddToCart={handleAddToCart}
-                  handleBuyNow={handleBuyNow}
-                  navigate={navigate}
-                />
-              ))}
+              {currentProducts.length === 0 ? (
+                <div style={{padding:40,textAlign:'center',color:'#666'}}>Xin lỗi, hiện tại không có sản phẩm nào thuộc bộ lọc này. Hãy thử bỏ chọn bộ lọc hoặc chọn danh mục khác.</div>
+              ) : (
+                currentProducts.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    {...p}
+                    isWished={wishlist.has(p.id)}
+                    handleToggleWishlist={handleToggleWishlist}
+                    handleAddToCart={handleAddToCart}
+                    handleBuyNow={handleBuyNow}
+                    navigate={navigate}
+                  />
+                ))
+              )}
             </div>
 
             {/* Pagination */}

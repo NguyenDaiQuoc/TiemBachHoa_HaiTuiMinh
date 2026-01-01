@@ -4,7 +4,7 @@ import { auth } from "../firebase-auth";
 import { db } from "../firebase";
 import { doc, onSnapshot, getDoc, collection, query, orderBy } from 'firebase/firestore';
 import { showError } from '../utils/toast';
-import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -121,6 +121,40 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
   const [trackingEvents, setTrackingEvents] = useState<any[]>([]);
   const mapRef = useRef<any>(null);
 
+  // whenever tracking events update, ensure map recenters on the latest known location (including IP-derived coords)
+  useEffect(() => {
+    const locEvents = trackingEvents.map((t:any) => {
+      if (t && t.location && t.location.lat != null && t.location.lng != null) {
+        return { ...t, location: { lat: Number(t.location.lat), lng: Number(t.location.lng) } };
+      }
+      if (t && t.lat != null && t.lng != null) {
+        return { ...t, location: { lat: Number(t.lat), lng: Number(t.lng) } };
+      }
+      return null;
+    }).filter(Boolean);
+
+    if (locEvents.length > 0 && mapRef.current) {
+      const last = locEvents[locEvents.length - 1];
+      try {
+        // react-leaflet Map instance supports setView / flyTo
+        if (mapRef.current.setView) mapRef.current.setView([last.location.lat, last.location.lng], 13);
+        else if (mapRef.current.flyTo) mapRef.current.flyTo([last.location.lat, last.location.lng], 13);
+      } catch (e) {
+        // ignore
+      }
+    } else if (!locEvents.length && orderData && orderData.shippingLocation && mapRef.current) {
+      try {
+        const sl = orderData.shippingLocation;
+        const lat = sl.lat != null ? Number(sl.lat) : null;
+        const lng = sl.lng != null ? Number(sl.lng) : null;
+        if (lat != null && lng != null) {
+          if (mapRef.current.setView) mapRef.current.setView([lat, lng], 13);
+          else if (mapRef.current.flyTo) mapRef.current.flyTo([lat, lng], 13);
+        }
+      } catch (e) {}
+    }
+  }, [trackingEvents, orderData]);
+
   // Listen to auth state changes like Cart.tsx
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -215,12 +249,31 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
               if (pts.length === 0) {
                 return <div className="map-placeholder">Chưa có dữ liệu vị trí để hiển thị bản đồ.</div>;
               }
-              const center: any = pts[0];
+              // center map on the most recent tracking point (latest delivery location)
+              const center: any = pts[pts.length - 1];
               return (
                 <div style={{height:400}}>
-                  <MapContainer whenCreated={m=>mapRef.current = m} style={{height:'100%', width:'100%'}} center={[center[0], center[1]]} zoom={13}>
+                  <MapContainer ref={(m: any) => { mapRef.current = m; }} style={{height:'100%', width:'100%'}} center={[center[0], center[1]]} zoom={13}>
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     <Polyline positions={pts} color="#4A6D56" />
+                    {
+                      // render shippingLocation as a distinct marker (different color)
+                      orderData && orderData.shippingLocation && orderData.shippingLocation.lat != null && orderData.shippingLocation.lng != null ? (
+                        <CircleMarker
+                          center={[Number(orderData.shippingLocation.lat), Number(orderData.shippingLocation.lng)]}
+                          pathOptions={{ color: '#1f8ef1', fillColor: '#1f8ef1' }}
+                          radius={8}
+                        >
+                          <Popup>
+                            <div style={{minWidth:180}}>
+                              <div><strong>Địa điểm đặt hàng</strong></div>
+                              <div style={{fontSize:12}}>{shippingAddress}</div>
+                              <div style={{marginTop:6}}><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(Number(orderData.shippingLocation.lat) + ',' + Number(orderData.shippingLocation.lng))}`}>Mở Maps</a></div>
+                            </div>
+                          </Popup>
+                        </CircleMarker>
+                      ) : null
+                    }
                     {
                       pts.map((p:any, idx:number) => {
                         const ev = trackingEvents.filter((t:any)=>t.location)[idx];

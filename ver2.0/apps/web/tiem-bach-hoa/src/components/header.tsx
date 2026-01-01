@@ -173,7 +173,9 @@ export default function Header() {
   useEffect(() => {
     const onUnhandled = (ev: PromiseRejectionEvent) => {
       try {
-        const reason = (ev && (ev.reason || ev.detail || ev)) as any;
+        // Some environments attach different fields - cast to any and read commonly used keys
+        const eAny = ev as any;
+        const reason = (eAny && (eAny.reason || eAny.detail || eAny)) as any;
         const text = String(reason && (reason.message || reason.stack || reason)).toLowerCase();
         if (text.includes('metamask') || text.includes('inpage') || text.includes('solana') || text.includes('phantom') || text.includes('solanaaction')) {
           // suppress default logging for extension-related noise

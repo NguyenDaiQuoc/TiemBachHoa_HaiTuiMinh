@@ -338,7 +338,7 @@ function OverlayBanner({ imageSrc }: { imageSrc: string }) {
     <>
       {showOverlay && (
         <div
-          className={`modal-overlay ${fadeClass}`}
+          className={`modal-overlay overlay-banner ${fadeClass}`}
           style={{ backdropFilter: "blur(2px)" }}
           onClick={handleNavigate}
         >

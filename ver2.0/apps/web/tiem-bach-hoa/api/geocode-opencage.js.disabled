@@ -1,0 +1,1 @@
+﻿{ error:serverless-proxy-not-deployed,message:Use /api/geocode-opencage.php or deploy this file as a serverless function. Do not fetch this file directly.}

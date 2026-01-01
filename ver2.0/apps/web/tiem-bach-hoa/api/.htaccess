@@ -1,0 +1,9 @@
+# Prevent direct HTTP access to opencage.key and other secret files
+<Files "opencage.key">
+  Require all denied
+</Files>
+
+# Deny access to any *.key file just in case
+<FilesMatch "\\.key$">
+  Require all denied
+</FilesMatch>

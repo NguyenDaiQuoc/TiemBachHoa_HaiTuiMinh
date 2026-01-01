@@ -194,3 +194,13 @@
   transition: 0.2s;
 }
 .btn-support:hover { background-color: white; }
+
+/* Leaflet map z-index fix for non-admin / tracking view
+   Ensure the map doesn't stay visually on top while scrolling and that
+   map controls don't overlap other UI elements. We scope rules to
+   `.map-box` (the component wrapper) so it doesn't affect other pages. */
+.map-box .leaflet-container { z-index: 0 !important; position: relative !important; }
+.map-box .leaflet-pane { z-index: 0 !important; }
+.map-box .leaflet-tile, .map-box .leaflet-marker-pane, .map-box .leaflet-overlay-pane, .map-box .leaflet-shadow-pane { z-index: 0 !important; }
+.map-box .leaflet-control { z-index: 2 !important; }
+.map-box .leaflet-popup { z-index: 3 !important; }
