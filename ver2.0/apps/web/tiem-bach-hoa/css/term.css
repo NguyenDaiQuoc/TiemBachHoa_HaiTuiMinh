@@ -114,3 +114,26 @@
 .support-button:hover {
   opacity: 0.85;
 }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .terms-container {
+    max-width: 100%;
+    margin-top: 24px;
+    margin-bottom: 40px;
+    padding: 0 16px;
+  }
+
+  .terms-title { font-size: 28px; }
+  .terms-intro { font-size: 14px; }
+
+  .policy-box { padding: 18px; border-radius: 12px; }
+  .policy-heading { font-size: 18px; }
+  .policy-text, .policy-list { font-size: 14px; }
+}
+
+@media (max-width: 480px) {
+  .terms-title { font-size: 24px; }
+  .policy-box { padding: 14px; }
+  .support-button { width: 100%; display: block; padding: 12px; border-radius: 10px; }
+}

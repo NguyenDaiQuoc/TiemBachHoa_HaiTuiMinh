@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-// Import các icon cần thiết cho Social Links
-import { Phone, ShoppingBag, Facebook, Instagram } from 'lucide-react';
+// Import các icon cần thiết cho Social Links và Mobile Menu
+import { Phone, ShoppingBag, Facebook, Instagram, Menu, X } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth, db } from '../firebase';
@@ -89,6 +89,8 @@ export default function Header() {
   const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
   // State cho More Menu
   const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
+  // State cho Mobile Menu
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Cart state will be loaded live from Firestore `cart` collection (queried by userID)
   const [cartItems, setCartItems] = useState<any[]>([]);
@@ -319,53 +321,104 @@ export default function Header() {
 
       <div className="header">
         {/* Class gốc: flex justify-between items-center p-4 */}
-        <div className="header-container justify-between items-center p-4">
+        <div className="header-container">
 
           {/* LOGO */}
-          <a href="/" className="header-logo-text font-bold text-lg">
+          <a href="/" className="header-logo-text">
             Tiệm Bách Hóa Hai Tụi Mình
           </a>
 
-          {/* MENU */}
-          <div className="header-menu flex gap-6">
-            <a href="/" className="menu-item">Trang chủ</a>
+          {/* MOBILE MENU TOGGLE BUTTON */}
+          <button 
+            className="mobile-menu-toggle"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
 
-            {/* 1. DANH MỤC SẢN PHẨM (MEGA MENU) */}
-            {/* <div 
-                            className="menu-item menu-dropdown-trigger has-indicator"
-                            onMouseEnter={() => setIsMegaMenuOpen(true)}
-                            onMouseLeave={() => setIsMegaMenuOpen(false)}
-                        >
-                            Danh mục sản phẩm <span className="dropdown-indicator">▼</span>
-                            {isMegaMenuOpen && <MegaMenu />}
-                        </div> */}
+          {/* MENU - Desktop và Mobile */}
+          <div className={`header-menu ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+            <a href="/" className="menu-item" onClick={() => setIsMobileMenuOpen(false)}>Trang chủ</a>
+            <a href="/categories" className="menu-item" onClick={() => setIsMobileMenuOpen(false)}>Danh mục</a>
+            <a href="/products" className="menu-item" onClick={() => setIsMobileMenuOpen(false)}>Sản phẩm</a>
+            <a href="/vip" className="menu-item" onClick={() => setIsMobileMenuOpen(false)}>VIP</a>
 
-            <a href="/categories">Danh mục</a>
-            <a href="/products" className="menu-item">Sản phẩm</a>
-            {/* <a href="/combo" className="menu-item">Ưu đãi</a> */}
-            <a href="/vip" className="menu-item">VIP</a>
-
-            {/* 2. XEM THÊM (DROPDOWN ĐƠN) */}
+            {/* XEM THÊM - Dropdown trên desktop, mở rộng trên mobile */}
             <div
               className="menu-item menu-dropdown-trigger has-indicator"
-              onMouseEnter={() => setIsMoreDropdownOpen(true)}
-              onMouseLeave={() => setIsMoreDropdownOpen(false)}
+              onMouseEnter={() => !isMobileMenuOpen && setIsMoreDropdownOpen(true)}
+              onMouseLeave={() => !isMobileMenuOpen && setIsMoreDropdownOpen(false)}
+              onClick={() => isMobileMenuOpen && setIsMoreDropdownOpen(!isMoreDropdownOpen)}
             >
               Xem thêm <span className="dropdown-indicator">▼</span>
               {isMoreDropdownOpen && (
                 <div className="simple-dropdown more-menu">
                   {moreMenuData.map((item, index) => (
-                    <a key={index} href={item.link} className="dropdown-link">
+                    <a 
+                      key={index} 
+                      href={item.link} 
+                      className="dropdown-link"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsMoreDropdownOpen(false);
+                      }}
+                    >
                       {item.name}
                     </a>
                   ))}
                 </div>
               )}
             </div>
+
+            {/* Mobile-only: Cart & User links */}
+            <div className="mobile-menu-actions">
+              <a href="/cart" className="menu-item mobile-action" onClick={() => setIsMobileMenuOpen(false)}>
+                🛒 Giỏ hàng ({cartTotalCount})
+              </a>
+              {(!currentUser || currentUser.isAnonymous) ? (
+                <>
+                  <a href="/login" className="menu-item mobile-action" onClick={() => setIsMobileMenuOpen(false)}>
+                    👤 Đăng nhập
+                  </a>
+                  <a href="/register" className="menu-item mobile-action" onClick={() => setIsMobileMenuOpen(false)}>
+                    ✨ Đăng ký
+                  </a>
+                </>
+              ) : (
+                <>
+                  <a href="/profile" className="menu-item mobile-action" onClick={() => setIsMobileMenuOpen(false)}>
+                    👤 {displayName}
+                  </a>
+                  <a href="/order-history" className="menu-item mobile-action" onClick={() => setIsMobileMenuOpen(false)}>
+                    📦 Đơn hàng
+                  </a>
+                  <a 
+                    href="#" 
+                    className="menu-item mobile-action"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsMobileMenuOpen(false);
+                      try {
+                        localStorage.removeItem('tiem_user');
+                        localStorage.removeItem('remember_until');
+                      } catch (e) {
+                        console.warn('clear localStorage failed', e);
+                      }
+                      auth.signOut();
+                      showSuccess('Đăng xuất thành công!');
+                      setTimeout(() => window.location.reload(), 800);
+                    }}
+                  >
+                    🚪 Đăng xuất
+                  </a>
+                </>
+              )}
+            </div>
           </div>
 
-          {/* SEARCH + USER + CART (KHÔI PHỤC CẤU TRÚC GỐC) */}
-          <div className="header-icons flex items-center gap-4">
+          {/* SEARCH + USER + CART - Desktop only */}
+          <div className="header-icons desktop-only">
 
             {/* SEARCH */}
             <div className="search-field">
@@ -374,7 +427,7 @@ export default function Header() {
                 type="text"
                 id="header-search"
                 name="search"
-                placeholder="Tìm kiếm sản phẩm..."
+                placeholder="Tìm kiếm..."
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
               />
@@ -413,14 +466,27 @@ export default function Header() {
                             </div>
                             <div style={{ fontSize: 12, color: '#6b7280' }}>{emailForDisplay}</div>
                             {/* VIP progress summary */}
-                            <div style={{ marginTop: 8 }}>
+                              <div style={{ marginTop: 8 }}>
                               <div style={{ fontSize: 12, color: '#374151' }}>Chi tiêu tháng: <strong>{formatCurrency(monthlySpend || 0)}</strong></div>
                               <div style={{ height: 8, background: '#e5e7eb', borderRadius: 8, marginTop: 6, overflow: 'hidden' }}>
                                 <div style={{ width: `${vipProgressPercent}%`, height: '100%', background: vipColor(userRecord?.vip), transition: 'width 400ms ease' }} />
                               </div>
-                              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>{vipRank} • {vipProgressPercent}%</span>
-                                <a href="/vip" style={{ fontSize: 12, color: '#2563eb' }}>Tìm hiểu thêm</a>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 6 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span>{vipRank} • {vipProgressPercent}%</span>
+                                  <a href="/vip" style={{ fontSize: 12, color: '#2563eb' }}>Tìm hiểu thêm</a>
+                                </div>
+                                {/* Amount needed to next tier */}
+                                {(() => {
+                                  try {
+                                    const r = getRankFor(monthlySpend || 0);
+                                    const needed = Math.max(0, (r.nextThreshold || 0) - (monthlySpend || 0));
+                                    if (needed > 0 && r.next && r.next !== r.current) {
+                                      return (<div style={{ marginTop: 6, color: '#374151', fontSize: 12 }}>Cần chi thêm <strong>{formatCurrency(needed)}</strong> để lên hạng <strong>{r.next}</strong></div>);
+                                    }
+                                  } catch (e) { /* ignore */ }
+                                  return null;
+                                })()}
                               </div>
                             </div>
                           </div>

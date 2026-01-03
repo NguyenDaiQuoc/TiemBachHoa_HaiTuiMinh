@@ -398,6 +398,67 @@
     flex-direction: column;
   }
 
+  /* Additional small-screen tweaks */
+  .sale-hero-banner {
+    border-radius: 16px;
+  }
+
+  .sale-hero-decoration {
+    display: none;
+  }
+
+  .sale-banner-image {
+    height: 180px;
+  }
+
+  .sale-banner-content {
+    padding: 16px;
+  }
+
+  .sale-banner-title {
+    font-size: 18px;
+  }
+
+  .sale-banner-desc {
+    font-size: 14px;
+  }
+
+  .sale-banner-btn {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .sale-empty {
+    padding: 40px 16px;
+    max-width: 100%;
+  }
+
+  .sale-banner-grid {
+    gap: 20px;
+  }
+
+  @media (max-width: 480px) {
+    .sale-hero-banner {
+      padding: 28px 16px;
+    }
+
+    .sale-hero-title {
+      font-size: 26px;
+    }
+
+    .sale-hero-desc {
+      font-size: 14px;
+    }
+
+    .sale-banner-image {
+      height: 140px;
+    }
+
+    .sale-banner-title {
+      font-size: 16px;
+    }
+  }
+
   .sale-cta-btn {
     width: 100%;
   }

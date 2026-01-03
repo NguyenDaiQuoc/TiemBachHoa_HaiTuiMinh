@@ -18,7 +18,7 @@ function PopupOverlay({ onClose, ctaLink }: PopupOverlayProps) {
   return (
     // Backdrop: Che phủ toàn bộ viewport, không ảnh hưởng đến scroll của trang chính
     // z-index: Đảm bảo nó luôn nằm trên cùng của mọi element khác
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
       
       {/* Container chính của Popup */}
       {/* max-h-full để popup không tràn ra ngoài nếu nội dung quá dài */}

@@ -1066,7 +1066,7 @@ export default function AdminProductsPage() {
               <tr>
                 <th><input type="checkbox" /></th>
                 <th>Ảnh</th>
-                <th>Sản Phẩm (ID)</th>
+                <th>Sản Phẩm</th>
                 <th>Giá Gốc/Giảm (%)</th>
                 <th>Tồn Kho (Biến Thể)</th>
                 <th>Danh Mục (Slugs)</th>
@@ -1086,8 +1086,6 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="admin-product-product-name">
                     <div className="name-text"><strong>{p.name}</strong></div>
-                    <div className="sku-id">#{p.id}</div>
-                    <div className="description-preview">{p.description.substring(0, 30)}...</div>
                   </td>
                   <td className="pro-admin-product-price">
                     <div className="product-old-price"><del>{formatCurrency(p.oldPrice)}</del></div>
@@ -1096,7 +1094,6 @@ export default function AdminProductsPage() {
                   </td>
                   <td className={p.stock <= 10 && p.stock > 0 ? 'low-stock' : (p.stock === 0 ? 'status-soldout' : '')}>
                     <div className="stock-count"><strong>{p.stock}</strong></div>
-                    <div className="variant-count">({p.variants} Biến Thể)</div>
                   </td>
                   <td>{p.categorySlugs.join(', ')}</td>
                   <td>{p.tag.join(', ')}</td>

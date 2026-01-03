@@ -107,6 +107,7 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="form-input"
+                autoComplete="email"
                 required
               />
             </div>
@@ -121,6 +122,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="form-input password-input"
                 required
+                autoComplete="current-password"
               />
               <span
                 className="password-toggle"

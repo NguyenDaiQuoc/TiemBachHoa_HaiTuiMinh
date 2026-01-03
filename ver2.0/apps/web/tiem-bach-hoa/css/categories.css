@@ -31,3 +31,15 @@
         flex-direction: row;
     }
 }
+
+/* Mobile tweaks */
+@media (max-width: 768px) {
+    .categories-page-wrapper { padding: 20px 12px; }
+    .page-title { font-size: 1.5rem; margin-bottom: 1rem; }
+    .content-layout { gap: 1rem; }
+}
+
+@media (max-width: 480px) {
+    .categories-page-wrapper { padding: 14px 10px; }
+    .page-title { font-size: 1.25rem; }
+}

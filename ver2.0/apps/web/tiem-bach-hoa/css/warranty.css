@@ -111,3 +111,19 @@
 .wp-btn:hover {
   opacity: 0.85;
 }
+
+/* Responsive: Warranty page */
+@media (max-width: 1024px) {
+  .wp-box { padding: 20px; }
+  .wp-container { padding: 0 12px; }
+}
+
+@media (max-width: 480px) {
+  .wp-title { font-size: 22px; }
+  .wp-subtitle { font-size: 14px; }
+  .wp-box { padding: 14px; border-radius: 10px; }
+  .wp-section-title { font-size: 18px; }
+  .wp-list { font-size: 14px; }
+  .wp-btn { padding: 10px 16px; }
+  .wp-btn { width: 100%; display: block; box-sizing: border-box; }
+}

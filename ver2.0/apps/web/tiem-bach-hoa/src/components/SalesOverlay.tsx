@@ -27,7 +27,7 @@ function SalesOverlay({ onClose, ctaLink }: SalesOverlayProps) {
 
   return (
     // Backdrop: Che phủ toàn bộ viewport, z-index cao nhất
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
       
       {/* Container chính của Popup */}
       <div className="relative w-[80%] max-w-xl mx-auto max-h-[90vh] bg-white rounded-lg shadow-2xl overflow-hidden flex flex-col">

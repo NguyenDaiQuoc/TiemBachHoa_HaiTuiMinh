@@ -116,7 +116,14 @@ const mapProductFromFirestore = (docId: string, docData: any): ProductData => {
     newPrice: docData.newPrice || 0,
     discount: docData.discount || undefined,
     tags: docData.tag || [],
-    categorySlugs: docData.categorySlugs || [],
+    // Normalize categorySlugs: support array or comma-separated string stored by admin
+    categorySlugs: ((): string[] => {
+      const raw = docData.categorySlugs;
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw.map((s: any) => String(s).trim()).filter(Boolean);
+      if (typeof raw === 'string') return raw.split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+      return [];
+    })(),
     stock: docData.stock || 0,
     description: docData.description || '',
     createdAt: docData.createdAt instanceof Timestamp ? docData.createdAt.toMillis() : Date.now(),

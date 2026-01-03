@@ -649,9 +649,9 @@ export default function ProductDetailPage() {
               {isSale && <span className="old-price">{formatPrice(displayOldPrice)}</span>}
             </div>
 
-            <p className="product-detail-desc">
+            {/* <p className="product-detail-desc">
               {description}
-            </p>
+            </p> */}
 
             {/* ⭐ HIỂN THỊ CÁC THUỘC TÍNH BIẾN THỂ (Color / Size / Condition) ⭐ */}
             {variations.length > 0 && (

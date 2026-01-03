@@ -147,3 +147,37 @@
     margin-top: 0.25rem; /* mt-1 */
     margin-bottom: 0;
 }
+
+/* Responsive: collapse/hide or compress sidebar on small screens */
+@media (max-width: 767px) {
+    .sidebar-container {
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        box-shadow: none;
+        border: none;
+        background-color: transparent;
+    }
+
+    .sidebar-title {
+        font-size: 1rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .tree-item-link {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .tree-level-1 {
+        padding-left: 1rem; /* giảm lề cho mobile */
+    }
+
+    .count-badge {
+        display: none; /* Ẩn badge nhỏ trên mobile để gọn */
+    }
+    /* Ensure sidebar links are tappable and stacked */
+    .tree-list { display: flex; flex-direction: column; gap: 6px; }
+}

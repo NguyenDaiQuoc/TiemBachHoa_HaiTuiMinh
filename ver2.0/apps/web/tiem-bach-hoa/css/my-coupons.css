@@ -210,3 +210,33 @@
   .coupon-body { flex-direction: column; }
   .coupon-code-wrap { text-align: left; }
 }
+
+@media (max-width: 480px) {
+  .coupon-page { padding: 12px; margin: 12px; }
+  .coupon-heading { font-size: 22px; }
+  .coupon-card { padding: 12px; border-radius: 10px; }
+  .coupon-body { gap: 12px; }
+  .coupon-code-box { font-size: 16px; padding: 8px 10px; }
+  .coupon-copy { width: 100%; padding: 10px; }
+}
+
+/* Extra small screen polish */
+@media (max-width: 360px) {
+  .coupon-heading { font-size: 20px; }
+  .coupon-page { padding: 10px; margin: 10px; }
+  .coupon-card { padding: 10px; }
+  .coupon-body { flex-direction: column; gap: 10px; }
+  .coupon-code-wrap { text-align: left; }
+}
+
+@media (max-width: 280px) {
+  .filter-item { padding: 8px 12px; font-size: 13px; }
+  .coupon-copy { padding: 8px; font-size: 13px; }
+}
+
+/* Additional small tweaks for readability */
+@media (max-width: 360px) {
+  .coupon-title { font-size: 18px; }
+  .coupon-code { font-size: 16px; }
+  .coupon-copy { font-size: 13px; }
+}

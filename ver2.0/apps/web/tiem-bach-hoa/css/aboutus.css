@@ -145,6 +145,52 @@
   gap: 40px;
 }
 
+/* Responsive: About Us */
+@media (max-width: 1024px) {
+  .about-values-grid { grid-template-columns: 1fr; gap: 24px; }
+  .about-products-grid { grid-template-columns: repeat(2, 1fr); }
+  .about-team-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Make hero and large sections more compact on smaller devices */
+@media (max-width: 768px) {
+  .about-hero { padding: 48px 20px; gap: 28px; }
+  .about-hero-title { font-size: 34px; }
+  .about-hero-tagline { font-size: 18px; }
+  .about-hero-image { border-radius: 12px; }
+  .about-hero-image img { height: 260px; }
+  .about-values { padding: 40px 20px; }
+  .about-products { padding: 40px 20px; }
+}
+
+@media (max-width: 480px) {
+  .about-hero { grid-template-columns: 1fr; padding: 28px 12px; }
+  .about-hero-image img { height: 200px; }
+  .about-hero-title { font-size: 28px; }
+  .about-hero-description { font-size: 15px; }
+  .about-values-grid { grid-template-columns: 1fr; gap: 18px; }
+  .about-product-category { padding: 18px 14px; }
+  .about-product-icon { font-size: 36px; }
+  .about-stats-grid { grid-template-columns: 1fr 1fr; gap: 18px; }
+  .about-stat-number { font-size: 40px; }
+  .about-founders-box { display: flex; flex-direction: column; width: 92%; padding: 12px; }
+  .about-founders-image { width: 100%; height: 200px; margin: 0 0 12px 0; }
+  .about-founders-text { width: 100%; }
+  .about-cta { padding: 28px 12px; }
+  .about-cta-btn { width: 100%; padding: 12px; }
+}
+
+@media (max-width: 768px) {
+  .about-products-grid { grid-template-columns: 1fr; padding: 24px; }
+  .about-value-card, .about-product-category { padding: 20px; }
+  .about-value-icon, .about-product-icon { font-size: 40px; }
+}
+
+@media (max-width: 480px) {
+  .about-team-grid { grid-template-columns: 1fr; }
+  .about-value-title { font-size: 1.05rem; }
+}
+
 .about-value-card {
   background: white;
   padding: 48px 36px;

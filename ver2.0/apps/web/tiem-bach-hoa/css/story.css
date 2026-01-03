@@ -512,3 +512,27 @@
     width: 100%;
   }
 }
+.story-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:20px; }
+/* Responsive story */
+@media (max-width: 1024px) {
+  .story-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 480px) {
+  .story-hero { height: 300px; margin-bottom: 40px; background-attachment: scroll; }
+  .story-hero-title { font-size: 28px; }
+  .story-hero-subtitle { font-size: 16px; }
+  .story-container { padding: 0 16px 60px; }
+  .story-values-section { padding: 40px 16px; }
+  .story-value-card { padding: 20px; }
+  .story-team-card { padding: 20px; }
+  .story-team-avatar { width: 120px; height: 120px; }
+}
+.story-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:20px; }
+/* Responsive story */
+@media (max-width: 1024px) {
+  .story-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 768px) {
+  .story-grid { grid-template-columns: 1fr; gap:12px; }
+  .story-card img { width:100%; height:auto; object-fit:cover; }
+}

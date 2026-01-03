@@ -73,6 +73,26 @@
   }
 }
 
+/* Mobile tweaks for address list and cards */
+@media (max-width: 767px) {
+  .ab-wrapper { margin: 16px 12px; padding: 14px; border-radius: 12px; }
+  .ab-title { font-size: 20px; }
+  .ab-add-btn { padding: 12px; font-size: 16px; border-radius: 12px; }
+  .ab-card { padding: 12px; }
+  .ab-card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ab-actions { margin-top: 8px; gap: 12px; }
+  .ab-info { font-size: 13px; }
+}
+
+/* Very small screens: make action buttons full width and modal compact */
+@media (max-width: 420px) {
+  .ab-actions { flex-direction: column; align-items: stretch; }
+  .ab-action-edit, .ab-action-delete, .ab-set-default { width: 100%; text-align: left; padding: 8px 0; }
+  .ab-add-btn { padding: 10px; font-size: 15px; }
+  .ab-modal { padding: 12px; border-radius: 12px 12px 0 0; }
+  .ab-modal .grid-2 { grid-template-columns: 1fr; gap: 10px; }
+}
+
 /* =======================================
    ADDRESS CARD
 ======================================= */

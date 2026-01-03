@@ -7,6 +7,7 @@ import "../../../css/admin/sidebar.css";
 import "../../../css/admin/responsive.css"
 import { Toaster } from 'react-hot-toast';
 import AdminNotifications from './Notifications';
+import addDataLabelsToTables from '../../utils/adminTableLabels';
 
 // --- SIDEBAR COMPONENT ---
 export default function AdminSidebar() {
@@ -96,6 +97,15 @@ export default function AdminSidebar() {
   const handleNavigation = (path: string) => {
     navigate(path);
   };
+
+  // When location changes, attempt to add data-labels to admin tables (helps mobile stacked view)
+  useEffect(() => {
+    // run after a short delay to allow page DOM to render
+    const t = setTimeout(() => {
+      try { addDataLabelsToTables(); } catch (e) { /* ignore */ }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [location.pathname]);
 
   return (
     <div className="admin-sidebar">

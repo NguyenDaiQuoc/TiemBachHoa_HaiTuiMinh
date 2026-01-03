@@ -185,3 +185,33 @@
 .ship-cta-btn:hover {
   opacity: 0.9;
 }
+
+/* Responsive: Shipping policy */
+@media (max-width: 1024px) {
+  .ship-container { padding: 16px; max-width: 100%; }
+  .ship-box { padding: 20px; }
+}
+
+@media (max-width: 480px) {
+  .ship-title { font-size: 24px; }
+  .ship-subtitle { font-size: 14px; }
+  .ship-list, .ship-list-number { padding-left: 16px; font-size: 14px; }
+  .ship-table th, .ship-table td { font-size: 13px; padding: 8px; }
+  .ship-cta-btn { padding: 10px 18px; }
+}
+
+@media (max-width: 420px) {
+  .ship-container { padding: 12px; }
+  .ship-box { padding: 14px; }
+  .ship-title { font-size: 20px; }
+  .ship-list, .ship-list-number { font-size: 13px; padding-left: 12px; }
+  .ship-cta-btn { display: block; width: 100%; padding: 10px; border-radius: 10px; }
+  .ship-table th, .ship-table td { font-size: 12px; padding: 6px; }
+}
+
+@media (max-width: 320px) {
+  .ship-title { font-size: 18px; }
+  .ship-subtitle { font-size: 13px; }
+  .ship-box { padding: 10px; }
+  .ship-cta-btn { width: 100%; display: block; }
+}

@@ -4,6 +4,7 @@ import { auth } from "../firebase-auth";
 import { db } from "../firebase";
 import { doc, onSnapshot, getDoc, collection, query, orderBy } from 'firebase/firestore';
 import { showError } from '../utils/toast';
+import { handleFirestoreError } from '../utils/firestoreErrors';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import Header from "../components/Header";
@@ -16,22 +17,33 @@ import "../../css/order-tracking.css";
 const formatCurrency = (amount: any) => Number(amount).toLocaleString('vi-VN') + ' VNĐ';
 
 // --- Component Thanh Trạng Thái (Timeline) ---
-function TrackingTimeline({ currentStep }: any) {
-  const steps = [
-    { name: "Đã Đặt Hàng", date: "11/11/2025" },
-    { name: "Đang Xử Lý", date: "11/11/2025" },
-    { name: "Đang Giao Hàng", date: "12/11/2025" },
-    { name: "Đã Giao Thành Công", date: "" },
-  ];
+function TrackingTimeline({ currentStep, events }: any) {
+  // Build timeline steps from tracking events if available, otherwise fallback to default steps
+  let steps: any[] = [];
+  if (Array.isArray(events) && events.length > 0) {
+    steps = events.map((e: any) => ({ name: e.status || e.name || 'Vị trí', date: e.ts ? (e.ts.seconds ? new Date(e.ts.seconds * 1000).toLocaleString() : new Date(e.ts).toLocaleString()) : (e.time || '') }));
+  } else {
+    steps = [
+      { name: "Đã Đặt Hàng", date: "" },
+      { name: "Đang Xử Lý", date: "" },
+      { name: "Đang Giao Hàng", date: "" },
+      { name: "Đã Giao Thành Công", date: "" },
+    ];
+  }
+
   const normalize = (s: string) => (s || '').toString().toLowerCase();
   const stepIndex = (() => {
     const cs = normalize(currentStep || '');
-    if (!cs) return -1;
+    if (!cs) return steps.length - 1 >= 0 ? -1 : -1;
+    // find exact match or best-effort match in steps
+    const found = steps.findIndex(step => normalize(step.name).includes(cs) || cs.includes(normalize(step.name)));
+    if (found >= 0) return found;
+    // fallback heuristics
     if (cs.includes('đặt') || cs.includes('mới')) return 0;
     if (cs.includes('chờ') || cs.includes('xử lý') || cs.includes('processing')) return 1;
     if (cs.includes('vận') || cs.includes('giao') || cs.includes('vận chuyển')) return 2;
-    if (cs.includes('đã giao') || cs.includes('hoàn thành')) return 3;
-    return steps.findIndex(step => normalize(step.name) === cs);
+    if (cs.includes('đã giao') || cs.includes('hoàn thành')) return Math.max(0, steps.length - 1);
+    return Math.min(steps.length - 1, Math.max(0, found));
   })();
 
   return (
@@ -40,7 +52,7 @@ function TrackingTimeline({ currentStep }: any) {
       {steps.map((step, index) => {
         const isActive = index <= stepIndex;
         return (
-          <div key={step.name} className="timeline-step">
+          <div key={step.name + index} className="timeline-step">
             <div className={`timeline-circle ${isActive ? 'active' : ''}`}>
               {isActive && <span>✓</span>}
             </div>
@@ -176,8 +188,7 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
       if (!snap.exists()) return;
       setOrderData({ id: snap.id, ...snap.data() });
     }, (err) => {
-      console.error('order snap err', err);
-      showError('Không thể tải thông tin đơn hàng: ' + (err?.message || err));
+      handleFirestoreError(err, 'order snap err');
     });
 
     // listen to trackingEvents subcollection
@@ -190,11 +201,10 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
         setTrackingEvents(arr);
       } catch (err: any) {
         console.error('tracking events snap err', err);
-        showError('Lỗi khi xử lý dữ liệu lịch sử hành trình: ' + (err?.message || err));
+        handleFirestoreError(err, 'tracking events processing error');
       }
     }, (err) => {
-      console.error('tracking events snap err', err);
-      showError('Không thể lắng nghe lịch sử hành trình: ' + (err?.message || err));
+      handleFirestoreError(err, 'tracking events onSnapshot err');
     });
 
     return () => { off(); offEvents(); };
@@ -241,7 +251,12 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
           {
             (() => {
               // build points from tracking events that have location
-              const pts = trackingEvents.filter((t:any)=>t.location).map((t:any)=>[t.location.lat, t.location.lng]);
+              // build points from tracking events supporting both t.location and top-level lat/lng
+              const pts = trackingEvents.map((t:any) => {
+                if (t && t.location && t.location.lat != null && t.location.lng != null) return [Number(t.location.lat), Number(t.location.lng)];
+                if (t && t.lat != null && t.lng != null) return [Number(t.lat), Number(t.lng)];
+                return null;
+              }).filter(Boolean as any);
               // fallback to order shippingLocation if no tracking points available
               if (pts.length === 0 && orderData?.shippingLocation && orderData.shippingLocation.lat && orderData.shippingLocation.lng) {
                 pts.push([orderData.shippingLocation.lat, orderData.shippingLocation.lng]);
@@ -275,10 +290,11 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
                       ) : null
                     }
                     {
+                      // Render each tracking point as a CircleMarker (Marker icons can be missing in some builds)
                       pts.map((p:any, idx:number) => {
-                        const ev = trackingEvents.filter((t:any)=>t.location)[idx];
+                        const ev = trackingEvents[idx];
                         return (
-                          <Marker key={idx} position={[p[0], p[1]]}>
+                          <CircleMarker key={idx} center={[p[0], p[1]]} pathOptions={{ color: '#4A6D56', fillColor: '#4A6D56' }} radius={6}>
                             <Popup>
                               <div style={{minWidth:180}}>
                                 <div><strong>{ev?.status || 'Vị trí'}</strong></div>
@@ -287,7 +303,7 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
                                 <div style={{marginTop:6}}><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p[0] + ',' + p[1])}`}>Mở Maps</a></div>
                               </div>
                             </Popup>
-                          </Marker>
+                          </CircleMarker>
                         )
                       })
                     }
@@ -322,12 +338,22 @@ export default function OrderTracking({ orderId, currentStatus, totalAmount, cur
 
           <div className="tracking-products">
             <h3>Sản Phẩm Trong Đơn</h3>
-              {Array.isArray(orderItems) && orderItems.length > 0 ? orderItems.map((item:any, index:number) => (
-                <div key={index} className="product-row">
-                  <span>{item.name || item.title || item.productName} (x{item.quantity || item.qty || 1})</span>
-                  <span>{formatCurrency((item.price || item.unitPrice || item.amount || 0) * (item.quantity || item.qty || 1))}</span>
-                </div>
-              )) : (<div>Không có sản phẩm chi tiết</div>)}
+                  {Array.isArray(orderItems) && orderItems.length > 0 ? orderItems.map((item:any, index:number) => (
+                    <div key={index} className="product-row" style={{display:'flex', alignItems:'center', gap:12}}>
+                      <div style={{width:64, height:64, overflow:'hidden', borderRadius:8, background:'#f7f7f7', flex:'0 0 64px'}}>
+                        { (item.image || item.img || item.thumbnail) ? (
+                          <img src={item.image || item.img || item.thumbnail} alt={item.name || 'product'} style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                        ) : (
+                          <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',color:'#999'}}>No Image</div>
+                        ) }
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:600}}>{item.name || item.title || item.productName}</div>
+                        <div style={{fontSize:13,color:'#666'}}>(x{item.quantity || item.qty || 1})</div>
+                      </div>
+                      <div style={{fontWeight:700}}>{formatCurrency((item.price || item.unitPrice || item.amount || 0) * (item.quantity || item.qty || 1))}</div>
+                    </div>
+                  )) : (<div>Không có sản phẩm chi tiết</div>)}
           </div>
         </div>
 

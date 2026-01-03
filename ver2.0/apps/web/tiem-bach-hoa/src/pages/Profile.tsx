@@ -9,6 +9,7 @@ import { db } from "../firebase-firestore";
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, collection, query, where, orderBy, getDocs, deleteDoc, onSnapshot, addDoc, writeBatch } from "firebase/firestore";
 import { signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { showSuccess, showError } from "../utils/toast";
+import { handleFirestoreError } from "../utils/firestoreErrors";
 import { addToCart as addToCartUtil } from "../utils/cart";
 import { Toaster } from "react-hot-toast";
 import "../../css/profile.css";
@@ -160,7 +161,7 @@ function AddressContent({ currentUser }: any) {
       setAddresses(docs);
       setLoading(false);
     }, (err) => {
-      console.error('addresses onSnapshot', err);
+      handleFirestoreError(err, 'addresses onSnapshot');
       setAddresses([]);
       setLoading(false);
     });

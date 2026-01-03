@@ -10,7 +10,7 @@ import VoucherPicker from '../components/VoucherPicker';
 import LoginWarning from "../components/LoginWarning";
 import { auth } from "../firebase-auth";
 import { db } from '../firebase';
-import { doc, getDoc, collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, increment } from 'firebase/firestore';
 import { computeDistanceKm } from '../utils/distance';
 import { storage } from '../firebase';
 import { ref as storageRef } from 'firebase/storage';
@@ -18,6 +18,7 @@ import uploadWithRetries from '../utils/storage';
 import { clearCart } from '../utils/cart';
 import { fetchActiveDeals, applyDealsToPrice } from '../utils/deals';
 import "../../css/checkout.css"
+import { showSuccess, showError, showInfo } from '../utils/toast';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -249,13 +250,13 @@ export default function CheckoutPage() {
       }
 
       setQrImageUrl(qr);
-      // show a brief alert with transfer note for convenience
+      // show a brief info toast with transfer note for convenience
       setTimeout(()=>{
-        alert(`Ghi chú chuyển khoản: ${note}\nSao chép ghi chú này vào nội dung chuyển khoản để hệ thống đối soát.`);
+        showInfo(`Ghi chú chuyển khoản: ${note}\nSao chép ghi chú này vào nội dung chuyển khoản để hệ thống đối soát.`);
       }, 60);
     } catch (err) {
       console.error('createPaymentQr', err);
-      alert('Không thể tạo QR thanh toán. Vui lòng thử lại.');
+      showError('Không thể tạo QR thanh toán. Vui lòng thử lại.');
     }
   };
 
@@ -462,7 +463,7 @@ export default function CheckoutPage() {
                 <div style={{marginTop:6}}>
                   <button className="btn-secondary" onClick={async ()=>{
                     // calculate distance and fee
-                    if (!address) return alert('Vui lòng nhập địa chỉ để tính khoảng cách');
+                    if (!address) { showError('Vui lòng nhập địa chỉ để tính khoảng cách'); return; }
                     setComputingDistance(true);
                     try {
                       const proxyUrl = `/api/geocode-opencage.php?address=${encodeURIComponent(address + ', ' + district + ', ' + city)}`;
@@ -586,7 +587,7 @@ export default function CheckoutPage() {
                       setComputedShippingFee(finalFee);
                     } catch (err) {
                       console.error('calc distance', err);
-                      alert('Không thể tính khoảng cách tự động. Vui lòng kiểm tra địa chỉ hoặc thử chọn địa chỉ đã lưu.');
+                      showError('Không thể tính khoảng cách tự động. Vui lòng kiểm tra địa chỉ hoặc thử chọn địa chỉ đã lưu.');
                     } finally {
                       setComputingDistance(false);
                     }
@@ -633,7 +634,7 @@ export default function CheckoutPage() {
                 <div style={{marginTop:8}}>
                   <button className="btn-primary" onClick={async ()=>{
                     if (!currentUser) { setShowLoginWarning(true); return; }
-                    if (!selectedProvider || selectedProvider==='none') return alert('Chọn nhà cung cấp thanh toán');
+                    if (!selectedProvider || selectedProvider==='none') { showError('Chọn nhà cung cấp thanh toán'); return; }
                     await createPaymentQr(selectedProvider, total);
                   }}>Tạo QR/Đường dẫn thanh toán</button>
                 </div>
@@ -656,14 +657,14 @@ export default function CheckoutPage() {
                         <div><strong>Chủ tài khoản:</strong> NGUYENDAIQUOC</div>
                       </div>
                       <div style={{textAlign:'right'}}>
-                        <button className="copy-btn" onClick={()=>{ const t = 'MBBANK - 155186868 - NGUYENDAIQUOC'; (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : (window as any).clipboardData && (window as any).clipboardData.setData ? (window as any).clipboardData.setData('text', t) : null); alert('Đã sao chép thông tin ngân hàng') }}>Sao chép</button>
+                        <button className="copy-btn" onClick={()=>{ const t = 'MBBANK - 155186868 - NGUYENDAIQUOC'; (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : (window as any).clipboardData && (window as any).clipboardData.setData ? (window as any).clipboardData.setData('text', t) : null); showSuccess('Đã sao chép thông tin ngân hàng') }}>Sao chép</button>
                       </div>
                     </div>
                     <div style={{marginTop:8,fontSize:14}}>
                       <div style={{fontWeight:600}}>Nội dung chuyển khoản</div>
                       <div style={{marginTop:6,wordBreak:'break-word'}}><span className="transfer-note">{lastTransferNote || 'Nhấn "Tạo QR/Đường dẫn thanh toán" để tạo ghi chú chuyển khoản.'}</span></div>
                       <div style={{marginTop:8}}>
-                        <button className="copy-btn" onClick={()=>{ if (!lastTransferNote) return alert('Chưa có ghi chú chuyển khoản'); const t = String(lastTransferNote); (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : (window as any).clipboardData && (window as any).clipboardData.setData ? (window as any).clipboardData.setData('text', t) : null); alert('Đã sao chép ghi chú chuyển khoản') }}>Sao chép</button>
+                        <button className="copy-btn" onClick={()=>{ if (!lastTransferNote) { showError('Chưa có ghi chú chuyển khoản'); return; } const t = String(lastTransferNote); (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : (window as any).clipboardData && (window as any).clipboardData.setData ? (window as any).clipboardData.setData('text', t) : null); showSuccess('Đã sao chép ghi chú chuyển khoản') }}>Sao chép</button>
                       </div>
                     </div>
                   </div>
@@ -675,7 +676,7 @@ export default function CheckoutPage() {
                   <div style={{marginTop:8}}>
                     <button className="btn-primary" onClick={async ()=>{
                       if (!currentUser) { setShowLoginWarning(true); return; }
-                      if (!proofFiles || proofFiles.length === 0) return alert('Chọn hình để tải lên');
+                      if (!proofFiles || proofFiles.length === 0) { showError('Chọn hình để tải lên'); return; }
                       setUploadingProof(true);
                       try {
                         const urls: string[] = [];
@@ -686,10 +687,10 @@ export default function CheckoutPage() {
                           urls.push(r.url);
                         }
                         setProofUrls(urls);
-                        alert('Tải lên thành công');
+                        showSuccess('Tải lên thành công');
                       } catch (err) {
                         console.error('upload proofs', err);
-                        alert('Tải lên thất bại');
+                        showError('Tải lên thất bại');
                       } finally { setUploadingProof(false); }
                     }}>{uploadingProof ? 'Đang tải...' : 'Tải lên bằng chứng'}</button>
                   </div>
@@ -759,7 +760,7 @@ export default function CheckoutPage() {
                     <input placeholder="Nhập mã giảm giá" value={manualVoucherCode} onChange={e=>setManualVoucherCode(e.target.value)} />
                     <button className="apply-btn" onClick={async ()=>{
                       const code = (manualVoucherCode || '').trim();
-                      if (!code) return alert('Nhập mã voucher');
+                      if (!code) { showError('Nhập mã voucher'); return; }
                       try {
                         const { doc, getDoc } = await import('firebase/firestore');
                         const promoDoc = await getDoc(doc(db, 'promotions', code));
@@ -781,10 +782,10 @@ export default function CheckoutPage() {
                           setManualVoucherCode('');
                           return;
                         }
-                        alert('Không tìm thấy mã giảm giá hợp lệ');
+                        showError('Không tìm thấy mã giảm giá hợp lệ');
                       } catch (err) {
                         console.error('apply manual voucher', err);
-                        alert('Không thể áp dụng mã. Vui lòng thử lại.');
+                        showError('Không thể áp dụng mã. Vui lòng thử lại.');
                       }
                     }}>Áp dụng</button>
                   </div>
@@ -916,8 +917,27 @@ export default function CheckoutPage() {
                 // Prepare final payment object
                 const paymentObj = paymentMethod === 'BANK' ? { method: 'BANK', provider: selectedProvider, qrImageUrl: finalQr, proofUrls, transferStatus: proofUrls.length > 0 ? 'uploaded' : 'pending', transferNote: transferNoteFinal } : { method: paymentMethod, transferNote: transferNoteFinal };
 
+
                 // Update the order document with final payment info and status
                 await updateDoc(docRef, { payment: paymentObj, transferNote: transferNoteFinal, qrImageUrl: finalQr, status: 'Chờ Xử Lý' });
+
+                // Decrement stock for each purchased product (best-effort). Use FieldValue.increment for atomic decrement.
+                try {
+                  const decrements = cartItems.map(async (it:any) => {
+                    try {
+                      const qty = getQty(it) || (it.qty || it.quantity || 1);
+                      const pid = it.productId || it.id || it.product || null;
+                      if (!pid) return;
+                      const prodRef = doc(db, 'products', pid);
+                      await updateDoc(prodRef, { stock: increment(-Math.max(0, qty)) });
+                    } catch (e:any) {
+                      console.warn('Failed to decrement stock for item', it, e?.message || e);
+                    }
+                  });
+                  await Promise.all(decrements);
+                } catch (e:any) {
+                  console.warn('Stock decrement pass failed', e?.message || e);
+                }
 
                 // clear cart
                 await clearCart();

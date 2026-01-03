@@ -19,55 +19,98 @@ If you are developing a production application, we recommend updating the config
 export default defineConfig([
   globalIgnores(['dist']),
   {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+    # Tiệm Bách Hóa — Hai Tụi Mình (Frontend)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+    This repository contains the React + TypeScript storefront and admin UI for Tiệm Bách Hóa Hai Tụi Mình, built with Vite.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+    This README documents setup, common commands, and recent fixes related to accessibility, Firestore connectivity, order tracking, and mapping.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+    ---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+    ## Quick Start
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+    Requirements
+    - Node.js 18+ (recommended)
+    - npm 9+ (or yarn)
+
+    Install dependencies
+
+    ```cmd
+    cd /d C:\Users\Admin\Desktop\coding\TiemBachHoa_HaiTuiMinh\ver2.0\apps\web\tiem-bach-hoa
+    npm install --no-audit --no-fund
+    ```
+
+    Start development server
+
+    ```cmd
+    npm run dev
+    ```
+
+    Build for production
+
+    ```cmd
+    npm run build
+    ```
+
+    Preview production build
+
+    ```cmd
+    npm run preview
+    ```
+
+    ---
+
+    ## Project Layout (high level)
+    - `src/` — React app source code
+    - `src/pages` — Page components (Product, Cart, Checkout, Order, Admin pages)
+    - `src/components` — Reusable UI components
+    - `css/` — Page-level styles (legacy plain CSS)
+    - `public/` — Static assets
+
+    ---
+
+    ## Recent Fixes (applied during this session)
+
+    - Accessibility
+      - Added `autoComplete` attributes where missing (notably admin login) so browsers/password managers correctly suggest credentials.
+
+    - Firestore connectivity
+      - Added `src/utils/firestoreErrors.ts` which inspects Firestore errors for common client-side blocking (e.g., `ERR_BLOCKED_BY_CLIENT`) and shows a helpful toast recommending disabling adblock/whitelist the site.
+      - This helps users diagnosing blocked realtime connections when onSnapshot requests fail.
+
+    - Order tracking
+      - `OrderConfirm` now sends the user directly to `/order-tracking?orderId=...` when clicking "Theo Dõi Đơn Hàng".
+      - `OrderTracking` timeline now consumes real tracking events (timestamps) when available rather than static placeholder dates.
+      - Order detail view shows product thumbnails if the order items include image fields.
+      - Map rendering uses `CircleMarker` for reliable visibility and draws the route polyline based on recorded points; shipping location is shown as a distinct marker.
+
+    ---
+
+    ## Troubleshooting
+
+    1) Firestore requests fail with `ERR_BLOCKED_BY_CLIENT`
+
+    - Cause: browser extensions (adblockers) frequently block network calls to `firestore.googleapis.com` and similar endpoints.
+    - Fix: disable adblock/whitelist the site for affected users. The app now shows a toast explaining this condition.
+
+    2) Leaflet markers invisible in production
+
+    - Cause: Leaflet default marker icons are image assets and may require explicit import in some bundlers (Vite). If default icons are invisible, we render `CircleMarker` as fallback.
+    - Fix: to restore default markers, add the following initialization (example) into `src/main.tsx` or a top-level module:
+
+    ```ts
+    import L from 'leaflet';
+    import iconUrl from 'leaflet/dist/images/marker-icon.png';
+    import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+    import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+
+    L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
+    ```
+
+    3) CSS build errors (PostCSS parse error)
+
+    - If `vite build` fails with a PostCSS parse error pointing to a CSS file line/column, open the file and check for mismatched braces or malformed `@media` blocks. I fixed one such issue in `css/blogdetail.css` earlier.
+
+    ---
+
+

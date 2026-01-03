@@ -1,9 +1,11 @@
 /* Wrapper & layout */
 .fp-wrapper {
   min-height: 100vh;
-  
-  background-color: #FBF8F5;
+  display: flex;
+  justify-content: center;
   align-items: center;
+  padding: 1.5rem 0;
+  background-color: #FBF8F5;
 }
 .fp-content {
   width: 100%;
@@ -18,6 +20,8 @@
   border-radius: 1rem;
   box-shadow: 0 10px 25px rgba(0,0,0,0.1);
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 .fp-title {
   font-size: 1.5rem;
@@ -115,4 +119,14 @@
 }
 .fp-back a:hover {
   opacity: 0.8;
+}
+
+/* Responsive: Forgot password */
+@media (max-width: 480px) {
+  .fp-content { margin: 2.5rem 1rem; max-width: 100%; }
+  .fp-card { padding: 1.25rem; border-radius: 0.75rem; }
+  .fp-title { font-size: 1.25rem; }
+  .fp-input { padding: 0.65rem; }
+  .fp-btn { padding: 0.65rem; }
+  .fp-form { gap: 1rem; }
 }

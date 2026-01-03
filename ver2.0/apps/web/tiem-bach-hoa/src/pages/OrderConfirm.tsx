@@ -68,8 +68,14 @@ export default function OrderConfirm() {
   }, [orderId]);
 
   const handleTrack = () => {
-    // go to user's orders page where they can see tracking/status
-    navigate('/orders');
+    // go to order tracking page for the just-created order
+    if (order && order.id) {
+      navigate(`/order-tracking?orderId=${encodeURIComponent(order.id)}`);
+    } else if (orderId) {
+      navigate(`/order-tracking?orderId=${encodeURIComponent(orderId)}`);
+    } else {
+      navigate('/order-history');
+    }
   };
 
   const handleHome = () => navigate('/');

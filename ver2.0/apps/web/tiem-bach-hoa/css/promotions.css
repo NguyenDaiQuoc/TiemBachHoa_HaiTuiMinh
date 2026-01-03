@@ -311,3 +311,25 @@
     width: 100%;
   }
 }
+
+/* Extra tweaks for small tablets and phones */
+@media (max-width: 1024px) {
+  .loyalty-card { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .coupon-code-area { width: 100%; text-align: left; margin-top: 12px; }
+  .coupon-info { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .coupon-desc { font-size: 1rem; }
+  .deal-banner { height: 160px; }
+  .deal-info { padding: 12px; }
+  .deal-footer { flex-direction: column; gap: 8px; align-items: flex-start; }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .page-title { font-size: 1.25rem; }
+  .deals-grid { gap: 12px; }
+  .deal-banner { height: 140px; }
+  .deal-btn { width: 100%; }
+}

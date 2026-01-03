@@ -288,6 +288,24 @@
   .grid-2 { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 520px) {
+  .checkout-title { font-size: 20px; }
+  .form-group input, .form-group textarea, .form-group select { padding: 10px; font-size: 14px; }
+  .grid-2 { gap: 10px; }
+  .summary-box { padding: 12px; }
+  .summary-item .thumb { width: 48px; height: 48px; }
+  .qr-panel .qr-image, .bank-panel .qr-image { width: 100px; height: 100px; }
+  .voucher-input { gap: 6px; }
+}
+
+@media (max-width: 420px) {
+  .checkout-container { padding: 12px 8px 30px; }
+  .checkout-left { padding: 12px; }
+  .btn-submit { padding: 12px; font-size: 0.95rem; }
+  .section-title { font-size: 16px; }
+  .shipping-option, .payment-option { padding: 10px; font-size: 13px; }
+}
+
 /* --- Modal / Overlay styles used by Checkout modals --- */
 .ab-modal-overlay, .voucher-picker-overlay, .modal-overlay {
   position: fixed;
@@ -324,4 +342,28 @@
 /* Responsive adjustments */
 @media (max-width: 520px) {
   .ab-modal, .voucher-picker { padding: 12px; border-radius: 10px; }
+}
+
+/* Extra mobile polish for checkout */
+@media (max-width: 880px) {
+  .summary-box { margin-top: 18px; }
+  .qr-panel .qr-image, .bank-panel .qr-image { width: 140px; height: 140px; }
+  .qr-panel .qr-image { margin: 6px 0; }
+  .voucher-input { flex-direction: column; align-items: stretch; }
+  .voucher-input .apply-btn { width: 100%; }
+}
+
+@media (max-width: 520px) {
+  .checkout-container { padding: 12px 10px 40px; }
+  .checkout-left { padding: 16px; }
+  .summary-box { padding: 14px; }
+  .btn-submit { padding: 12px; font-size: 0.95rem; }
+  .qr-panel .qr-image, .bank-panel .qr-image { width: 120px; height: 120px; }
+}
+
+@media (max-width: 360px) {
+  .checkout-title { font-size: 18px; }
+  .form-group input, .form-group textarea, .form-group select { padding: 8px; }
+  .btn-submit { padding: 10px; }
+  .summary-item .thumb { width: 40px; height: 40px; }
 }

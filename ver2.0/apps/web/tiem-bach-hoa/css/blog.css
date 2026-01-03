@@ -103,3 +103,31 @@
 .blog-btn:hover {
   background: #c0392b;
 }
+
+/* Responsive: Blog list */
+@media (max-width: 1024px) {
+  .blog-hero { padding: 40px 16px; }
+  .blog-title { font-size: 32px; }
+  .blog-list { gap: 24px; padding: 30px 16px; }
+}
+
+@media (max-width: 480px) {
+  .blog-title { font-size: 26px; }
+  .blog-subtitle { font-size: 14px; padding: 0 12px; }
+  .blog-card img { height: 160px; }
+  .blog-card h3 { font-size: 18px; }
+  .blog-card p { font-size: 14px; }
+  .blog-btn { width: 100%; display: block; }
+}
+
+/* Very small screens tweaks */
+@media (max-width: 360px) {
+  .blog-hero { padding: 28px 12px; }
+  .blog-title { font-size: 22px; }
+  .blog-list { padding: 20px 12px; gap: 18px; }
+  .blog-card { padding: 14px; }
+  .blog-card img { height: 140px; border-radius: 8px; }
+  .blog-card h3 { font-size: 16px; }
+  .blog-card p { font-size: 13px; }
+  .badge { padding: 5px 8px; font-size: 11px; }
+}

@@ -155,3 +155,41 @@
   transition: opacity 0.2s;
 }
 .btn-set-default:hover { opacity: 0.8; }
+
+/* Responsive: Payment page tweaks */
+@media (max-width: 1024px) {
+  .payment-content { max-width: 100%; padding: 1.25rem; }
+  .payment-list { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .payment-content h2 { font-size: 1.25rem; }
+  .payment-trust { padding: 0.75rem; border-radius: 10px; }
+  .btn-add { padding: 0.65rem; }
+  .card-wrapper { padding: 0.85rem; border-radius: 10px; }
+  .card-icon { font-size: 1.3rem; }
+  .card-name { font-size: 0.95rem; }
+}
+
+/* Extra small and tablet polish */
+@media (max-width: 768px) {
+  .payment-content { padding: 1rem; max-width: 100%; }
+  .payment-trust { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .payment-list { grid-template-columns: 1fr; }
+  .card-actions { justify-content: flex-start; gap: 8px; }
+}
+
+@media (max-width: 420px) {
+  .payment-content { padding: 12px; }
+  .btn-add { padding: 0.55rem; }
+  .card-wrapper { padding: 0.6rem; }
+  .card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .card-actions { width: 100%; }
+  .btn-set-default { width: 100%; text-align: left; }
+}
+
+@media (max-width: 360px) {
+  .card-wrapper { padding: 0.5rem; }
+  .card-name { font-size: 0.95rem; }
+  .payment-content h2 { font-size: 1.1rem; }
+}

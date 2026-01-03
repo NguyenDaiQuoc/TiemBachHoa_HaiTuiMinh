@@ -137,3 +137,38 @@
   padding: 1.5rem;
   color: #4a6d56;
 }
+
+/* Responsive profile */
+@media (max-width: 880px) {
+  .profile-content { padding: 12px; }
+  .profile-main { flex-direction: column; gap: 12px; }
+  .profile-sidebar { width: 100%; order: -1; }
+  .profile-details { width: 100%; }
+  .btn-logout, .btn-edit { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .btn-logout, .btn-edit { padding: 10px; font-size: 0.95rem; }
+  .content-title { font-size: 1.25rem; }
+}
+
+@media (max-width: 360px) {
+  .profile-title { font-size: 1.6rem; }
+  .sidebar-item { padding: 0.6rem; font-size: 0.95rem; }
+  .content-card { padding: 12px; }
+}
+
+/* Extra small tweaks for very small phones */
+@media (max-width: 420px) {
+  .profile-content { padding: 10px; }
+  .profile-title { font-size: 1.4rem; margin-bottom: 12px; }
+  .sidebar { padding: 8px; border-radius: 8px; }
+  .sidebar-item { font-size: 0.92rem; padding: 0.5rem; }
+  .content-card { padding: 12px; }
+  .info-value { font-size: 0.95rem; }
+}
+
+@media (max-width: 320px) {
+  .profile-title { font-size: 1.2rem; }
+  .sidebar-item { padding: 0.45rem; font-size: 0.9rem; }
+}

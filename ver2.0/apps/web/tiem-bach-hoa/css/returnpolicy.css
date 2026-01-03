@@ -101,3 +101,24 @@
   opacity: 0.9;
 }
 
+/* Mobile polish for return policy */
+@media (max-width: 768px) {
+  .return-content { padding: 16px; }
+  .return-card { padding: 16px; }
+  .return-title { font-size: 1.75rem; }
+}
+
+@media (max-width: 420px) {
+  .return-content { padding: 12px; }
+  .return-title { font-size: 1.4rem; }
+  .return-subtitle { font-size: 1rem; }
+  .return-card { padding: 12px; }
+  .section-title { font-size: 1.1rem; }
+  .cta-btn { display: block; width: 100%; padding: 10px; }
+}
+
+@media (max-width: 320px) {
+  .return-title { font-size: 1.2rem; }
+  .section-sub { font-size: 0.95rem; }
+}
+

@@ -28,6 +28,17 @@
   border-radius: 9999px;
   z-index: 0;
 }
+
+/* Responsive order-tracking */
+@media (max-width: 880px) {
+  .tracking-wrapper { padding: 12px; }
+  .tracking-steps { display: flex; flex-direction: column; gap: 12px; }
+  .tracking-step { flex-direction: row; align-items: flex-start; gap: 10px; }
+}
+
+@media (max-width:480px) {
+  .tracking-step .meta { font-size: 0.95rem; }
+}
 .timeline-step {
   display: flex;
   flex-direction: column;
@@ -204,3 +215,35 @@
 .map-box .leaflet-tile, .map-box .leaflet-marker-pane, .map-box .leaflet-overlay-pane, .map-box .leaflet-shadow-pane { z-index: 0 !important; }
 .map-box .leaflet-control { z-index: 2 !important; }
 .map-box .leaflet-popup { z-index: 3 !important; }
+
+/* Responsive: Order tracking */
+@media (max-width: 1024px) {
+  .timeline-step { width: 50%; }
+  .tracking-grid { flex-direction: column; }
+  .tracking-info, .tracking-products { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .timeline-wrapper { padding: 12px 0; }
+  .timeline-step { width: 100%; flex-direction: row; align-items: center; gap: 12px; }
+  .timeline-name { text-align: left; font-size: 0.95rem; }
+  .map-box { height: 10rem; }
+  .map-truck { left: 50%; }
+}
+
+/* More mobile behavior: convert timeline to vertical list and reduce map height */
+@media (max-width: 640px) {
+  .timeline-wrapper { flex-direction: column; align-items: stretch; padding: 8px 0; }
+  .timeline-line { display: none; }
+  .timeline-step { width: 100%; flex-direction: row; align-items: center; gap: 12px; padding: 8px 0; }
+  .timeline-circle { width: 1.6rem; height: 1.6rem; }
+  .timeline-name { font-size: 0.95rem; text-align: left; }
+  .map-box { height: 8.5rem; }
+}
+
+@media (max-width: 420px) {
+  .map-box { height: 7rem; }
+  .map-truck { font-size: 1.1rem; }
+  .tracking-content { padding: 10px; }
+  .tracking-support { margin-top: 1.5rem; }
+}

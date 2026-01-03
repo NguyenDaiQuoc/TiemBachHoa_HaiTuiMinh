@@ -133,3 +133,27 @@
   color: #6B7280;
   margin-top: 1.5rem;
 }
+
+/* Responsive: Order confirmation */
+@media (max-width: 1024px) {
+  .thankyou-content { padding: 1.25rem; max-width: 100%; }
+  .thankyou-card { padding: 2rem; }
+  .thankyou-summary { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .thankyou-icon { width: 4rem; height: 4rem; font-size: 1.6rem; }
+  .thankyou-title { font-size: 1.6rem; }
+  .thankyou-subtitle { font-size: 1rem; }
+  .thankyou-orderid { font-size: 1rem; padding: 0.5rem 1rem; }
+  .btn-primary, .btn-secondary { padding: 0.65rem 1rem; }
+}
+
+@media (max-width: 360px) {
+  .thankyou-card { padding: 1.25rem; }
+  .thankyou-title { font-size: 1.3rem; }
+  .thankyou-subtitle { font-size: 0.95rem; }
+  .thankyou-summary { gap: 12px; padding: 1rem 0; }
+  .btn-primary, .btn-secondary { width: 100%; padding: 10px; }
+  .thankyou-orderid { font-size: 0.95rem; padding: 0.4rem 0.8rem; }
+}

@@ -339,3 +339,21 @@
   font-size: 0.875rem;
   color: #555;
 }
+
+/* Responsive: Login/Phone forms */
+@media (max-width: 480px) {
+  .auth-content { padding: 0 16px; margin: 1.5rem auto; }
+  .auth-card { padding: 1.25rem; border-radius: 12px; }
+  .auth-title { font-size: 1.25rem; }
+  .auth-input { padding: 0.65rem; font-size: 0.95rem; }
+  .auth-btn { padding: 0.65rem; }
+  .phone-input-row, .otp-row { flex-direction: column; }
+  .auth-tabs { gap: 0.25rem; }
+  .auth-tabs .tab { padding: 0.4rem 0.75rem; }
+  /* Make small inline buttons full-width for better tap targets */
+  .auth-btn.small { width: 100%; min-width: 0; }
+  .auth-social-buttons { gap: 0.5rem; }
+  .auth-social-btn { padding: 0.65rem; font-size: 0.95rem; }
+  /* Ensure wrapper centers content on very small devices */
+  .auth-wrapper { display: flex; align-items: center; justify-content: center; padding: 1rem 0; }
+}

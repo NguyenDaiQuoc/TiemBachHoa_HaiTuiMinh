@@ -175,3 +175,48 @@
 .nf-search-btn:hover {
   filter: brightness(1.2);
 }
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .nf-container {
+    margin: 32px 16px;
+    max-width: 100%;
+  }
+
+  .nf-box {
+    padding: 28px;
+    border-radius: 12px;
+    margin: 0 8px;
+  }
+
+  .nf-code {
+    font-size: 72px;
+  }
+
+  .nf-title {
+    font-size: 22px;
+  }
+
+  .nf-desc {
+    font-size: 15px;
+  }
+
+  .nf-icon {
+    width: 100px;
+    height: 100px;
+    font-size: 40px;
+  }
+
+  .nf-buttons {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nf-code { font-size: 54px; }
+  .nf-box { padding: 20px; }
+  .nf-header { padding: 12px 16px; }
+  .nf-header-inner { height: 34px; }
+  .btn-primary, .btn-outline { width: 100%; padding: 12px; border-radius: 12px; }
+  .nf-icon img { width: 80px; height: 80px; }
+}

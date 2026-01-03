@@ -1,0 +1,153 @@
+/* Mobile overrides (auto-generated) */
+/* Applied broadly to improve small-screen layout without changing desktop styles. */
+
+/* Make images responsive by default */
+img, picture, .hero-img, .product-image, .blog-card img, .about-hero-image img {
+  max-width: 100%;
+  height: auto !important;
+}
+
+/* Generic containers/card padding adjustments on small screens */
+@media (max-width: 768px) {
+  .wrapper, .container, .content, .card, .page, .page-wrapper, .section, .main, .modal-card {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Reduce large hero / section paddings that appear across pages */
+  .hero, .about-hero, .blog-hero, .sale-hero {
+    padding-top: 28px !important;
+    padding-bottom: 28px !important;
+  }
+}
+
+/* Small device specific improvements */
+@media (max-width: 480px) {
+  /* Make the most important CTAs full-width and easy to tap */
+  button, .btn, .auth-btn, .add-btn, .about-cta-btn, .contact-submit-btn, .continue-btn, .blog-btn, .ab-modal .btn-primary, .ab-modal .btn-secondary {
+    width: 100% !important;
+    display: block !important;
+    box-sizing: border-box;
+  }
+
+  /* Stack grids into single column when possible */
+  .grid, .grid-2, .form-grid-2, .blog-list, .about-products-grid, .about-values-grid, .about-team-grid, .about-products-grid, .ab-grid, .wishlist-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Make modals behave like bottom-sheets if configured */
+  .modal, .modal-card, .ab-modal {
+    width: 100% !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Reduce large typographic scales that break small layouts */
+  h1, h2, h3, .blog-title, .about-hero-title, .contact-title {
+    font-size: calc(1rem + 1vw) !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Ensure sidebars collapse where present */
+  .sidebar, .blog-sidebar, .desktop-only, .aside {
+    display: none !important;
+  }
+}
+
+/* Very small phones, extra safe fallbacks */
+@media (max-width: 360px) {
+  .header-container, .header-inner, .auth-content, .ab-wrapper, .wishlist-wrapper {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+}
+
+/* Page-specific responsive fallbacks for remaining styles */
+@media (max-width: 768px) {
+  /* Header: compact layout + ensure overlays appear above content */
+  .header, .header-container, .header-inner {
+    height: auto !important;
+    min-height: 48px !important;
+  }
+  .site-overlay, .popup-overlay, .ab-overlay {
+    z-index: var(--z-overlay) !important;
+  }
+
+  /* Product list: force 1-column cards on small screens */
+  .products-grid, .product-grid, .product-list, .product-loop {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Product detail: stack gallery and info */
+  .product-detail-wrapper, .product-detail, .product-gallery, .product-info {
+    display: block !important;
+    width: 100% !important;
+  }
+  .product-gallery .thumbnails, .product-gallery .main-image {
+    width: 100% !important;
+    margin: 0 0 12px 0 !important;
+  }
+
+  /* Cart rows: make quantity + price appear beneath product name */
+  .cart-item, .cart-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .cart-item .meta, .cart-item .qty, .cart-item .price {
+    width: 100% !important;
+  }
+
+  /* Checkout: form inputs full-width and stacked labels */
+  .checkout-form, .checkout-summary, .checkout-left, .checkout-right {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .checkout-form .form-row, .checkout-form .form-group {
+    display: block !important;
+    width: 100% !important;
+  }
+  .checkout-summary .totals-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+
+  /* Payment methods: make provider tiles responsive */
+  .payment-methods, .providers-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Order tracking: timeline stack and map height reduction */
+  .order-timeline, .tracking-timeline {
+    display: block !important;
+    padding: 8px !important;
+  }
+  .order-map, .tracking-map {
+    height: 220px !important;
+  }
+
+  /* Profile: address cards stack */
+  .addresses-grid, .address-list, .profile-cards {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small devices: tighten spacing and font sizes */
+  .product-title, .cart-item-title, .checkout-title, .order-title {
+    font-size: 1rem !important;
+  }
+  .footer, .site-footer {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .mini-cta, .small-cta {
+    width: 100% !important;
+  }
+}
+

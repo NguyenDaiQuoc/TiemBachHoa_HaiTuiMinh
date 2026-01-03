@@ -189,3 +189,26 @@
 .cta-button:hover {
   opacity: 0.85;
 }
+
+/* Responsive: FAQ */
+@media (max-width: 1024px) {
+  .faq-content { flex-direction: column; gap: 20px; }
+  .faq-sidebar { width: 100%; order: 2; }
+  .faq-questions { order: 1; }
+}
+
+@media (max-width: 480px) {
+  .faq-title { font-size: 30px; }
+  .faq-subtitle { font-size: 14px; }
+  .faq-search { max-width: 100%; padding: 12px 16px; }
+  .faq-questions { padding: 18px; }
+  .sidebar-item { padding: 10px 12px; font-size: 13px; }
+}
+
+/* Extra small tweaks */
+@media (max-width: 360px) {
+  .faq-title { font-size: 24px; }
+  .faq-search { padding: 10px 12px; }
+  .cta-button { width: 100%; padding: 12px; }
+  .faq-questions { padding: 12px; }
+}

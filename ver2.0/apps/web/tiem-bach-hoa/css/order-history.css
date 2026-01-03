@@ -157,3 +157,30 @@
   border-radius: 0.5rem;
   padding: 0.25rem 0.75rem;
 }
+
+/* Responsive: Order history */
+@media (max-width: 1024px) {
+  .order-history-content { padding: 1rem; max-width: 100%; }
+  .filters { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+  .order-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .order-details { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .order-actions { align-items: flex-start; }
+  .order-btn { width: 100%; }
+}
+
+@media (max-width: 360px) {
+  .page-title { font-size: 1.25rem; }
+  .order-card { padding: 0.75rem; }
+  .label { font-size: 0.7rem; }
+  .value { font-size: 0.95rem; }
+  .order-actions { width: 100%; align-items: stretch; }
+  .order-btn { width: 100%; padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+}
+
+@media (max-width: 280px) {
+  .filters { gap: 6px; }
+  .filter-inactive, .filter-active { padding: 0.35rem 0.6rem; font-size: 0.78rem; }
+}

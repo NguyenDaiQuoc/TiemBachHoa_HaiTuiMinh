@@ -117,3 +117,25 @@
     width: 100%;
   }
 }
+
+@media (max-width: 480px) {
+  .settings-container { padding: 12px; }
+  .settings-title { font-size: 20px; }
+  .settings-menu-item { padding: 10px; font-size: 14px; }
+  .settings-content { padding: 12px; }
+}
+
+/* Very small phones: tighten spacing and make delete button full width */
+@media (max-width: 420px) {
+  .settings-container { padding: 10px; border-radius: 10px; }
+  .settings-title { font-size: 18px; }
+  .settings-layout { gap: 12px; }
+  .settings-menu-item { padding: 8px; font-size: 13px; }
+  .settings-delete-btn { width: 100%; padding: 10px; border-radius: 8px; }
+  .settings-content { padding: 10px; }
+}
+
+@media (max-width: 320px) {
+  .settings-title { font-size: 16px; }
+  .settings-container { padding: 8px; }
+}

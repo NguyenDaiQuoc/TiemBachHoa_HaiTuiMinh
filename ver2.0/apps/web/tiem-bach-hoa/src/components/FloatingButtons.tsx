@@ -177,7 +177,8 @@ export default function FloatingButtons() {
                 customer: data.customerName || data.customer || data.userName || data.name || 'Khách lẻ',
                 total: Number(data.total || data.amount || 0),
                 createdAt: data.createdAt,
-                status: data.status || 'Chờ Xử Lý'
+                status: data.status || 'Chờ Xử Lý',
+                items: Array.isArray(data.items) ? data.items : (Array.isArray(data.cart) ? data.cart : [])
               };
             }).sort((a, b) => {
               const da = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : Number(a.createdAt || 0);
@@ -365,20 +366,40 @@ export default function FloatingButtons() {
                   Mở trang
                 </button>
               </div>
-              {pendingOrders.length === 0 ? (
+                  {pendingOrders.length === 0 ? (
                 <div className="orders-panel__empty">Chưa có đơn chờ xử lý</div>
               ) : (
                 <ul className="orders-panel__list">
                   {pendingOrders.map((o) => {
                     const ts = o.createdAt?.seconds ? o.createdAt.seconds * 1000 : Number(o.createdAt || 0);
-                    const timeText = ts ? new Date(ts).toLocaleString('vi-VN') : '';
+                    const timeAgo = (() => {
+                      const diff = Date.now() - (ts || 0);
+                      if (diff < 60_000) return 'vừa xong';
+                      if (diff < 3_600_000) return Math.round(diff / 60_000) + ' phút trước';
+                      if (diff < 86_400_000) return Math.round(diff / 3_600_000) + ' giờ trước';
+                      return new Date(ts).toLocaleString('vi-VN');
+                    })();
+
+                    const items = Array.isArray(o.items) ? o.items : [];
+                    const firstNames = items.slice(0, 2).map((it:any) => it.name || it.productName || it.title || it.product || '').filter(Boolean);
+                    const thumbnails = items.slice(0,2).map((it:any) => it.image || it.thumbnail || it.img || '');
+
                     return (
                       <li key={o.id}>
                         <div className="orders-panel__row">
-                          <div>
-                            <div className="orders-panel__title">#{o.id}</div>
-                            <div className="orders-panel__meta">{o.customer} · {o.status}</div>
-                            {timeText && <div className="orders-panel__meta">{timeText}</div>}
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              {thumbnails.map((src:any, i:number) => src ? (
+                                <img key={i} src={src} alt="thumb" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6 }} />
+                              ) : (
+                                <div key={i} style={{ width:36, height:36, background:'#f3f4f6', borderRadius:6, display:'flex',alignItems:'center',justifyContent:'center' }}>📦</div>
+                              ))}
+                            </div>
+                            <div>
+                              <div className="orders-panel__title">{firstNames.length > 0 ? firstNames.join(', ') : `#${o.id}`}</div>
+                              <div className="orders-panel__meta">{o.customer} · {o.status}</div>
+                              <div className="orders-panel__meta">{timeAgo}</div>
+                            </div>
                           </div>
                           <div className="orders-panel__total">{formatCurrency(o.total)}</div>
                         </div>

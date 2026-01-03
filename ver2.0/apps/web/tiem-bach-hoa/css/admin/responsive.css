@@ -65,3 +65,51 @@
     padding: 12px;
   }
 }
+
+/* Additional admin-wide responsive helpers */
+/* Ensure admin layouts, tables and forms behave on narrow screens */
+@media (max-width: 1024px) {
+  /* Collapse two-column admin grids into single column */
+  .admin-grid, .dashboard-grid, .settings-layout { grid-template-columns: 1fr !important; }
+
+  /* Make sidebars full width on tablet/mobile and place on top */
+  .admin-sidebar, .po-sidebar, .admin-left { width: 100% !important; position: relative !important; margin: 0 0 12px 0; }
+
+  /* Toolbars wrap and inputs stretch */
+  .po-toolbar, .admin-toolbar { flex-wrap: wrap; gap: 8px; }
+  .po-toolbar .input-search, .po-toolbar .input-select, .admin-toolbar .input-search { flex: 1 1 100% !important; }
+
+  /* Table wrappers: make tables horizontally scrollable */
+  .po-table-wrapper, .admin-table-wrapper, .table-card, .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .po-table-wrapper table, .admin-table-wrapper table { min-width: 720px; }
+
+  /* Forms: stack fields */
+  .form-row, .admin-form .form-row { flex-direction: column !important; gap: 10px !important; }
+
+  /* Compact spacing for list items and cards */
+  .card, .table-card, .po-card { padding: 12px !important; }
+}
+
+@media (max-width: 480px) {
+  /* On phones: make headers compact and modals full-screen-like */
+  .po-header .title { font-size: 18px; }
+  .po-toolbar { padding: 8px; }
+
+  /* Collapse action buttons into column */
+  .admin-actions, .po-actions { display: flex; flex-direction: column; gap: 8px; }
+
+  /* Make table rows stack-friendly (use data-label attr in markup) */
+  .po-table-wrapper table thead { display: none; }
+  .po-table-wrapper table tr { display: block; margin-bottom: 12px; border: 1px solid #f3f3f3; border-radius: 8px; padding: 8px; }
+  .po-table-wrapper table td { display: flex; justify-content: space-between; padding: 6px 8px; }
+  .po-table-wrapper table td:before { content: attr(data-label); font-weight: 600; color: #374151; margin-right: 6px; }
+}
+
+/* Helper: a small visible toggle for collapsed sidebar (JS can add/remove .collapsed) */
+.admin-sidebar.collapsed { width: 64px !important; }
+.sidebar-toggle { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 6px; cursor: pointer; }
+
+/* Ensure admin modals have priority z-index on mobile */
+@media (max-width: 768px) {
+  .modal-content, .po-modal { max-width: 100% !important; width: 100% !important; margin: 0; border-radius: 8px; }
+}
