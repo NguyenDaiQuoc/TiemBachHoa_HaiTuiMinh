@@ -1,0 +1,45 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="640" rx="36" fill="url(#bg)"/>
+  <circle cx="1120" cy="120" r="170" fill="url(#orb1)" fill-opacity="0.55"/>
+  <circle cx="180" cy="530" r="220" fill="url(#orb2)" fill-opacity="0.45"/>
+  <circle cx="850" cy="510" r="120" fill="#FACC15" fill-opacity="0.08"/>
+  <rect x="70" y="74" width="1140" height="492" rx="30" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.16)"/>
+  <rect x="760" y="140" width="360" height="320" rx="28" fill="#FCFFFE" fill-opacity="0.92"/>
+  <rect x="790" y="180" width="300" height="18" rx="9" fill="#DCFCE7"/>
+  <rect x="790" y="215" width="180" height="44" rx="16" fill="#166534"/>
+  <rect x="790" y="281" width="300" height="1" fill="#D1D5DB"/>
+  <rect x="790" y="310" width="138" height="118" rx="20" fill="#ECFDF5"/>
+  <rect x="952" y="310" width="138" height="118" rx="20" fill="#EFF6FF"/>
+  <rect x="820" y="334" width="78" height="12" rx="6" fill="#86EFAC"/>
+  <rect x="982" y="334" width="78" height="12" rx="6" fill="#93C5FD"/>
+  <rect x="820" y="360" width="52" height="52" rx="18" fill="#16A34A"/>
+  <rect x="982" y="360" width="52" height="52" rx="18" fill="#2563EB"/>
+  <rect x="120" y="120" width="110" height="110" rx="28" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.14)"/>
+  <path d="M151 170C151 147.909 168.909 130 191 130C213.091 130 231 147.909 231 170C231 192.091 213.091 210 191 210C168.909 210 151 192.091 151 170Z" fill="#F0FDF4"/>
+  <path d="M191 143L198 160H216L201 171L207 189L191 178L175 189L181 171L166 160H184L191 143Z" fill="#16A34A"/>
+  <text x="120" y="290" fill="white" font-family="Segoe UI, Arial, sans-serif" font-size="70" font-weight="800">Tiệm bách hoá</text>
+  <text x="120" y="362" fill="#BBF7D0" font-family="Segoe UI, Arial, sans-serif" font-size="80" font-weight="900">Hai Tụi Mình</text>
+  <text x="120" y="430" fill="rgba(255,255,255,0.78)" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="500">
+    Storefront thương mại điện tử hiện đại cho mỹ phẩm chính hãng,
+  </text>
+  <text x="120" y="468" fill="rgba(255,255,255,0.78)" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="500">
+    đồ gia dụng tiện ích và đồ công nghệ với trải nghiệm người dùng chỉn chu.
+  </text>
+  <rect x="120" y="506" width="210" height="50" rx="18" fill="#16A34A"/>
+  <text x="152" y="538" fill="white" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">React • Prisma • Docker</text>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#052E16"/>
+      <stop offset="0.5" stop-color="#14532D"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <radialGradient id="orb1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1120 120) rotate(90) scale(170)">
+      <stop stop-color="#F0FDF4"/>
+      <stop offset="1" stop-color="#F0FDF4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(180 530) rotate(90) scale(220)">
+      <stop stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#60A5FA" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>
