@@ -1,0 +1,27 @@
+Phase 6E: Brand Alignment & Auth Stabilization - COMPLETED
+
+1. Auth Stabilization:
+   - Enhanced register and login routes with robust mock fallbacks.
+   - If Prisma/DB connection fails, the system automatically uses demo user logic.
+   - Updated all error messages to natural Vietnamese.
+   - Fixed 500 error on registration by wrapping Prisma calls in try/catch.
+
+2. Brand Realignment:
+   - Full store name established: "Tiệm Bách Hoá Hai Tụi Mình".
+   - Focused product direction: Cosmetics (Mỹ phẩm), Gadgets (Công nghệ), Home (Gia dụng).
+   - Replaced food-focused sample content with trend-relevant items like Marshall speakers and B5 serums.
+   - Updated hero sections and collection landing pages.
+
+3. UX Refinement:
+   - Added password visibility toggles to both Login and Register pages.
+   - Improved focus management and tab order in auth forms.
+   - Refined MegaMenu categories and iconography.
+
+4. Storefront Copywriting:
+   - Rewrote all high-level CTAs and descriptions in header, footer, and home sections.
+   - Tone is now modern, trustworthy, and approachable.
+   - Removed generic startup/enterprise language.
+
+5. Interaction Polish:
+   - Fixed corrupted footer/header branding text.
+   - Ensured smooth transitions and consistent spacing in overlays.

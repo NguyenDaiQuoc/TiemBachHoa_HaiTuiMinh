@@ -1,0 +1,29 @@
+PHASE 7D — AUTH STABILIZATION & ACCOUNT EXPERIENCE - COMPLETED
+
+1. Auth Stabilization & Security:
+   - Fixed Login failures by unifying password hashing logic and salting.
+   - Implemented `/api/auth/me` endpoint to safely verify sessions and retrieve current user data.
+   - Added global session hydration in AppRoot: The app now verifies existing tokens on mount and handles invalid sessions gracefully.
+   - Integrated `ProtectedRoute` for `/account` and `/admin` routes with RBAC (Role-Based Access Control).
+
+2. Account Experience 2.0:
+   - Built a comprehensive Account Portal with high-fidelity, categorized tabs.
+   - Profile Management: High-fidelity layout for user settings.
+   - Lịch sử đơn hàng: Beautified orders tab with detailed status badges and tracking shortcuts.
+   - Danh sách yêu thích: Connected to real store data with live removing/viewing interactions.
+   - Sản phẩm vừa xem: Implemented recently viewed tracking with persistence.
+   - Security Center: Implemented a hardened UI for password changes, 2FA setup, and session management.
+
+3. User Interaction & UX:
+   - Refined Account Dropdown: Added smart hover delay, Esc-to-close support, and motion-enhanced animations.
+   - VIP Membership System: Created a visual progress architecture tracking user loyalty from Bronze to Diamond.
+   - Loading States: Added skeleton loaders and progressive loading for account-related content.
+
+4. Performance & Error Hardening:
+   - Standardized auth error responses and frontend toast notifications.
+   - Removed duplicate rerenders in auth tracking.
+   - Verified footer and navigation ecosystem—zero dead links or circular routes.
+
+5. Technical Debt:
+   - Unified hashing rounds to 10 for consistent login/register verification.
+   - Resolved mock vs real API conflicts in the auth router.

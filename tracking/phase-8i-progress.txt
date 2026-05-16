@@ -1,0 +1,20 @@
+PHASE 8I - PROFILE LAYOUT & THEME INHERITANCE HARDENING
+
+Status: COMPLETE
+
+Delivered:
+- Introduced a persistent `AppShell` route layout so storefront pages, including `/profile`, inherit the same Header, Footer, search overlay, cart drawer, and global landmarks.
+- Refactored `src/app/app.tsx` into a dedicated route tree with `src/app/routes.tsx`, keeping auth/admin separation while restoring shell continuity for account pages.
+- Hardened theme initialization with persisted Zustand storage, document-level pre-render theme sync in `src/main.tsx`, and hydration-safe theme application in `src/app/providers/with-theme.tsx`.
+- Replaced key profile navigation hardcoded light surfaces with semantic tokens to prevent dark-mode white flashes.
+- Added regression coverage in `src/app/app-shell.test.tsx` for header/footer persistence, route focus restoration, dark theme continuity, and profile shell snapshots.
+
+Verification:
+- `npx vitest run src/app/app-shell.test.tsx` PASS
+- `npm run build` PASS
+
+Notes:
+- `npm run lint` still reports pre-existing unrelated TypeScript issues in admin/product/shared UI files that were already present before this phase.
+
+Next:
+- Continue Phase 9 - Social Commerce & Community Engine

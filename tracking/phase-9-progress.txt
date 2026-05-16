@@ -1,0 +1,32 @@
+PHASE 9 — BACKEND STABILIZATION & PRODUCTION DATA LAYER - IN PROGRESS
+
+1. Database Foundation:
+   - Migrated Prisma schema to PostgreSQL with UUID primary keys.
+   - Implemented soft-delete support with deletedAt and isActive fields.
+   - Expanded data models: User, Product, Category, Cart, Order, Address, Wishlist.
+   - Synchronized database schema with prisma db push.
+   - Implemented robust seed architecture with Categories and related Products.
+
+2. Authentication System:
+   - Hardened JWT sign/verify logic with Zod-validated payloads.
+   - Implemented Refresh Token rotation system in DB.
+   - Secured cookies with httpOnly, secure, and sameSite strict.
+   - Removed all mock auth logic fallbacks.
+   - Integrated role-based access control (RBAC) middleware for ADMIN/SUPERADMIN.
+
+3. API Hardening:
+   - Implemented standardized ApiResponse utility for consistent client-server communication.
+   - Created centralized errorHandler middleware to catch and format API errors.
+   - Added global products rate limiter (100 req/min) with explicit Vietnamese error message.
+   - Integrated helmet for production security headers.
+   - Enabled 'trust proxy' for accurate rate limiting behind Nginx/Cloud Run.
+
+4. Operations & Admin:
+   - Built Admin stats endpoint for business overview (Revenue, Orders, Users).
+   - Implemented Product management (Create/Update/Soft-delete).
+   - Implemented Order status management.
+   - Automated stock reduction and sold count tracking via atomic Prisma transactions.
+
+5. Client-Side Integration:
+   - Initialized TanStack Query entity patterns for Products.
+   - Standardized fetch architecture for typed API responses.

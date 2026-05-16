@@ -1,0 +1,26 @@
+PHASE 8H — PROFILE STATE UNIFICATION & MEDIA HARDENING
+
+[DONE] FIX PROFILE PATCH 400
+- Normalized payload in user-router
+- Transformed empty strings to null
+- Matched Zod schema with API validator
+
+[DONE] FIX AVATAR UPLOAD 413
+- Implemented client-side image compression (canvas + jpeg 70%)
+- Increased express limit to 10MB
+- Added multipart stabilization
+
+[DONE] UNIFY PROFILE KPI + VIP SYSTEM
+- Created central loyalty utility in entities/user/lib/loyalty.ts
+- Synced Header, Profile Overview, and Sidebar
+- Real-time progress tracking from DB points
+
+[DONE] DARK MODE HARDENING V3
+- OLED-grade contrast implementation
+- Removed gray artifacts in profile selects/inputs
+- Unified surface tokens
+
+[DONE] ACCESSIBILITY & STATE
+- Progress narration improvements
+- React Query invalidation strategy
+- Optimistic state updates (via AuthStore integration)

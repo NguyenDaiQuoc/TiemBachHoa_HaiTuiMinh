@@ -1,0 +1,24 @@
+[2026-05-12 - 12:50]
+PHASE 8G: PROFILE INTERACTION HARDENING & UX COMPLETION - COMPLETED
+
+SUMMARY:
+- Header dropdowns ("Cửa hàng") are now fully clickable and navigate to search with context.
+- Profile data expanded: username, gender, birthDate, bio now persist in DB.
+- Avatar system implemented: drag/drop support with optimistic base64 preview and persistence.
+- Membership system: Point history and tier progress fully implemented with real API hooks.
+- Notification settings: Full switch-based system for Order/Promotion/Newsletter preferences.
+- API stability: Aligned Zod schemas with Prisma and client payload to fix 400 errors.
+- UX: Added responsive header for mobile profile navigation and polished card interactions.
+- Dark Mode Hardening: Audited and updated all profile surfaces to use semantic tokens, fixing select/input background contrast.
+- Security Center: Added session list and password strength indicators.
+
+OBJECTIVE MET:
+The profile system is now a stable, production-grade customer center.
+
+PHASE 9 — SOCIAL COMMERCE & ENGAGEMENT PLATFORM (IN PROGRESS)
+- Product reviews & ratings
+- User-generated photos
+- Social proof engine
+- Daily check-in rewards
+- Referral system (Invite-and-Earn)
+- Gamified loyalty mechanics (Badges/Achievements)

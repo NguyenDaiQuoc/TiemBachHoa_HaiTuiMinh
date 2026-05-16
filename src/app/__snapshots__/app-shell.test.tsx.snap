@@ -1,0 +1,1523 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`App shell and profile inheritance > matches the dark-mode profile shell snapshot 1`] = `
+<div
+  class="min-h-screen bg-background text-foreground"
+>
+  <a
+    class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-foreground focus:shadow-lg"
+    href="#app-main-content"
+  >
+    Skip to content
+  </a>
+  <header
+    class="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md border-border/50"
+  >
+    <div
+      class="container mx-auto flex h-16 items-center justify-between px-4"
+    >
+      <div
+        class="flex items-center gap-4"
+      >
+        <button
+          aria-expanded="false"
+          aria-haspopup="dialog"
+          class="group/button relative inline-flex shrink-0 items-center justify-center bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 md:hidden rounded-lg hover:bg-primary/5 transition-all w-10 h-10 border border-transparent hover:border-border/50"
+          data-base-ui-click-trigger=""
+          data-slot="sheet-trigger"
+          id="base-ui-_r_1i_"
+          tabindex="0"
+          type="button"
+        >
+          <span
+            class="flex items-center gap-2"
+            style="opacity: 1; transform: none;"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-menu h-6 w-6"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M4 5h16"
+              />
+              <path
+                d="M4 12h16"
+              />
+              <path
+                d="M4 19h16"
+              />
+            </svg>
+          </span>
+        </button>
+        <a
+          class="flex items-center gap-2 group"
+          data-discover="true"
+          href="/"
+        >
+          <span
+            class="text-xl font-heading font-black tracking-tight text-primary italic uppercase"
+          >
+            TIỆM BÁCH HOÁ HAI TỤI MÌNH
+          </span>
+        </a>
+      </div>
+      <nav
+        class="hidden md:flex items-center space-x-6 text-sm font-medium"
+      >
+        <div
+          class="relative group"
+        >
+          <button
+            class="flex items-center gap-1.5 hover:text-primary transition-all uppercase tracking-[0.2em] text-[10px] font-black py-1 text-foreground/60"
+          >
+            CỬA HÀNG
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-chevron-down h-3 w-3 transition-transform"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m6 9 6 6 6-6"
+              />
+            </svg>
+            <span
+              class="absolute bottom-0 left-0 w-full h-[2px] bg-primary transition-transform origin-left scale-x-0"
+            />
+          </button>
+        </div>
+        <div
+          class="relative group"
+        >
+          <a
+            class="hover:text-primary transition-all text-foreground/60 hover:text-foreground uppercase tracking-[0.2em] text-[10px] font-black relative overflow-hidden group py-1"
+            data-discover="true"
+            href="/search"
+          >
+            KHÁM PHÁ
+            <span
+              class="absolute bottom-0 left-0 w-full h-[2px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
+            />
+          </a>
+        </div>
+        <div
+          class="relative group"
+        >
+          <a
+            class="hover:text-primary transition-all text-foreground/60 hover:text-foreground uppercase tracking-[0.2em] text-[10px] font-black relative overflow-hidden group py-1"
+            data-discover="true"
+            href="/tracking"
+          >
+            THEO DÕI
+            <span
+              class="absolute bottom-0 left-0 w-full h-[2px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
+            />
+          </a>
+        </div>
+        <div
+          class="relative group"
+        >
+          <button
+            class="flex items-center gap-1.5 hover:text-primary transition-all uppercase tracking-[0.2em] text-[10px] font-black py-1 text-foreground/60"
+          >
+            BỘ SƯU TẬP
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-chevron-down h-3 w-3 transition-transform"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m6 9 6 6 6-6"
+              />
+            </svg>
+            <span
+              class="absolute bottom-0 left-0 w-full h-[2px] bg-primary transition-transform origin-left scale-x-0"
+            />
+          </button>
+        </div>
+      </nav>
+      <div
+        class="flex items-center space-x-4"
+      >
+        <button
+          class="group/button relative inline-flex shrink-0 items-center justify-center bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 rounded-full hover:bg-primary/5 transition-all w-10 h-10 border border-transparent hover:border-border/50"
+          data-slot="button"
+          tabindex="0"
+          type="button"
+        >
+          <span
+            class="flex items-center gap-2"
+            style="opacity: 1; transform: none;"
+          >
+            <div
+              style="opacity: 0; transform: scale(0.5) rotate(-90deg);"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-sun h-5 w-5 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="4"
+                />
+                <path
+                  d="M12 2v2"
+                />
+                <path
+                  d="M12 20v2"
+                />
+                <path
+                  d="m4.93 4.93 1.41 1.41"
+                />
+                <path
+                  d="m17.66 17.66 1.41 1.41"
+                />
+                <path
+                  d="M2 12h2"
+                />
+                <path
+                  d="M20 12h2"
+                />
+                <path
+                  d="m6.34 17.66-1.41 1.41"
+                />
+                <path
+                  d="m19.07 4.93-1.41 1.41"
+                />
+              </svg>
+            </div>
+          </span>
+        </button>
+        <div
+          class="flex items-center space-x-1 sm:space-x-2"
+        >
+          <button
+            aria-label="Tìm kiếm"
+            class="group/button relative shrink-0 items-center justify-center bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 rounded-full flex hover:bg-primary/5 transition-all w-10 h-10 border border-transparent hover:border-border/50"
+            data-slot="button"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              class="flex items-center gap-2"
+              style="opacity: 1; transform: none;"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-search h-5 w-5"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m21 21-4.34-4.34"
+                />
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="8"
+                />
+              </svg>
+            </span>
+          </button>
+          <div
+            class="relative"
+          >
+            <button
+              aria-expanded="false"
+              aria-haspopup="menu"
+              class="rounded-full hover:bg-primary/5 transition-all w-10 h-10 border border-transparent hover:border-border/50 overflow-hidden outline-none flex items-center justify-center cursor-pointer"
+              data-slot="dropdown-menu-trigger"
+              id="base-ui-_r_20_"
+              tabindex="0"
+              type="button"
+            >
+              <div
+                class="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-black text-xs uppercase italic"
+              >
+                T
+              </div>
+            </button>
+          </div>
+          <div
+            class="relative cursor-pointer group"
+            tabindex="0"
+          >
+            <div
+              class="p-2.5 rounded-full hover:bg-primary/5 transition-all border border-transparent group-hover:border-border/50"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-shopping-bag h-5 w-5 transition-colors"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 10a4 4 0 0 1-8 0"
+                />
+                <path
+                  d="M3.103 6.034h17.794"
+                />
+                <path
+                  d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main
+    class="flex-1 outline-none bg-background text-foreground transition-colors duration-300"
+    id="app-main-content"
+    tabindex="-1"
+  >
+    <div
+      class="bg-background pt-10 pb-20 px-4 md:px-8"
+    >
+      <div
+        class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8"
+      >
+        <div
+          class="lg:hidden flex items-center justify-between bg-card border border-border/50 p-4 rounded-[24px] shadow-soft mb-4"
+        >
+          <div
+            class="flex items-center gap-3"
+          >
+            <div
+              class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-user w-5 h-5 text-primary"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"
+                />
+                <circle
+                  cx="12"
+                  cy="7"
+                  r="4"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3
+                class="text-xs font-black uppercase tracking-tight italic leading-none"
+              >
+                Test User
+              </h3>
+              <p
+                class="text-[10px] font-bold text-muted-foreground mt-0.5"
+              >
+                Hồ sơ cá nhân
+              </p>
+            </div>
+          </div>
+          <button
+            class="group/button relative inline-flex shrink-0 items-center justify-center border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 rounded-xl h-10 w-10 bg-muted/30 hover:bg-muted"
+            data-slot="button"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              class="flex items-center gap-2"
+              style="opacity: 1; transform: none;"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-menu w-5 h-5"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4 5h16"
+                />
+                <path
+                  d="M4 12h16"
+                />
+                <path
+                  d="M4 19h16"
+                />
+              </svg>
+            </span>
+          </button>
+        </div>
+        <aside
+          class="hidden lg:block lg:col-span-3 space-y-6"
+        >
+          <div
+            class="group/card flex flex-col gap-4 rounded-xl text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl p-6 overflow-hidden relative group border border-border/50 shadow-soft bg-card/90 backdrop-blur-md"
+            data-size="default"
+            data-slot="card"
+          >
+            <div
+              class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"
+            />
+            <div
+              class="relative flex flex-col items-center text-center"
+            >
+              <div
+                class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 ring-4 ring-background shadow-xl overflow-hidden group-hover:scale-105 transition-transform"
+              >
+                <span
+                  class="text-2xl font-black text-primary italic uppercase"
+                >
+                  T
+                </span>
+              </div>
+              <h2
+                class="text-xl font-black uppercase italic tracking-tight truncate w-full"
+              >
+                Test User
+              </h2>
+              <p
+                class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60 truncate w-full"
+              >
+                tester@example.com
+              </p>
+              <div
+                class="mt-6 w-full p-4 rounded-xl bg-muted/30 dark:bg-muted/10 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <div
+                  class="flex items-center justify-between mb-2"
+                >
+                  <span
+                    class="text-[9px] font-black uppercase tracking-widest text-slate-400"
+                  >
+                    Hạng 
+                    Bạc
+                  </span>
+                  <span
+                    class="text-[9px] font-black text-primary"
+                  >
+                    47
+                    %
+                  </span>
+                </div>
+                <div
+                  class="h-1.5 w-full bg-muted rounded-full overflow-hidden"
+                >
+                  <div
+                    class="h-full bg-primary"
+                    style="width: 0px;"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <nav
+            class="space-y-1"
+          >
+            <a
+              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group bg-primary text-primary-foreground shadow-lg shadow-primary/25 translate-x-2"
+              data-discover="true"
+              href="/profile"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-user w-5 h-5 transition-transform group-hover:scale-110"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"
+                  />
+                  <circle
+                    cx="12"
+                    cy="7"
+                    r="4"
+                  />
+                </svg>
+                <span
+                  class="text-xs font-black uppercase tracking-widest"
+                >
+                  Hồ sơ cá nhân
+                </span>
+              </div>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-primary-foreground"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m9 18 6-6-6-6"
+                />
+              </svg>
+            </a>
+            <a
+              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              data-discover="true"
+              href="/profile/orders"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-package w-5 h-5 transition-transform group-hover:scale-110"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"
+                  />
+                  <path
+                    d="M12 22V12"
+                  />
+                  <polyline
+                    points="3.29 7 12 12 20.71 7"
+                  />
+                  <path
+                    d="m7.5 4.27 9 5.15"
+                  />
+                </svg>
+                <span
+                  class="text-xs font-black uppercase tracking-widest"
+                >
+                  Lịch sử đơn hàng
+                </span>
+              </div>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m9 18 6-6-6-6"
+                />
+              </svg>
+            </a>
+            <a
+              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              data-discover="true"
+              href="/profile/wishlist"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-heart w-5 h-5 transition-transform group-hover:scale-110"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"
+                  />
+                </svg>
+                <span
+                  class="text-xs font-black uppercase tracking-widest"
+                >
+                  Danh sách yêu thích
+                </span>
+              </div>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m9 18 6-6-6-6"
+                />
+              </svg>
+            </a>
+            <a
+              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              data-discover="true"
+              href="/profile/recently-viewed"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-eye w-5 h-5 transition-transform group-hover:scale-110"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="3"
+                  />
+                </svg>
+                <span
+                  class="text-xs font-black uppercase tracking-widest"
+                >
+                  Sản phẩm vừa xem
+                </span>
+              </div>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m9 18 6-6-6-6"
+                />
+              </svg>
+            </a>
+            <a
+              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              data-discover="true"
+              href="/profile/membership"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-trophy w-5 h-5 transition-transform group-hover:scale-110"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978"
+                  />
+                  <path
+                    d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978"
+                  />
+                  <path
+                    d="M18 9h1.5a1 1 0 0 0 0-5H18"
+                  />
+                  <path
+                    d="M4 22h16"
+                  />
+                  <path
+                    d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"
+                  />
+                  <path
+                    d="M6 9H4.5a1 1 0 0 1 0-5H6"
+                  />
+                </svg>
+                <span
+                  class="text-xs font-black uppercase tracking-widest"
+                >
+                  Hạng thành viên
+                </span>
+              </div>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m9 18 6-6-6-6"
+                />
+              </svg>
+            </a>
+            <a
+              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              data-discover="true"
+              href="/profile/addresses"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-map-pin w-5 h-5 transition-transform group-hover:scale-110"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+                  />
+                  <circle
+                    cx="12"
+                    cy="10"
+                    r="3"
+                  />
+                </svg>
+                <span
+                  class="text-xs font-black uppercase tracking-widest"
+                >
+                  Địa chỉ của tôi
+                </span>
+              </div>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m9 18 6-6-6-6"
+                />
+              </svg>
+            </a>
+            <a
+              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              data-discover="true"
+              href="/profile/security"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-shield-check w-5 h-5 transition-transform group-hover:scale-110"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+                  />
+                  <path
+                    d="m9 12 2 2 4-4"
+                  />
+                </svg>
+                <span
+                  class="text-xs font-black uppercase tracking-widest"
+                >
+                  Mật khẩu & Bảo mật
+                </span>
+              </div>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m9 18 6-6-6-6"
+                />
+              </svg>
+            </a>
+            <a
+              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              data-discover="true"
+              href="/profile/settings"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-bell w-5 h-5 transition-transform group-hover:scale-110"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10.268 21a2 2 0 0 0 3.464 0"
+                  />
+                  <path
+                    d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
+                  />
+                </svg>
+                <span
+                  class="text-xs font-black uppercase tracking-widest"
+                >
+                  Cài đặt thông báo
+                </span>
+              </div>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m9 18 6-6-6-6"
+                />
+              </svg>
+            </a>
+            <button
+              class="w-full flex items-center gap-3 p-4 rounded-2xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all duration-300 mt-4 group"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-log-out w-5 h-5 transition-transform group-hover:-translate-x-1"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m16 17 5-5-5-5"
+                />
+                <path
+                  d="M21 12H9"
+                />
+                <path
+                  d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+                />
+              </svg>
+              <span
+                class="text-xs font-black uppercase tracking-widest"
+              >
+                Đăng xuất
+              </span>
+            </button>
+          </nav>
+        </aside>
+        <main
+          class="lg:col-span-9 min-h-[600px]"
+        >
+          <div
+            class="h-full"
+            style="opacity: 0; transform: translateY(12px);"
+          >
+            <div>
+              Profile overview
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </main>
+  <footer
+    class="border-t bg-muted/30 pt-16 pb-8"
+  >
+    <div
+      class="container mx-auto px-4"
+    >
+      <div
+        class="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16"
+      >
+        <div
+          class="lg:col-span-4 space-y-6"
+        >
+          <a
+            class="inline-block"
+            data-discover="true"
+            href="/"
+          >
+            <h3
+              class="font-heading font-black text-2xl italic text-primary tracking-tighter"
+            >
+              HAI TỤI MÌNH
+            </h3>
+          </a>
+          <p
+            class="text-sm text-muted-foreground font-medium max-w-sm leading-relaxed"
+          >
+            Tiệm Bách Hoá Hai Tụi Mình – Chuyên mỹ phẩm chính hãng, đồ gia dụng thông minh và phụ kiện công nghệ chất lượng cao. Chúng mình tin rằng mỗi sản phẩm là một lời cam kết về giá trị thực.
+          </p>
+          <div
+            class="flex gap-4"
+          >
+            <a
+              class="size-10 rounded-xl bg-background border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all group"
+              href="#"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-instagram size-5 group-hover:scale-110 transition-transform"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  height="20"
+                  rx="5"
+                  ry="5"
+                  width="20"
+                  x="2"
+                  y="2"
+                />
+                <path
+                  d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"
+                />
+                <line
+                  x1="17.5"
+                  x2="17.51"
+                  y1="6.5"
+                  y2="6.5"
+                />
+              </svg>
+            </a>
+            <a
+              class="size-10 rounded-xl bg-background border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all group"
+              href="#"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-facebook size-5 group-hover:scale-110 transition-transform"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
+                />
+              </svg>
+            </a>
+            <a
+              class="size-10 rounded-xl bg-background border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all group"
+              href="#"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-message-circle size-5 group-hover:scale-110 transition-transform"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
+                />
+              </svg>
+            </a>
+          </div>
+        </div>
+        <div
+          class="lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-8"
+        >
+          <div
+            class="space-y-4"
+          >
+            <button
+              class="flex items-center justify-between w-full md:cursor-default group"
+            >
+              <h4
+                class="font-black text-[10px] uppercase tracking-[0.2em] text-foreground/70"
+              >
+                MUA SẮM
+              </h4>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-down size-4 md:hidden transition-transform"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m6 9 6 6 6-6"
+                />
+              </svg>
+            </button>
+            <div
+              class="overflow-hidden transition-all duration-300 md:h-auto max-h-0 opacity-0 md:max-h-full md:opacity-100"
+            >
+              <ul
+                class="space-y-3 pt-2 md:pt-0"
+              >
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/collections"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Bộ sưu tập
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/search?sort=newest"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Sản phẩm mới
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/search?sort=popular"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Bán chạy nhất
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/#flash-sale"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Flash Sale
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div
+            class="space-y-4"
+          >
+            <button
+              class="flex items-center justify-between w-full md:cursor-default group"
+            >
+              <h4
+                class="font-black text-[10px] uppercase tracking-[0.2em] text-foreground/70"
+              >
+                DỊCH VỤ KHÁCH HÀNG
+              </h4>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-down size-4 md:hidden transition-transform"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m6 9 6 6 6-6"
+                />
+              </svg>
+            </button>
+            <div
+              class="overflow-hidden transition-all duration-300 md:h-auto max-h-0 opacity-0 md:max-h-full md:opacity-100"
+            >
+              <ul
+                class="space-y-3 pt-2 md:pt-0"
+              >
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/faq"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Trung tâm trợ giúp (FAQ)
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/shipping-policy"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Chính sách vận chuyển
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/return-policy"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Chính sách đổi trả
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/faq#payment"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Phương thức thanh toán
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div
+            class="space-y-4"
+          >
+            <button
+              class="flex items-center justify-between w-full md:cursor-default group"
+            >
+              <h4
+                class="font-black text-[10px] uppercase tracking-[0.2em] text-foreground/70"
+              >
+                VỀ CHÚNG MÌNH
+              </h4>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-down size-4 md:hidden transition-transform"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m6 9 6 6 6-6"
+                />
+              </svg>
+            </button>
+            <div
+              class="overflow-hidden transition-all duration-300 md:h-auto max-h-0 opacity-0 md:max-h-full md:opacity-100"
+            >
+              <ul
+                class="space-y-3 pt-2 md:pt-0"
+              >
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/about"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Câu chuyện thương hiệu
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/contact"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Liên hệ
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/about#careers"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Tuyển dụng
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    data-discover="true"
+                    href="/privacy-policy"
+                  >
+                    <span
+                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                    />
+                    Chính sách bảo mật
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="p-8 md:p-12 rounded-[3rem] bg-background border border-border/50 grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 shadow-soft"
+      >
+        <div
+          class="flex items-center gap-6 group"
+        >
+          <div
+            class="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-all"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-phone size-6"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
+              />
+            </svg>
+          </div>
+          <div
+            class="space-y-1"
+          >
+            <p
+              class="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+            >
+              Mua hàng nhanh
+            </p>
+            <p
+              class="font-black italic text-lg tracking-tight"
+            >
+              0123.456.789
+            </p>
+          </div>
+        </div>
+        <div
+          class="flex items-center gap-6 group"
+        >
+          <div
+            class="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-all"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-mail size-6"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"
+              />
+              <rect
+                height="16"
+                rx="2"
+                width="20"
+                x="2"
+                y="4"
+              />
+            </svg>
+          </div>
+          <div
+            class="space-y-1"
+          >
+            <p
+              class="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+            >
+              Phản hồi & Khiếu nại
+            </p>
+            <p
+              class="font-black italic text-lg tracking-tight"
+            >
+              hello@haituiminh.vn
+            </p>
+          </div>
+        </div>
+        <div
+          class="flex items-center gap-6 group"
+        >
+          <div
+            class="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-all"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-map-pin size-6"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+              />
+              <circle
+                cx="12"
+                cy="10"
+                r="3"
+              />
+            </svg>
+          </div>
+          <div
+            class="space-y-1"
+          >
+            <p
+              class="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+            >
+              Địa chỉ cửa hàng
+            </p>
+            <p
+              class="font-black italic text-lg tracking-tight"
+            >
+              Quận 1, TP. HCM
+            </p>
+          </div>
+        </div>
+      </div>
+      <div
+        class="pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-6"
+      >
+        <div
+          class="flex flex-wrap justify-center gap-4"
+        >
+          <div
+            class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-border/50"
+          >
+            <span
+              class="text-[10px] font-black uppercase italic tracking-tighter"
+            >
+              COD
+            </span>
+          </div>
+          <div
+            class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-border/50"
+          >
+            <span
+              class="text-[10px] font-black uppercase italic tracking-tighter"
+            >
+              Bảo hành 1 đổi 1
+            </span>
+          </div>
+          <div
+            class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-border/50"
+          >
+            <span
+              class="text-[10px] font-black uppercase italic tracking-tighter"
+            >
+              Gửi hàng toàn quốc
+            </span>
+          </div>
+        </div>
+        <div
+          class="text-center md:text-right space-y-1"
+        >
+          <p
+            class="text-[10px] text-muted-foreground font-medium uppercase tracking-widest"
+          >
+            © 2026 Tiệm Bách Hoá Hai Tụi Mình. Crafted with ♡
+          </p>
+          <p
+            class="text-[9px] text-muted-foreground/30 uppercase font-black"
+          >
+            Powered by Antigravity Engine
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+`;
