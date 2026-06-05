@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -36,6 +37,21 @@ model User {
   wishlist      Wishlist?
   membershipTransactions MembershipTransaction[]
   notifications NotificationSetting[]
+  reviews       ProductReview[]
+  reviewHelpful ReviewHelpful[]
+  shopFollows   ShopFollow[]
+  dailyCheckIns DailyCheckIn[]
+  referralProfile ReferralProfile?
+  referralEventsSent ReferralEvent[] @relation("ReferralSender")
+  referralEventsReceived ReferralEvent[] @relation("ReferralReceiver")
+  missionProgress UserMissionProgress[]
+  achievements  UserAchievement[]
+  supportConversations SupportConversation[]
+  assignedSupportConversations SupportConversation[] @relation("SupportAssignee")
+  supportMessages SupportMessage[]
+  productViews ProductViewEvent[]
+  appNotifications AppNotification[]
+  generatedMarketingImages GeneratedMarketingImage[]
 }
 
 model MembershipTransaction {
@@ -60,6 +76,25 @@ model NotificationSetting {
   updatedAt   DateTime @updatedAt
 
   @@unique([userId, type])
+}
+
+model AppNotification {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope           String   @default("USER") // USER, ADMIN
+  type            String   @default("INFO") // INFO, SUCCESS, WARNING, ORDER, PROMOTION, SYSTEM
+  title           String
+  message         String
+  link            String?
+  isRead          Boolean  @default(false)
+  readAt          DateTime?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, isRead, createdAt])
+  @@index([scope, createdAt])
 }
 
 model RefreshToken {
@@ -99,17 +134,39 @@ model Category {
   products    Product[]
 }
 
+model Supplier {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String?  @unique
+  phone       String?
+  email       String?
+  address     String?
+  note        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Product {
   id          String    @id @default(uuid())
   name        String
   slug        String    @unique
+  sku         String?   @unique
   description String
+  costPrice   Float     @default(0)
   price       Float
+  promotionalPrice Float?
   images      String[]  // Array of image URLs
   categoryId  String
   category    Category  @relation(fields: [categoryId], references: [id])
+  brand       String?
+  subcategory String?
+  tags        String[]  @default([])
   stock       Int       @default(0)
+  initialStock Int      @default(0)
+  reorderLevel Int      @default(0)
   soldCount   Int       @default(0)
+  variantsJson Json?
   isActive    Boolean   @default(true)
   deletedAt   DateTime?
   createdAt   DateTime  @default(now())
@@ -118,6 +175,10 @@ model Product {
   orderItems  OrderItem[]
   cartItems   CartItem[]
   wishlistItems WishlistItem[]
+  reviews     ProductReview[]
+  viewEvents  ProductViewEvent[]
+  voucherProducts VoucherProduct[]
+  receiptItems StockReceiptItem[]
 }
 
 model Cart {
@@ -175,6 +236,8 @@ model Order {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   items          OrderItem[]
+  voucherId      String?
+  voucher        Voucher?    @relation(fields: [voucherId], references: [id], onDelete: SetNull)
 }
 
 model OrderItem {
@@ -198,4 +261,285 @@ model AuditLog {
   metadata  String? // JSON string
   ip        String?
   createdAt DateTime @default(now())
+}
+
+model StockReceipt {
+  id          String            @id @default(uuid())
+  code        String            @unique
+  mode        String            // RESTOCK, NEW_PRODUCT
+  supplier    String?
+  note        String?
+  createdById String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  items       StockReceiptItem[]
+}
+
+model MarketingCampaign {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  type        String   // FLASH_SALE, DEAL, PROMOTION
+  description String?
+  bannerImage String?
+  productIds  Json?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type, isActive, startsAt, endsAt])
+}
+
+model GeneratedMarketingImage {
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  prompt       String
+  finalPrompt  String
+  campaignType String
+  imageUrl     String
+  imagePath    String
+  status       String   @default("COMPLETED")
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([campaignType, createdAt])
+}
+
+model StockReceiptItem {
+  id          String       @id @default(uuid())
+  receiptId   String
+  receipt     StockReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int
+  costPrice   Float
+  salePrice   Float
+  createdAt   DateTime     @default(now())
+}
+
+model ProductReview {
+  id               String   @id @default(uuid())
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating           Int
+  content          String
+  media            Json?
+  verifiedPurchase Boolean  @default(false)
+  helpfulCount     Int      @default(0)
+  sellerResponse   String?
+  sellerRespondedAt DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  helpfulBy        ReviewHelpful[]
+
+  @@index([productId, createdAt])
+}
+
+model ReviewHelpful {
+  id        String        @id @default(uuid())
+  reviewId  String
+  review    ProductReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([reviewId, userId])
+}
+
+model ShopProfile {
+  id          String   @id @default("main-shop")
+  name        String
+  slug        String   @unique
+  description String?
+  coverImage  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  followers   ShopFollow[]
+  vouchers    Voucher[]
+}
+
+model Voucher {
+  id             String           @id @default(uuid())
+  code           String           @unique
+  title          String
+  description    String?
+  type           String           // PERCENT, FIXED
+  value          Float
+  minOrderValue  Float?           @default(0)
+  maxDiscount    Float?
+  usageLimit     Int?
+  usedCount      Int              @default(0)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  isActive       Boolean          @default(true)
+  shopId         String           @default("main-shop")
+  shop           ShopProfile      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  orders         Order[]
+  products       VoucherProduct[]
+
+  @@index([isActive, startsAt, endsAt])
+}
+
+model VoucherProduct {
+  id         String   @id @default(uuid())
+  voucherId  String
+  voucher    Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([voucherId, productId])
+}
+
+model ShopFollow {
+  id                   String      @id @default(uuid())
+  shopId               String
+  shop                 ShopProfile @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId               String
+  user                 User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notificationsEnabled Boolean     @default(true)
+  createdAt            DateTime    @default(now())
+
+  @@unique([shopId, userId])
+}
+
+model DailyCheckIn {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayKey       String
+  streak       Int      @default(1)
+  pointsEarned Int      @default(10)
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, dayKey])
+}
+
+model ReferralProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code          String   @unique
+  referredByCode String?
+  totalInvites  Int      @default(0)
+  totalRewards  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ReferralEvent {
+  id             String   @id @default(uuid())
+  referrerId     String
+  referrer       User     @relation("ReferralSender", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId String?
+  referredUser   User?    @relation("ReferralReceiver", fields: [referredUserId], references: [id], onDelete: SetNull)
+  code           String
+  rewardPoints   Int      @default(0)
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+}
+
+model RewardMission {
+  id           String   @id @default(uuid())
+  slug         String   @unique
+  title        String
+  description  String
+  actionType   String
+  targetCount  Int
+  rewardPoints Int
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  progress     UserMissionProgress[]
+}
+
+model UserMissionProgress {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  missionId     String
+  mission       RewardMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  progress      Int           @default(0)
+  completedAt   DateTime?
+  rewardClaimed Boolean       @default(false)
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([userId, missionId])
+}
+
+model AchievementBadge {
+  id             String   @id @default(uuid())
+  slug           String   @unique
+  name           String
+  description    String
+  icon           String
+  thresholdType  String
+  thresholdValue Int
+  createdAt      DateTime @default(now())
+  users          UserAchievement[]
+}
+
+model UserAchievement {
+  id         String           @id @default(uuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId    String
+  badge      AchievementBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  unlockedAt DateTime         @default(now())
+
+  @@unique([userId, badgeId])
+}
+
+model SupportConversation {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   String           @default("HUMAN") // AI, HUMAN
+  assignedAdminId String?
+  assignedAdmin User?        @relation("SupportAssignee", fields: [assignedAdminId], references: [id], onDelete: SetNull)
+  status    String           @default("OPEN")
+  lastMessageAt DateTime     @default(now())
+  lastReadByUserAt DateTime?
+  lastReadByAdminAt DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  messages  SupportMessage[]
+
+  @@unique([userId, channel])
+  @@index([channel, status, lastMessageAt])
+}
+
+model SupportMessage {
+  id             String              @id @default(uuid())
+  conversationId String
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sender         String
+  content        String
+  metadata       Json?
+  createdAt      DateTime            @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model ProductViewEvent {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sessionId  String?
+  city       String?
+  createdAt  DateTime @default(now())
+
+  @@index([productId, createdAt])
 }

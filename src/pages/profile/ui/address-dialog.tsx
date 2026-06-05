@@ -25,6 +25,7 @@ const addressSchema = z.object({
 });
 
 type AddressFormValues = z.infer<typeof addressSchema>;
+type AddressFormInput = z.input<typeof addressSchema>;
 
 interface AddressDialogProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export const AddressDialog: React.FC<AddressDialogProps> = ({
   initialData,
   isLoading
 }) => {
-  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<AddressFormValues>({
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<AddressFormInput, unknown, AddressFormValues>({
     resolver: zodResolver(addressSchema),
     defaultValues: initialData || {
       receiverName: '',

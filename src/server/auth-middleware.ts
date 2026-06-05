@@ -3,12 +3,20 @@ import { env } from "../shared/config/env.js";
 
 const JWT_SECRET = env.JWT_SECRET;
 
+export interface AuthenticatedUserToken {
+  id: string;
+  role: string;
+  email: string;
+}
+
+export const verifyAccessToken = (token: string) => jwt.verify(token, JWT_SECRET) as AuthenticatedUserToken;
+
 export const authenticate = (req: any, res: any, next: any) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = verifyAccessToken(token);
     req.user = decoded;
     next();
   } catch (error) {

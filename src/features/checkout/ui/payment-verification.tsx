@@ -183,7 +183,7 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
         <Check className="h-4 w-4 shrink-0 mt-0.5" />
         <p>
           Hệ thống sẽ tự động xác nhận sau khi chúng tôi nhận được tiền (từ 1-5 phút). 
-          Nếu quá 15 phút chưa thấy xác nhận, vui lòng liên hệ hotline <strong>0123.456.789</strong> để được hỗ trợ nhanh nhất.
+          Nếu quá 15 phút chưa thấy xác nhận, vui lòng liên hệ hotline <strong>0931.454.176</strong> để được hỗ trợ nhanh nhất.
         </p>
       </div>
     </div>

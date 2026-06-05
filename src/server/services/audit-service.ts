@@ -12,6 +12,7 @@ export const logAction = async (data: {
     await prisma.auditLog.create({
       data: {
         ...data,
+        userId: data.userId ?? null,
         metadata: data.metadata ? JSON.stringify(data.metadata) : null,
       }
     });

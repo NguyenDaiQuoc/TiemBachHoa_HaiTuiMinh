@@ -1,32 +1,40 @@
-PHASE 9 — BACKEND STABILIZATION & PRODUCTION DATA LAYER - IN PROGRESS
+﻿PHASE 9 - SOCIAL COMMERCE & COMMUNITY ENGINE - IN PROGRESS
 
-1. Database Foundation:
-   - Migrated Prisma schema to PostgreSQL with UUID primary keys.
-   - Implemented soft-delete support with deletedAt and isActive fields.
-   - Expanded data models: User, Product, Category, Cart, Order, Address, Wishlist.
-   - Synchronized database schema with prisma db push.
-   - Implemented robust seed architecture with Categories and related Products.
+1. Review and Rating System:
+   - Added persistent Prisma models for product reviews, helpful interactions, seller responses, and review media payloads.
+   - Built `/api/community/products/:productId/reviews` for review summary, filters, verified purchase detection, and sentiment-ready aggregates.
+   - Replaced mocked PDP review blocks with live data, rating histogram, media previews, helpful votes, and real submission flow.
 
-2. Authentication System:
-   - Hardened JWT sign/verify logic with Zod-validated payloads.
-   - Implemented Refresh Token rotation system in DB.
-   - Secured cookies with httpOnly, secure, and sameSite strict.
-   - Removed all mock auth logic fallbacks.
-   - Integrated role-based access control (RBAC) middleware for ADMIN/SUPERADMIN.
+2. Social Proof Engine:
+   - Added product view event tracking and social proof aggregation endpoint.
+   - Wired PDP viewer count, sold-last-hour, latest purchase city, and trust signal chips to live community data.
+   - Removed fake timer-driven review and social proof presentation from the product page.
 
-3. API Hardening:
-   - Implemented standardized ApiResponse utility for consistent client-server communication.
-   - Created centralized errorHandler middleware to catch and format API errors.
-   - Added global products rate limiter (100 req/min) with explicit Vietnamese error message.
-   - Integrated helmet for production security headers.
-   - Enabled 'trust proxy' for accurate rate limiting behind Nginx/Cloud Run.
+3. Follow and Community:
+   - Created `/community` as a separate storefront route that preserves the main storefront shell.
+   - Added shop follow API, community feed, trending product rail, daily check-in surface, referral surface, missions, and achievements.
+   - Added one dedicated community entry point in the header without changing the core storefront layout.
 
-4. Operations & Admin:
-   - Built Admin stats endpoint for business overview (Revenue, Orders, Users).
-   - Implemented Product management (Create/Update/Soft-delete).
-   - Implemented Order status management.
-   - Automated stock reduction and sold count tracking via atomic Prisma transactions.
+4. Support and Floating Actions:
+   - Added a persistent AI support chat flow with one conversation per user backed by the database.
+   - Added floating right-side actions for AI chat, Zalo, Messenger, and conditional back-to-top behavior.
+   - Kept the floating tools shell-safe and dark-mode compatible.
 
-5. Client-Side Integration:
-   - Initialized TanStack Query entity patterns for Products.
-   - Standardized fetch architecture for typed API responses.
+5. Verification:
+   - `npm.cmd run lint` passes.
+   - `npm.cmd run build` passes.
+   - Prisma schema was pushed, Prisma Client regenerated, and seed accounts re-created successfully.
+
+6. Admin hardening carried alongside Phase 9:
+   - Fixed admin sidebar active-state behavior so `/admin` no longer stays highlighted on child routes.
+   - Added persisted `VI/EN` admin locale toggle and refreshed admin shell copy.
+   - Reworked admin product operations into receiving, warehouse, and catalog flows.
+   - Added inventory receipt history, low-stock alert logic, Excel export, and richer SKU/cost/promo fields.
+   - Added a real notification center for both user and admin surfaces, backed by Prisma and route-aware dropdown actions.
+   - Upgraded notifications to realtime SSE updates, dedicated `/profile/notifications` and `/admin/notifications` views, and richer icon/color/status presentation inside the dropdown.
+   - Added shared back-to-top behavior for the storefront floating stack and the admin shell.
+
+7. Realtime support inbox update:
+   - Added SSE synchronization between user support chat and `/admin/support`.
+   - Added workflow states for `Dang cho`, `Da nhan`, `Dang xu ly`, and `Da doc`.
+   - Refined the floating support drawer to feel closer to a real commerce support center.

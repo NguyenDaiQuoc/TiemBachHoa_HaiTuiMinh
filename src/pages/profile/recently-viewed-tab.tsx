@@ -5,49 +5,43 @@ import { Eye, ShoppingBag, Trash2, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useRecentlyViewedStore } from '@/src/entities/product/model/recently-viewed-store';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '@/src/shared/lib/utils';
 import { useCartStore } from '@/src/shared/store/cart-store';
 import { toast } from 'sonner';
+import type { Product } from '@/src/entities/product/model/types';
 
 export const RecentlyViewedTab: React.FC = () => {
   const { products, clear } = useRecentlyViewedStore();
   const { addItem } = useCartStore();
 
-  const handleAddToCart = (product: any) => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: 1
-    });
+  const handleAddToCart = (product: Product) => {
+    addItem(product);
     toast.success(`Đã thêm ${product.name} vào giỏ hàng`);
   };
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-border/50">
+      <div className="flex flex-col justify-between gap-4 border-b border-border/50 pb-6 md:flex-row md:items-center">
         <div>
-          <h2 className="text-2xl font-black uppercase italic tracking-tight font-sans">SẢN PHẨM VỪA XEM</h2>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Danh sách các sản phẩm bạn đã quan tâm gần đây</p>
+          <h2 className="font-sans text-2xl font-black uppercase italic tracking-tight">SẢN PHẨM VỪA XEM</h2>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Danh sách các sản phẩm bạn đã quan tâm gần đây</p>
         </div>
         {products.length > 0 && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={clear}
-            className="h-10 px-4 rounded-xl text-[10px] font-black italic uppercase tracking-widest text-muted-foreground hover:text-rose-500 hover:bg-rose-500/5 transition-all"
+            className="h-10 rounded-xl px-4 text-[10px] font-black uppercase italic tracking-widest text-muted-foreground transition-all hover:bg-rose-500/5 hover:text-rose-500"
           >
-            <Trash2 className="w-3.5 h-3.5 mr-2" /> XÓA LỊCH SỬ
+            <Trash2 className="mr-2 h-3.5 w-3.5" /> Xóa lịch sử
           </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence mode="popLayout" initial={false}>
           {products.length > 0 ? (
             products.map((item, i) => (
-              <motion.div 
+              <motion.div
                 key={item.id}
                 layout
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -55,42 +49,38 @@ export const RecentlyViewedTab: React.FC = () => {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ delay: i * 0.05 }}
               >
-                <Card className="group relative overflow-hidden rounded-[32px] border-none shadow-soft transition-all duration-500 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md hover:shadow-xl h-full flex flex-col">
-                  <Link to={`/product/${item.id}`} className="block relative aspect-square overflow-hidden bg-muted/30 p-4">
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover rounded-2xl transition-transform duration-700 group-hover:scale-110" 
-                    />
-                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors duration-500" />
+                <Card className="group relative flex h-full flex-col overflow-hidden rounded-[32px] border-none bg-white/80 shadow-soft backdrop-blur-md transition-all duration-500 hover:shadow-xl dark:bg-slate-900/80">
+                  <Link to={`/product/${item.id}`} className="relative block aspect-square overflow-hidden bg-muted/30 p-4">
+                    <img src={item.image} alt={item.name} className="h-full w-full rounded-2xl object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-primary/0 transition-colors duration-500 group-hover:bg-primary/5" />
                   </Link>
 
-                  <div className="p-5 space-y-4 flex flex-col flex-1">
+                  <div className="flex flex-1 flex-col space-y-4 p-5">
                     <div className="space-y-1">
-                      <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] opacity-80">
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-80">
                         {typeof item.category === 'object' ? item.category.name : item.category}
                       </p>
-                      <h4 className="font-black italic uppercase tracking-tight text-sm line-clamp-1 group-hover:text-primary transition-colors">{item.name}</h4>
+                      <h4 className="line-clamp-1 text-sm font-black uppercase italic tracking-tight transition-colors group-hover:text-primary">{item.name}</h4>
                     </div>
-                    
-                    <div className="flex items-center justify-between mt-auto pt-2">
-                      <p className="text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString()}đ</p>
+
+                    <div className="mt-auto flex items-center justify-between pt-2">
+                      <p className="text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString('vi-VN')}đ</p>
                       <div className="flex gap-2">
-                        <Button 
+                        <Button
                           onClick={() => handleAddToCart(item)}
-                          size="icon" 
-                          variant="ghost" 
-                          className="rounded-xl h-10 w-10 bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                          size="icon"
+                          variant="ghost"
+                          className="h-10 w-10 rounded-xl bg-primary/5 text-primary shadow-sm transition-all hover:bg-primary hover:text-white"
                         >
-                          <ShoppingBag className="w-4 h-4" />
+                          <ShoppingBag className="h-4 w-4" />
                         </Button>
                         <Link to={`/product/${item.id}`}>
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="rounded-xl h-10 w-10 bg-muted/30 text-muted-foreground hover:bg-primary hover:text-white transition-all shadow-sm"
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-10 w-10 rounded-xl bg-muted/30 text-muted-foreground shadow-sm transition-all hover:bg-primary hover:text-white"
                           >
-                            <ArrowUpRight className="w-4 h-4" />
+                            <ArrowUpRight className="h-4 w-4" />
                           </Button>
                         </Link>
                       </div>
@@ -100,18 +90,20 @@ export const RecentlyViewedTab: React.FC = () => {
               </motion.div>
             ))
           ) : (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="col-span-full text-center py-24 bg-white/30 dark:bg-slate-900/30 rounded-[48px] border border-dashed border-border/50 w-full"
+              className="col-span-full w-full rounded-[48px] border border-dashed border-border/50 bg-white/30 py-24 text-center dark:bg-slate-900/30"
             >
-              <div className="w-24 h-24 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-6">
-                <Eye className="w-10 h-10 text-muted-foreground/30" />
+              <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/20">
+                <Eye className="h-10 w-10 text-muted-foreground/30" />
               </div>
-              <h3 className="text-xl font-black uppercase italic tracking-tight mb-2">LỊCH SỬ TRỐNG</h3>
-              <p className="text-xs text-muted-foreground font-medium mb-8 max-w-[280px] mx-auto">Bạn chưa xem bất kỳ sản phẩm nào. Hãy khám phá và tìm sản phẩm ưng ý nhé!</p>
+              <h3 className="mb-2 text-xl font-black uppercase italic tracking-tight">LỊCH SỬ TRỐNG</h3>
+              <p className="mx-auto mb-8 max-w-[280px] text-xs font-medium text-muted-foreground">Bạn chưa xem bất kỳ sản phẩm nào. Hãy khám phá và tìm sản phẩm ưng ý nhé!</p>
               <Link to="/search">
-                <Button className="h-14 px-10 rounded-2xl font-black uppercase tracking-widest italic text-[11px] shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">BẮT ĐẦU MUA SẮM</Button>
+                <Button className="h-14 rounded-2xl px-10 text-[11px] font-black uppercase italic tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+                  Bắt đầu mua sắm
+                </Button>
               </Link>
             </motion.div>
           )}

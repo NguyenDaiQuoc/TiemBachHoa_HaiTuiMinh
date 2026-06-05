@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Product } from '@/src/entities/product/model/types';
+import { Product, ProductVariant } from '@/src/entities/product/model/types';
 import { queryClient } from '@/src/shared/lib/react-query';
+import { getAuthHeaders } from '@/src/shared/lib/auth-headers';
 
 const BASE_URL = '/api/products';
 
@@ -27,6 +28,25 @@ export interface ProductListResponse {
   meta: ProductListMeta;
 }
 
+export interface ProductUpsertPayload {
+  name: string;
+  slug: string;
+  sku?: string | null;
+  description: string;
+  costPrice: number;
+  price: number;
+  promotionalPrice?: number | null;
+  images: string[];
+  categoryId: string;
+  brand?: string | null;
+  subcategory?: string | null;
+  tags?: string[];
+  stock: number;
+  initialStock?: number;
+  reorderLevel?: number | null;
+  variants?: ProductVariant[];
+}
+
 export const productKeys = {
   all: ['products'] as const,
   lists: () => [...productKeys.all, 'list'] as const,
@@ -35,12 +55,12 @@ export const productKeys = {
   detail: (id: string) => [...productKeys.details(), id] as const,
 };
 
-const parseJson = async (response: Response) => {
+const parseJson = async <T>(response: Response): Promise<T> => {
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
     throw new Error(payload?.error || payload?.message || 'Không thể tải dữ liệu sản phẩm');
   }
-  return payload;
+  return (payload?.data ?? payload) as T;
 };
 
 export const fetchProducts = async (filters: ProductListFilters = {}): Promise<ProductListResponse> => {
@@ -53,18 +73,23 @@ export const fetchProducts = async (filters: ProductListFilters = {}): Promise<P
   });
 
   const response = await fetch(`${BASE_URL}?${params.toString()}`);
-  const payload = await parseJson(response);
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(payload?.error || payload?.message || 'Không thể tải danh sách sản phẩm');
+  }
+
+  const items = (payload.data || []) as Product[];
 
   return {
-    items: payload.data,
-    meta: payload.meta,
+    items,
+    meta: payload.meta || { total: items.length, page: filters.page || 1, limit: filters.limit || items.length || 20, totalPages: 1 },
   };
 };
 
 export const fetchProduct = async (id: string): Promise<Product> => {
   const response = await fetch(`${BASE_URL}/${id}`);
-  const payload = await parseJson(response);
-  return payload.data;
+  return parseJson<Product>(response);
 };
 
 export const useProducts = (filters: ProductListFilters = {}) =>
@@ -80,32 +105,33 @@ export const useProduct = (id: string) =>
     enabled: !!id,
   });
 
-export const createProduct = async (data: unknown) => {
+export const createProduct = async (data: ProductUpsertPayload) => {
   const response = await fetch('/api/admin/products', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }, 'admin'),
     body: JSON.stringify(data),
   });
 
-  return parseJson(response);
+  return parseJson<Product>(response);
 };
 
-export const updateProduct = async ({ id, data }: { id: string; data: unknown }) => {
+export const updateProduct = async ({ id, data }: { id: string; data: Partial<ProductUpsertPayload> }) => {
   const response = await fetch(`/api/admin/products/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }, 'admin'),
     body: JSON.stringify(data),
   });
 
-  return parseJson(response);
+  return parseJson<Product>(response);
 };
 
 export const deleteProduct = async (id: string) => {
   const response = await fetch(`/api/admin/products/${id}`, {
     method: 'DELETE',
+    headers: getAuthHeaders({}, 'admin'),
   });
 
-  return parseJson(response);
+  return parseJson<null>(response);
 };
 
 export const useCreateProduct = () =>

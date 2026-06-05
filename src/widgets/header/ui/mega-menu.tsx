@@ -8,9 +8,11 @@ interface MegaMenuProps {
   isOpen: boolean;
   type: 'shop' | 'collections';
   onClose: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
-export const MegaMenu = ({ isOpen, type, onClose }: MegaMenuProps) => {
+export const MegaMenu = ({ isOpen, type, onClose, onMouseEnter, onMouseLeave }: MegaMenuProps) => {
   const shopItems = [
     {
       title: 'MỸ PHẨM CHÍNH HÃNG',
@@ -79,6 +81,8 @@ export const MegaMenu = ({ isOpen, type, onClose }: MegaMenuProps) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             className="fixed left-0 right-0 top-16 z-50 overflow-hidden border-b border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl"
           >
             <div className="container mx-auto px-6 py-12">

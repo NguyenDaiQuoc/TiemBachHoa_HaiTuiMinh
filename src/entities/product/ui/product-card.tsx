@@ -23,6 +23,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
   const isWishlisted = ids.includes(product.id);
   const [isAdding, setIsAdding] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const categoryLabel = typeof product.category === 'object' ? product.category?.name || 'Danh mục' : product.category || 'Danh mục';
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -142,7 +143,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
         <CardContent className="p-4 space-y-2 bg-surface-default group-hover:bg-surface-elevated transition-colors">
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.2em] font-black">
-              {typeof product.category === 'object' ? product.category.name : product.category}
+              {categoryLabel}
             </p>
             {product.soldCount && product.soldCount > 0 && (
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/5 border border-primary/10">

@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Prisma } from '@prisma/client';
 import prisma from '../shared/lib/prisma.js';
 import { sendError, sendSuccess } from './utils/api-response.js';
 
@@ -10,24 +11,39 @@ const CATEGORY_RATING_MAP: Record<string, number> = {
   'cong-nghe': 4.6,
 };
 
+const serializeProduct = (product: Prisma.ProductGetPayload<{ include: { category: true } }>) => {
+  const categorySlug = product.category?.slug ?? '';
+  const rating = CATEGORY_RATING_MAP[categorySlug] ?? 4.5;
+  const reviewCount = Math.max(12, Math.round(product.soldCount * 0.18) || 24);
+  const variants =
+    Array.isArray(product.variantsJson) && product.variantsJson.length
+      ? [
+          {
+            type: 'capacity' as const,
+            options: product.variantsJson,
+          },
+        ]
+      : [];
+
+  return {
+    ...product,
+    image: product.images?.[0] || '',
+    rating,
+    reviewCount,
+    isNew: Date.now() - new Date(product.createdAt).getTime() < 1000 * 60 * 60 * 24 * 21,
+    variants,
+  };
+};
+
 router.get('/', async (req, res, next) => {
-  const {
-    query,
-    category,
-    minPrice,
-    maxPrice,
-    minRating,
-    sortBy,
-    limit = 12,
-    page = 1,
-  } = req.query;
+  const { query, category, minPrice, maxPrice, minRating, sortBy, limit = 12, page = 1 } = req.query;
 
   try {
     const parsedPage = Math.max(1, Number(page) || 1);
     const parsedLimit = Math.min(48, Math.max(1, Number(limit) || 12));
     const skip = (parsedPage - 1) * parsedLimit;
 
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       isActive: true,
       deletedAt: null,
       AND: [
@@ -36,15 +52,13 @@ router.get('/', async (req, res, next) => {
               OR: [
                 { name: { contains: String(query), mode: 'insensitive' } },
                 { description: { contains: String(query), mode: 'insensitive' } },
+                { sku: { contains: String(query), mode: 'insensitive' } },
               ],
             }
           : {},
         category
           ? {
-              OR: [
-                { category: { slug: String(category) } },
-                { category: { name: String(category) } },
-              ],
+              OR: [{ category: { slug: String(category) } }, { category: { name: String(category) } }],
             }
           : {},
         minPrice ? { price: { gte: Number(minPrice) } } : {},
@@ -52,7 +66,7 @@ router.get('/', async (req, res, next) => {
       ],
     };
 
-    const orderBy =
+    const orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] =
       sortBy === 'price-asc'
         ? { price: 'asc' }
         : sortBy === 'price-desc'
@@ -73,21 +87,7 @@ router.get('/', async (req, res, next) => {
     ]);
 
     const requiredRating = minRating ? Number(minRating) : null;
-    const enrichedProducts = products
-      .map((product) => {
-        const categorySlug = typeof product.category === 'object' ? product.category.slug : '';
-        const fallbackRating = CATEGORY_RATING_MAP[categorySlug] ?? 4.5;
-        const reviewCount = Math.max(12, Math.round(product.soldCount * 0.18) || 24);
-
-        return {
-          ...product,
-          image: product.images?.[0] || '',
-          rating: fallbackRating,
-          reviewCount,
-          isNew: Date.now() - new Date(product.createdAt).getTime() < 1000 * 60 * 60 * 24 * 21,
-        };
-      })
-      .filter((product) => (requiredRating ? product.rating >= requiredRating : true));
+    const enrichedProducts = products.map(serializeProduct).filter((product) => (requiredRating ? product.rating >= requiredRating : true));
 
     return res.status(200).json({
       success: true,
@@ -116,16 +116,7 @@ router.get('/:id', async (req, res, next) => {
       return sendError(res, 'Sản phẩm không tồn tại hoặc đã ngừng kinh doanh', 404);
     }
 
-    const categorySlug = typeof product.category === 'object' ? product.category.slug : '';
-    const rating = CATEGORY_RATING_MAP[categorySlug] ?? 4.5;
-
-    return sendSuccess(res, {
-      ...product,
-      image: product.images?.[0] || '',
-      rating,
-      reviewCount: Math.max(12, Math.round(product.soldCount * 0.18) || 24),
-      isNew: Date.now() - new Date(product.createdAt).getTime() < 1000 * 60 * 60 * 24 * 21,
-    });
+    return sendSuccess(res, serializeProduct(product));
   } catch (error) {
     next(error);
   }

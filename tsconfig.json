@@ -26,6 +26,11 @@
       "@shared/*": ["./src/shared/*"]
     },
     "allowImportingTsExtensions": true,
+    "types": [
+      "vitest/globals",
+      "@testing-library/jest-dom"
+    ],
     "noEmit": true
-  }
+  },
+  "exclude": ["dist", "node_modules"]
 }

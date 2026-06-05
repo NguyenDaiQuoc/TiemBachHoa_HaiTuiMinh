@@ -26,6 +26,9 @@ const serverEnvSchema = z.object({
   GHN_TOKEN: z.string().optional(),
   GHTK_TOKEN: z.string().optional(),
 
+  // AI Support
+  GEMINI_API_KEY: z.string().optional(),
+
   // Feature Flags
   ENABLE_LIVE_PAYMENTS: z.string().optional().transform((v) => v === 'true').default(false),
   ENABLE_LIVE_SHIPPING: z.string().optional().transform((v) => v === 'true').default(false),

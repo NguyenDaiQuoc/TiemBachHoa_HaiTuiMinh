@@ -1,9 +1,11 @@
 import express from "express";
 import prisma from "../shared/lib/prisma.js";
-import { authenticate } from "./auth-middleware.js";
+import { authenticate, verifyAccessToken } from "./auth-middleware.js";
 import { sendSuccess, sendError } from "./utils/api-response.js";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { serializeNotificationCenter } from "./services/notification-service.js";
+import { emitNotificationStream, registerNotificationStream, unregisterNotificationStream } from "./services/notification-stream-service.js";
 
 const router = express.Router();
 
@@ -172,6 +174,89 @@ router.get("/notifications/settings", authenticate, async (req: any, res, next) 
     }
 
     return sendSuccess(res, settings);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/notifications", authenticate, async (req: any, res, next) => {
+  try {
+    const notifications = await prisma.appNotification.findMany({
+      where: { userId: req.user.id, scope: "USER" },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+
+    return sendSuccess(res, serializeNotificationCenter(notifications));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/notifications/stream", async (req: any, res) => {
+  const token = typeof req.query.token === "string" ? req.query.token : "";
+
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const user = verifyAccessToken(token);
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    });
+
+    registerNotificationStream(user.id, "USER", res);
+
+    const heartbeat = setInterval(() => {
+      res.write(`event: ping\ndata: ${Date.now()}\n\n`);
+    }, 20000);
+
+    req.on("close", () => {
+      clearInterval(heartbeat);
+      unregisterNotificationStream(user.id, "USER", res);
+    });
+  } catch {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+});
+
+router.patch("/notifications/:id/read", authenticate, async (req: any, res, next) => {
+  try {
+    const notification = await prisma.appNotification.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, userId: true },
+    });
+
+    if (!notification || notification.userId !== req.user.id) {
+      return sendError(res, "Không tìm thấy thông báo", 404);
+    }
+
+    const updated = await prisma.appNotification.update({
+      where: { id: req.params.id },
+      data: { isRead: true, readAt: new Date() },
+    });
+
+    emitNotificationStream(req.user.id, "USER");
+
+    return sendSuccess(res, updated, "Đã đánh dấu đã đọc");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/notifications/read-all", authenticate, async (req: any, res, next) => {
+  try {
+    const result = await prisma.appNotification.updateMany({
+      where: { userId: req.user.id, scope: "USER", isRead: false },
+      data: { isRead: true, readAt: new Date() },
+    });
+
+    emitNotificationStream(req.user.id, "USER");
+
+    return sendSuccess(res, { count: result.count }, "Đã đánh dấu toàn bộ thông báo");
   } catch (error) {
     next(error);
   }

@@ -1,9 +1,13 @@
 export interface ProductVariant {
   id: string;
-  name: string; // e.g., "Deep Midnight"
-  value: string; // e.g., "#000033" or "128GB"
-  priceModifier?: number;
+  name: string;
+  value: string;
+  sku?: string;
+  costPrice?: number;
+  price?: number;
+  promotionalPrice?: number;
   stock: number;
+  initialStock?: number;
   images?: string[];
 }
 
@@ -34,7 +38,10 @@ export interface Product {
   id: string;
   name: string;
   slug: string;
+  sku?: string;
+  costPrice?: number;
   price: number;
+  promotionalPrice?: number;
   oldPrice?: number;
   description: string;
   longDescription?: string;
@@ -42,8 +49,13 @@ export interface Product {
   images: string[];
   categoryId: string;
   category: Category | string;
+  brand?: string | null;
+  subcategory?: string | null;
+  tags?: string[];
   isNew?: boolean;
   stock: number;
+  initialStock?: number;
+  reorderLevel?: number;
   soldCount: number;
   rating?: number;
   reviewCount?: number;

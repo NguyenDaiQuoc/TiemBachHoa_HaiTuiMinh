@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const PORT = Number(env.PORT || 3000);
+  const isProduction = process.env.NODE_ENV === "production";
 
   // Trust proxy for rate limiting (behind Nginx/Cloud Run)
   app.set('trust proxy', 1);
@@ -25,12 +26,13 @@ async function startServer() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cookieParser());
+  app.use('/generated', express.static(path.join(process.cwd(), 'public', 'generated')));
 
   // Security: Rate Limiting
   const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: { error: "Too many login attempts. Please try again in 15 minutes." },
+    windowMs: isProduction ? 15 * 60 * 1000 : 60 * 1000,
+    max: isProduction ? 10 : 200,
+    message: { error: isProduction ? "Too many login attempts. Please try again in 15 minutes." : "Bạn đang gửi yêu cầu đăng nhập quá nhanh. Vui lòng thử lại sau ít phút." },
     standardHeaders: true,
     legacyHeaders: false,
     validate: { xForwardedForHeader: false },
@@ -53,9 +55,12 @@ async function startServer() {
   const cartRouter = (await import("./src/server/cart-router.js")).default;
   const orderRouter = (await import("./src/server/order-router.js")).default;
   const adminRouter = (await import("./src/server/admin-router.js")).default;
+  const communityRouter = (await import("./src/server/community-router.js")).default;
 
   // API Routes
-  app.use("/api/auth", authLimiter, authRouter);
+  app.use("/api/auth/login", authLimiter);
+  app.use("/api/auth/register", authLimiter);
+  app.use("/api/auth", authRouter);
   app.use("/api/user", userRouter);
   app.use("/api", apiLimiter); // Apply to all other API routes
   app.use("/api/products", productRouter);
@@ -63,6 +68,7 @@ async function startServer() {
   app.use("/api/cart", cartRouter);
   app.use("/api/orders", orderRouter);
   app.use("/api/admin", adminRouter);
+  app.use("/api/community", communityRouter);
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });

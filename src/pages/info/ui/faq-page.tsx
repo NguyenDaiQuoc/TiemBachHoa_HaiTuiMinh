@@ -134,9 +134,9 @@ export const FAQPage = () => {
               <MessageCircle className="w-5 h-5" />
               <span className="font-black uppercase text-xs">CSKH Online</span>
             </a>
-            <a href="tel:0123456789" className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 transition-colors">
+            <a href="tel:0931454176" className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 transition-colors">
               <Phone className="w-5 h-5" />
-              <span className="font-black uppercase text-xs">Hotline: 0123.456.789</span>
+              <span className="font-black uppercase text-xs">Hotline: 0931.454.176</span>
             </a>
           </div>
         </div>

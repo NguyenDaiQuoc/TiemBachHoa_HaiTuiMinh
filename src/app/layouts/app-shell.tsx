@@ -1,9 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useReducedMotion } from 'motion/react';
 import { Header } from '@/src/widgets/header';
 import { Footer } from '@/src/widgets/footer';
 import { cn } from '@/src/shared/lib/utils';
+
+const FloatingActions = lazy(() =>
+  import('@/src/widgets/floating-actions').then((module) => ({ default: module.FloatingActions }))
+);
 
 export const AppShell = () => {
   const location = useLocation();
@@ -42,6 +46,9 @@ export const AppShell = () => {
         <Outlet />
       </main>
       <Footer />
+      <Suspense fallback={null}>
+        <FloatingActions />
+      </Suspense>
     </div>
   );
 };

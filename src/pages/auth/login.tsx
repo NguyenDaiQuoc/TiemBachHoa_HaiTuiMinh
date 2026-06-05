@@ -4,19 +4,34 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Chrome, Eye, EyeOff, Github, Loader2, Lock, Mail } from 'lucide-react';
+import { ArrowRight, Chrome, Eye, EyeOff, Github, Loader2, Lock, Mail, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/src/shared/model/auth-store';
+import { readApiResponse } from '@/src/shared/lib/read-api-response';
 import { Button } from '@/src/shared/ui/button';
 import { Card } from '@/src/shared/ui/card';
 import { Input } from '@/src/shared/ui/input';
 
 const loginSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
-  password: z.string().min(6, 'Mật khẩu phải ít nhất 6 ký tự'),
+  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
+
+const readLoginResponse = async (response: Response) => {
+  const text = await response.text();
+
+  if (!text) {
+    throw new Error('Máy chủ chưa trả về dữ liệu đăng nhập. Vui lòng kiểm tra cấu hình API production.');
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Máy chủ đang trả về dữ liệu không hợp lệ cho đăng nhập. Vui lòng kiểm tra lại API production.');
+  }
+};
 
 export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +58,10 @@ export const LoginPage: React.FC = () => {
         body: JSON.stringify(data),
       });
 
-      const result = await response.json();
+      const result = await readApiResponse<{ user?: any; token?: string; error?: string }>(
+        response,
+        'May chu dang tra ve du lieu khong hop le cho dang nhap. Vui long kiem tra lai API production.'
+      );
       if (!response.ok) throw new Error(result.error || 'Đăng nhập thất bại');
 
       setAuth(result.user, result.token);
@@ -68,7 +86,7 @@ export const LoginPage: React.FC = () => {
             Welcome Back
           </motion.div>
           <h1 className="text-4xl font-black tracking-tight">Đăng nhập</h1>
-          <p className="text-muted-foreground">Tiếp tục mua sắm mỹ phẩm, gia dụng và công nghệ chính hãng</p>
+          <p className="text-muted-foreground">Tiếp tục mua sắm mỹ phẩm, đồ gia dụng và công nghệ chính hãng với mức giá cạnh tranh.</p>
         </div>
 
         <Card className="group relative overflow-hidden border-primary/10 p-8 shadow-2xl shadow-primary/10">
@@ -91,8 +109,9 @@ export const LoginPage: React.FC = () => {
             <div className="space-y-2">
               <div className="ml-1 flex items-center justify-between">
                 <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Mật khẩu</label>
-                <Link to="/forgot-password" tabIndex={-1} className="text-xs font-medium text-primary hover:underline focus:outline-none">
-                  Quên mật khẩu?
+                <Link to="/admin/login" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                  <Shield className="h-3.5 w-3.5" />
+                  Cổng admin
                 </Link>
               </div>
               <div className="group relative">
@@ -117,13 +136,7 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <Button type="submit" className="h-12 w-full text-md font-bold shadow-lg transition-all hover:shadow-primary/20" disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <span className="flex items-center gap-2">
-                  Đăng nhập <ArrowRight className="h-4 w-4" />
-                </span>
-              )}
+              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="flex items-center gap-2">Đăng nhập <ArrowRight className="h-4 w-4" /></span>}
             </Button>
           </form>
 

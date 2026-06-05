@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronDown, Compass, Home, Layers, Menu, Moon, Package, Search, ShoppingBag, Sun } from 'lucide-react';
+import { ChevronDown, Compass, Home, Layers, Menu, Moon, Package, Search, ShoppingBag, Sun, Users2 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCartStore } from '@/src/entities/cart/model/store';
 import { useThemeStore } from '@/src/shared/store/theme-store';
@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/sr
 import { cn } from '@/src/shared/lib/utils';
 import { SearchOverlay } from '@/src/features/search/ui/search-overlay';
 import { CartDrawer } from '@/src/widgets/cart-drawer';
+import { NotificationDropdown } from '@/src/shared/ui/notification-dropdown';
 import { AccountDropdown } from './account-dropdown';
 import { MegaMenu } from './mega-menu';
 
@@ -24,6 +25,7 @@ export const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const searchButtonRef = useRef<HTMLButtonElement>(null);
+  const megaMenuCloseTimerRef = useRef<number | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -49,6 +51,12 @@ export const Header = () => {
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (megaMenuCloseTimerRef.current) window.clearTimeout(megaMenuCloseTimerRef.current);
+    };
+  }, []);
+
   const handleOpenSearch = useCallback(() => {
     setIsSearchOpen(true);
   }, []);
@@ -60,28 +68,46 @@ export const Header = () => {
     }, 200);
   }, []);
 
+  const clearMegaMenuCloseTimer = () => {
+    if (!megaMenuCloseTimerRef.current) return;
+    window.clearTimeout(megaMenuCloseTimerRef.current);
+    megaMenuCloseTimerRef.current = null;
+  };
+
+  const openMegaMenu = (type: 'shop' | 'collections') => {
+    clearMegaMenuCloseTimer();
+    setActiveMegaMenu(type);
+  };
+
+  const scheduleMegaMenuClose = () => {
+    clearMegaMenuCloseTimer();
+    megaMenuCloseTimerRef.current = window.setTimeout(() => setActiveMegaMenu(null), 180);
+  };
+
   const toggleMegaMenu = (type: 'shop' | 'collections') => {
+    clearMegaMenuCloseTimer();
     setActiveMegaMenu((prev) => (prev === type ? null : type));
   };
 
   const navItems = [
-    { label: 'CỬA HÀNG', type: 'shop' as const, path: '/products', icon: <Home className="h-5 w-5" /> },
-    { label: 'KHÁM PHÁ', type: null, path: '/products', icon: <Compass className="h-5 w-5" /> },
-    { label: 'THEO DÕI', type: null, path: '/tracking', icon: <Package className="h-5 w-5" /> },
-    { label: 'BỘ SƯU TẬP', type: 'collections' as const, path: '/collections', icon: <Layers className="h-5 w-5" /> },
+    { label: 'Cửa hàng', type: 'shop' as const, path: '/products', icon: <Home className="h-5 w-5" /> },
+    { label: 'Khám phá', type: null, path: '/products', icon: <Compass className="h-5 w-5" /> },
+    { label: 'Cộng đồng', type: null, path: '/community', icon: <Users2 className="h-5 w-5" /> },
+    { label: 'Theo dõi', type: null, path: '/tracking', icon: <Package className="h-5 w-5" /> },
+    { label: 'Bộ sưu tập', type: 'collections' as const, path: '/collections', icon: <Layers className="h-5 w-5" /> },
   ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-4">
+      <div className="container mx-auto flex h-16 min-w-0 items-center justify-between gap-2 px-2 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger
               render={
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-lg border border-transparent transition-all hover:border-border/50 hover:bg-primary/5 md:hidden"
+                  className="h-9 w-9 rounded-lg border border-transparent transition-all hover:border-border/50 hover:bg-primary/5 sm:h-10 sm:w-10 md:hidden"
                 >
                   <Menu className="h-6 w-6" />
                 </Button>
@@ -90,16 +116,17 @@ export const Header = () => {
             <SheetContent side="left" className="w-[300px] border-r-border/50 bg-background/95 p-0 backdrop-blur-xl">
               <SheetHeader className="border-b border-border/50 p-6">
                 <SheetTitle className="text-left">
-                  <span className="font-heading text-xl font-black uppercase tracking-tight text-primary italic">
-                    TIỆM BÁCH HOÁ HAI TỤI MÌNH
+                  <span className="flex flex-wrap items-end gap-x-2 text-primary">
+                    <span className="font-heading text-lg font-semibold uppercase tracking-[0.16em] text-foreground">
+                      Tiệm bách hoá
+                    </span>
+                    <span className="font-accent text-[1.9rem] leading-none text-primary">Hai Tụi Mình</span>
                   </span>
                 </SheetTitle>
               </SheetHeader>
               <div className="space-y-8 p-6">
                 <div className="space-y-2">
-                  <p className="mb-4 text-[10px] font-black uppercase tracking-[.3em] text-muted-foreground">
-                    Điều hướng
-                  </p>
+                  <p className="mb-4 text-[10px] font-black uppercase tracking-[.3em] text-muted-foreground">Điều hướng</p>
                   {navItems.map((item) => (
                     <Link
                       key={item.label}
@@ -115,9 +142,7 @@ export const Header = () => {
                 </div>
 
                 <div className="space-y-4 border-t border-border/50 pt-8">
-                  <p className="mb-4 text-[10px] font-black uppercase tracking-[.3em] text-muted-foreground">
-                    Kênh bán hàng
-                  </p>
+                  <p className="mb-4 text-[10px] font-black uppercase tracking-[.3em] text-muted-foreground">Kênh bán hàng</p>
                   <div className="grid grid-cols-2 gap-4">
                     {['Facebook', 'Instagram', 'Zalo', 'Shopee'].map((social) => (
                       <Button key={social} variant="outline" className="h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest">
@@ -130,19 +155,23 @@ export const Header = () => {
             </SheetContent>
           </Sheet>
 
-          <Link to="/" className="flex items-center gap-2 group">
-            <span className="font-heading text-xl font-black uppercase tracking-tight text-primary italic">
-              TIỆM BÁCH HOÁ HAI TỤI MÌNH
+          <Link to="/" className="group flex min-w-0 items-center gap-2" aria-label="Hai Tui Minh home">
+            <span className="flex min-w-0 items-end gap-x-2 text-primary">
+              <span className="hidden font-heading text-lg font-semibold uppercase tracking-[0.16em] text-foreground transition-colors group-hover:text-primary sm:inline">
+                Tiệm bách hoá
+              </span>
+              <span className="shrink-0 whitespace-nowrap font-accent text-[1.05rem] leading-none text-primary min-[380px]:text-[1.18rem] sm:text-[1.75rem] lg:text-[1.95rem]">Hai Tụi Mình</span>
             </span>
           </Link>
         </div>
 
         <nav className="hidden items-center space-x-6 md:flex">
           {navItems.map((item) => (
-            <div key={item.label} className="group relative">
+            <div key={item.label} className="group relative" onMouseEnter={() => item.type && openMegaMenu(item.type)} onMouseLeave={() => item.type && scheduleMegaMenuClose()}>
               {item.type ? (
                 <button
                   onClick={() => toggleMegaMenu(item.type)}
+                  onFocus={() => openMegaMenu(item.type)}
                   className={cn(
                     'flex items-center gap-1.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] transition-all',
                     activeMegaMenu === item.type ? 'text-primary' : 'text-foreground/60'
@@ -170,12 +199,12 @@ export const Header = () => {
           ))}
         </nav>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className="h-10 w-10 rounded-full border border-transparent transition-all hover:border-border/50 hover:bg-primary/5"
+            className="hidden h-9 w-9 rounded-full border border-transparent transition-all hover:border-border/50 hover:bg-primary/5 min-[380px]:inline-flex sm:h-10 sm:w-10"
           >
             <AnimatePresence mode="wait">
               <motion.div
@@ -190,17 +219,21 @@ export const Header = () => {
             </AnimatePresence>
           </Button>
 
-          <div className="flex items-center space-x-1 sm:space-x-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               ref={searchButtonRef}
               variant="ghost"
               size="icon"
               onClick={handleOpenSearch}
-              className="flex h-10 w-10 rounded-full border border-transparent transition-all hover:border-border/50 hover:bg-primary/5"
+              className="flex h-9 w-9 rounded-full border border-transparent transition-all hover:border-border/50 hover:bg-primary/5 sm:h-10 sm:w-10"
               aria-label="Tìm kiếm"
             >
               <Search className="h-5 w-5" />
             </Button>
+
+            <div className="hidden min-[380px]:block">
+              <NotificationDropdown scope="user" />
+            </div>
 
             <AccountDropdown />
 
@@ -212,8 +245,8 @@ export const Header = () => {
               animate={isAnimating ? { scale: [1, 1.15, 1], rotate: [0, -5, 5, 0] } : {}}
               transition={{ duration: 0.3 }}
             >
-              <div className="rounded-full border border-transparent p-2.5 transition-all group-hover:border-border/50 group-hover:bg-primary/5">
-                <ShoppingBag className={cn('h-5 w-5 transition-colors', totalItemsCount > 0 && 'text-primary')} />
+              <div className="rounded-full border border-transparent p-2 transition-all group-hover:border-border/50 group-hover:bg-primary/5 sm:p-2.5">
+                <ShoppingBag className={cn('h-4 w-4 transition-colors sm:h-5 sm:w-5', totalItemsCount > 0 && 'text-primary')} />
               </div>
               <AnimatePresence>
                 {totalItemsCount > 0 && (
@@ -233,7 +266,13 @@ export const Header = () => {
         </div>
       </div>
 
-      <MegaMenu isOpen={!!activeMegaMenu} type={activeMegaMenu || 'shop'} onClose={() => setActiveMegaMenu(null)} />
+      <MegaMenu
+        isOpen={!!activeMegaMenu}
+        type={activeMegaMenu || 'shop'}
+        onClose={() => setActiveMegaMenu(null)}
+        onMouseEnter={clearMegaMenuCloseTimer}
+        onMouseLeave={scheduleMegaMenuClose}
+      />
 
       <CartDrawer isOpen={isCartOpen} onOpenChange={setIsCartOpen} />
       <SearchOverlay isOpen={isSearchOpen} onClose={handleCloseSearch} />

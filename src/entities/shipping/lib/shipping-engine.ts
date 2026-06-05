@@ -49,7 +49,7 @@ export class ShippingAggregator {
     // For now, we simulate a realistic response
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const origin: TrackingLocation = { lat: 10.8953, lng: 106.5771, name: 'Tòa nhà văn phòng - 82/1E tổ 39, Xuân Thới Sơn, TP.HCM', type: 'ORIGIN' };
+    const origin: TrackingLocation = { lat: 10.8953, lng: 106.5771, name: 'Tòa nhà văn phòng - 82/1E ấp Xuân Thới Đông 3, xã Xuân Thới Đông, Hóc Môn, TP.HCM', type: 'ORIGIN' };
     const destination: TrackingLocation = { lat: 10.7963, lng: 106.6675, name: 'Căn hộ khách hàng - Phường 6, Quận 3, TP.HCM', type: 'DESTINATION' };
 
     const mockEvents: TrackingEvent[] = [

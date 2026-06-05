@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { isAdminRole } from '@/src/shared/model/auth-utils';
+import { useAdminAuthStore } from '@/src/shared/model/admin-auth-store';
 import { useAuthStore } from '@/src/shared/model/auth-store';
-import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,14 +10,17 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
-  const { user, token } = useAuthStore();
+  const userAuth = useAuthStore();
+  const adminAuth = useAdminAuthStore();
   const location = useLocation();
+  const { user, token } = requireAdmin ? adminAuth : userAuth;
+  const hasAdminRole = isAdminRole(user?.role);
 
   if (!token || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={requireAdmin ? '/admin/login' : '/login'} state={{ from: location }} replace />;
   }
 
-  if (requireAdmin && user.role !== 'ADMIN') {
+  if (requireAdmin && !hasAdminRole) {
     return <Navigate to="/" replace />;
   }
 
