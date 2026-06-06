@@ -125,7 +125,8 @@ const getTimeLeft = (endsAt?: string | null) => {
 };
 
 export const HomePage = () => {
-  const [activeDeal, setActiveDeal] = useState<ActiveCampaignResponse | null>(null);
+  const [activeDeals, setActiveDeals] = useState<ActiveCampaignResponse[]>([]);
+  const [activeDealIndex, setActiveDealIndex] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(null));
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
@@ -142,12 +143,17 @@ export const HomePage = () => {
       .then((response) => (response.ok ? response.json() : null))
       .then((payload) => {
         if (!active) return;
-        const data = payload?.data || null;
-        setActiveDeal(data);
-        setTimeLeft(getTimeLeft(data?.campaign?.endsAt));
+        const campaigns = Array.isArray(payload?.data?.campaigns)
+          ? payload.data.campaigns
+          : payload?.data?.campaign
+            ? [payload.data]
+            : [];
+        setActiveDeals(campaigns);
+        setActiveDealIndex(0);
+        setTimeLeft(getTimeLeft(campaigns[0]?.campaign?.endsAt));
       })
       .catch(() => {
-        if (active) setActiveDeal(null);
+        if (active) setActiveDeals([]);
       });
 
     return () => {
@@ -155,12 +161,22 @@ export const HomePage = () => {
     };
   }, []);
 
+  const activeDeal = activeDeals[activeDealIndex] || null;
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(getTimeLeft(activeDeal?.campaign.endsAt));
     }, 1000);
     return () => clearInterval(timer);
   }, [activeDeal?.campaign.endsAt]);
+
+  useEffect(() => {
+    if (activeDeals.length < 2) return undefined;
+    const timer = setInterval(() => {
+      setActiveDealIndex((index) => (index + 1) % activeDeals.length);
+    }, 6500);
+    return () => clearInterval(timer);
+  }, [activeDeals.length]);
 
   const formatNum = (n: number) => n.toString().padStart(2, '0');
   const displayProducts = products.length ? products : SAMPLE_PRODUCTS;
@@ -173,7 +189,7 @@ export const HomePage = () => {
 
     return (matched.length ? matched : fallback).slice(0, 3);
   };
-  const dealProducts = activeDeal?.products?.length ? activeDeal.products : displayProducts.slice(0, 2);
+  const dealProducts = activeDeal?.products || [];
   const dealLink = activeDeal?.campaign?.slug ? `/${activeDeal.campaign.slug}` : '/flash-sale';
   return (
       <div className="container mx-auto px-4 py-12 space-y-20">
@@ -221,10 +237,17 @@ export const HomePage = () => {
         </section>
 
         {/* Flash Sale */}
+        {activeDeal && (
         <section className="bg-foreground text-background rounded-[3rem] p-8 md:p-12 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[100px] -mr-48 -mt-48 group-hover:bg-primary/30 transition-colors duration-1000" />
           
-          <div className="relative z-10 flex flex-col lg:flex-row gap-12 items-center">
+          <motion.div
+            key={activeDeal.campaign.id}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            className="relative z-10 flex flex-col lg:flex-row gap-12 items-center"
+          >
             <div className="flex-1 space-y-8 w-full">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded-full w-fit">
@@ -232,8 +255,13 @@ export const HomePage = () => {
                   <span className="text-[10px] font-black uppercase tracking-widest italic">Deal Cháy Giờ Vàng</span>
                 </div>
                 <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter leading-none">
-                  Flash Sale<br/><span className="text-primary">Săn Deal 1/2 Giá</span>
+                  {activeDeal.campaign.name}<br/><span className="text-primary">Săn Deal Giờ Vàng</span>
                 </h2>
+                {activeDeal.campaign.description && (
+                  <p className="max-w-xl text-sm font-semibold leading-relaxed text-background/70 md:text-base">
+                    {activeDeal.campaign.description}
+                  </p>
+                )}
                 <div className="flex items-center gap-4 pt-4">
                   <div className="flex items-center gap-2 font-mono text-2xl md:text-4xl font-black italic">
                     <span className="bg-background/10 backdrop-blur-md px-3 py-1 rounded-xl">{formatNum(timeLeft.h)}</span>
@@ -248,13 +276,33 @@ export const HomePage = () => {
                 </div>
               </div>
               
-              <Link to={dealLink} className="inline-block">
-                <button className="bg-primary text-primary-foreground px-8 py-4 rounded-full font-black uppercase tracking-widest italic hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20">
-                  Xem tất cả Deal <ArrowRight className="inline-block ml-2 w-5 h-5" />
-                </button>
-              </Link>
+              <div className="space-y-5">
+                <Link to={dealLink} className="inline-block">
+                  <button className="bg-primary text-primary-foreground px-8 py-4 rounded-full font-black uppercase tracking-widest italic hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20">
+                    Xem tất cả Deal <ArrowRight className="inline-block ml-2 w-5 h-5" />
+                  </button>
+                </Link>
+                {activeDeals.length > 1 && (
+                  <div className="flex items-center gap-2" aria-label="Chọn deal đang hiển thị">
+                    {activeDeals.map((deal, index) => (
+                      <button
+                        key={deal.campaign.id}
+                        type="button"
+                        onClick={() => setActiveDealIndex(index)}
+                        className={cn(
+                          'h-2.5 rounded-full transition-all',
+                          index === activeDealIndex ? 'w-8 bg-primary' : 'w-2.5 bg-background/25 hover:bg-background/50'
+                        )}
+                        aria-label={`Chuyển sang deal ${index + 1}`}
+                        aria-current={index === activeDealIndex}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
+            {dealProducts.length > 0 && (
             <div className="flex-1 w-full grid grid-cols-2 gap-4">
               {dealProducts.slice(0, 2).map((product, i) => (
                 <Link key={product.id || i} to={getProductUrl(product)} className="block group/item">
@@ -276,9 +324,10 @@ export const HomePage = () => {
                 </Link>
               ))}
             </div>
-          </div>
+            )}
+          </motion.div>
         </section>
-
+        )}
         <section className="space-y-12 relative">
           <div className="flex items-end justify-between px-2">
             <div className="space-y-2">

@@ -50,7 +50,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       .filter(Boolean);
     const now = new Date();
 
-    const campaign = await prisma.marketingCampaign.findFirst({
+    const campaigns = await prisma.marketingCampaign.findMany({
       where: {
         isActive: true,
         type: { in: requestedTypes.length ? requestedTypes : ['DEAL', 'FLASH_SALE'] },
@@ -58,27 +58,35 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }],
       },
       orderBy: [{ endsAt: 'asc' }, { updatedAt: 'desc' }],
+      take: 8,
     });
 
-    if (!campaign) {
-      return sendJson(res, 200, { success: true, data: null });
+    if (!campaigns.length) {
+      return sendJson(res, 200, { success: true, data: { campaigns: [] } });
     }
 
-    const productIds = normalizeProductIds(campaign.productIds);
-    const products = productIds.length
+    const allProductIds = Array.from(new Set(campaigns.flatMap((campaign) => normalizeProductIds(campaign.productIds))));
+    const products = allProductIds.length
       ? await prisma.product.findMany({
-          where: { id: { in: productIds }, isActive: true, deletedAt: null },
+          where: { id: { in: allProductIds }, isActive: true, deletedAt: null },
           include: { category: true },
         })
       : [];
     const byId = new Map(products.map((product) => [product.id, product]));
-    const sortedProducts = productIds.map((id) => byId.get(id)).filter(Boolean);
+    const data = campaigns.map((campaign) => {
+      const productIds = normalizeProductIds(campaign.productIds);
+      const sortedProducts = productIds.map((id) => byId.get(id)).filter(Boolean);
+
+      return {
+        campaign: serializeCampaign(campaign),
+        products: sortedProducts.map(serializePublicProduct),
+      };
+    });
 
     return sendJson(res, 200, {
       success: true,
       data: {
-        campaign: serializeCampaign(campaign),
-        products: sortedProducts.map(serializePublicProduct),
+        campaigns: data,
       },
     });
   } catch (error) {
