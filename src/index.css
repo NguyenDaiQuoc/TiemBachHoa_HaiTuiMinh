@@ -41,6 +41,15 @@
 }
 
 :root {
+    --primary-bg: #E5D3BD;
+    --secondary-bg: #FBF8F5;
+    --accent-orange: #C75F4B;
+    --accent-green: #4A6D56;
+    --text-primary: #3C3C3C;
+    --bg-main: #FBF8F5;
+    --bg-box: #E5D3BD;
+    --text-main: #3C3C3C;
+    --text-green: #4A6D56;
     --background: 30 43% 97%;
     --foreground: 0 0% 24%;
 
@@ -206,3 +215,5 @@
     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
   }
 }
+
+

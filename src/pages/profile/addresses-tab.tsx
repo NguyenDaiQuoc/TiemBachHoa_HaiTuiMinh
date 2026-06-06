@@ -67,7 +67,7 @@ export const AddressesTab: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black uppercase italic tracking-tight">ĐỊA CHỈ CỦA TÔI</h2>
+          <h2 className="text-2xl font-black uppercase italic tracking-tight">ĐỊA CHỈ CỦA TÔI</h2>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Quản lý danh sách địa chỉ nhận hàng của bạn</p>
         </div>
         <Button 

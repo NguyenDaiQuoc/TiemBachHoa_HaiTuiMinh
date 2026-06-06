@@ -175,7 +175,7 @@ export const ProductDetailPage = () => {
   const galleryRef = useRef<HTMLDivElement>(null);
 
   const addRecentlyViewed = useRecentlyViewedStore((state) => state.addProduct);
-  const recentlyViewed = useRecentlyViewedStore((state) => state.products.filter((entry) => entry.id !== id));
+  const recentlyViewedProducts = useRecentlyViewedStore((state) => state.products);
   const addItem = useCartStore((state) => state.addItem);
   const isAuthenticated = useAuthStore((state) => !!state.token);
 
@@ -223,6 +223,8 @@ export const ProductDetailPage = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const recentlyViewed = useMemo(() => recentlyViewedProducts.filter((entry) => entry.id !== id), [id, recentlyViewedProducts]);
 
   const relatedProducts = useMemo(
     () => Array.from({ length: 4 }).map((_, index) => ({ ...product, id: `rel-${index}` })).filter(Boolean) as Product[],
@@ -875,3 +877,5 @@ export const ProductDetailPage = () => {
     </div>
   );
 };
+
+

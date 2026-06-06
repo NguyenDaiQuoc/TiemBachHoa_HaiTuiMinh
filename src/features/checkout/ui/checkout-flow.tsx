@@ -24,7 +24,7 @@ export const CheckoutFlow = () => {
     currentOrder
   } = useCheckoutStore();
   
-  const { items, totalPrice } = useCartStore();
+  const { items, totalPrice, clearCart } = useCartStore();
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateOrder = async () => {
@@ -39,10 +39,9 @@ export const CheckoutFlow = () => {
     }
 
     setIsCreating(true);
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate order creation
-    
     try {
-      createOrder(items, totalPrice());
+      await createOrder(items, totalPrice());
+      clearCart();
       toast.success('Đơn hàng đã được khởi tạo!');
       setStep(3); // 3: Verification / Success
     } catch (error) {
@@ -156,3 +155,5 @@ export const CheckoutFlow = () => {
     </div>
   );
 };
+
+

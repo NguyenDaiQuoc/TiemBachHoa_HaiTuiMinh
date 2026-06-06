@@ -155,7 +155,7 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
         source: 'full-route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#e2e8f0',
+          'line-color': '#E5D3BD',
           'line-width': 4,
           'line-opacity': 0.5
         }
@@ -168,7 +168,7 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
         source: 'active-route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#FF3B30',
+          'line-color': '#C75F4B',
           'line-width': 5,
           'line-opacity': 1,
         }
@@ -404,3 +404,4 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
     </div>
   );
 };
+

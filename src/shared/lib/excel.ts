@@ -1,6 +1,6 @@
 const escapeCell = (value: unknown) =>
   String(value ?? '')
-    .replace(/&/g, '&amp;')
+    .replace(/&/g, '&')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');

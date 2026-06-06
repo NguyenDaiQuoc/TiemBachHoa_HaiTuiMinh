@@ -1,51 +1,98 @@
-
 import { Order, OrderStatus, PaymentStatus } from '@/src/entities/order/model/types';
 import { PaymentMethod } from '@/src/entities/payment/model/types';
 import { generateTransferContent } from '@/src/entities/order/lib/order-utils';
 import { QRCodeSVG } from 'qrcode.react';
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, Loader2, Copy, ExternalLink, ArrowRight } from 'lucide-react';
+import { Check, Loader2, Copy, ExternalLink, ArrowRight, RefreshCw, TimerReset } from 'lucide-react';
 import { Button } from '@/src/shared/ui/button';
 import { toast } from 'sonner';
 import { useCheckoutStore } from '../model/checkout-store';
-import { useCartStore } from '@/src/entities/cart/model/store';
 
 interface PaymentVerificationProps {
   order: Order;
 }
 
-export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
-  const [status, setStatus] = useState<PaymentStatus>(PaymentStatus.PENDING);
-  const { updateOrderStatus, resetCheckout } = useCheckoutStore();
-  const { clearCart } = useCartStore();
-  const [countdown, setCountdown] = useState(600); // 10 minutes
+const PAYMENT_WINDOW_SECONDS = 10 * 60;
 
-  const transferContent = generateTransferContent(order.id, order.shippingInfo.fullName);
+const isPaidStatus = (value?: string) => value === 'PAID' || value === PaymentStatus.SUCCESS;
+
+export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
+  const [status, setStatus] = useState<PaymentStatus>(
+    isPaidStatus(order.paymentStatus) ? PaymentStatus.SUCCESS : PaymentStatus.PENDING
+  );
+  const [countdown, setCountdown] = useState(PAYMENT_WINDOW_SECONDS);
+  const [isChecking, setIsChecking] = useState(false);
+  const { updateOrderStatus } = useCheckoutStore();
+
+  const trackingCode = order.trackingId || order.orderNumber || order.id;
+  const transferContent = useMemo(
+    () => generateTransferContent(order.orderNumber || order.id, order.shippingInfo.fullName),
+    [order.id, order.orderNumber, order.shippingInfo.fullName]
+  );
+
+  const checkPaymentStatus = useCallback(
+    async (isSilent = false) => {
+      if (!trackingCode) return;
+      if (!isSilent) setIsChecking(true);
+
+      try {
+        const response = await fetch(`/api/orders/track?code=${encodeURIComponent(trackingCode)}`);
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || payload?.message || 'Không thể kiểm tra thanh toán');
+        }
+
+        const nextPaymentStatus = payload.data?.order?.paymentStatus;
+        if (isPaidStatus(nextPaymentStatus)) {
+          setStatus(PaymentStatus.SUCCESS);
+          updateOrderStatus(OrderStatus.PAID, PaymentStatus.SUCCESS);
+          toast.success('Thanh toán đã được xác nhận!', {
+            description: `Đơn hàng ${trackingCode} đã được cập nhật từ hệ thống.`,
+          });
+          return;
+        }
+
+        if (!isSilent) {
+          toast.info('Chưa nhận được xác nhận thanh toán', {
+            description: 'Nếu bạn vừa chuyển khoản, vui lòng chờ hệ thống hoặc admin xác nhận thêm một chút.',
+          });
+        }
+      } catch (error) {
+        if (!isSilent) toast.error(error instanceof Error ? error.message : 'Không thể kiểm tra thanh toán');
+      } finally {
+        if (!isSilent) setIsChecking(false);
+      }
+    },
+    [trackingCode, updateOrderStatus]
+  );
 
   useEffect(() => {
-    // Simulate polling for payment confirmation
-    const timer = setTimeout(() => {
-      setStatus(PaymentStatus.SUCCESS);
-      updateOrderStatus(OrderStatus.PAID, PaymentStatus.SUCCESS);
-      clearCart();
-      toast.success('Thanh toán thành công!', {
-        description: `Đơn hàng ${order.id} đã được xác nhận.`,
+    if (status === PaymentStatus.SUCCESS || status === PaymentStatus.FAILED) return;
+
+    const timer = window.setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          setStatus(PaymentStatus.FAILED);
+          return 0;
+        }
+        return prev - 1;
       });
-    }, 10000); // Confirm after 10s for demo
+    }, 1000);
 
-    const countdownTimer = setInterval(() => {
-      setCountdown(prev => (prev > 0 ? prev - 1 : 0));
-    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [status]);
 
-    return () => {
-      clearTimeout(timer);
-      clearInterval(countdownTimer);
-    };
-  }, [order.id]);
+  useEffect(() => {
+    if (status !== PaymentStatus.PENDING) return;
+    const poller = window.setInterval(() => checkPaymentStatus(true), 30000);
+    return () => window.clearInterval(poller);
+  }, [checkPaymentStatus, status]);
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text: string, label: string) => {
+    await navigator.clipboard.writeText(text);
     toast.success(`Đã sao chép ${label}`);
   };
 
@@ -55,26 +102,24 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           className="h-20 w-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-xl shadow-primary/30"
         >
           <Check className="h-10 w-10 stroke-[3px]" />
         </motion.div>
-        
+
         <div className="space-y-2">
-          <h2 className="text-2xl font-black font-heading">THANH TOÁN THÀNH CÔNG!</h2>
+          <h2 className="text-2xl font-black font-heading">Thanh toán thành công</h2>
           <p className="text-muted-foreground">
-            Cảm ơn bạn đã tin tưởng Tiệm Bách Hoá Hai Tụi Mình. <br/>
-            Mã đơn hàng của bạn là: <span className="font-bold text-foreground">{order.id}</span>
+            Cảm ơn bạn đã tin tưởng Tiệm Bách Hoá Hai Tụi Mình. <br />
+            Mã đơn hàng của bạn là: <span className="font-bold text-foreground">{trackingCode}</span>
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 w-full">
-          <Button variant="outline" className="rounded-full" onClick={() => window.location.href = '/'}>
-            VỀ TRANG CHỦ
-          </Button>
-          <Button className="rounded-full font-bold group" onClick={() => window.location.href = '/tracking'}>
-             THEO DÕI NGAY
+          <Button variant="outline" className="rounded-full" onClick={() => (window.location.href = '/')}>Về trang chủ</Button>
+          <Button className="rounded-full font-bold group" onClick={() => (window.location.href = `/tracking?code=${encodeURIComponent(trackingCode)}`)}>
+            Theo dõi ngay
             <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
@@ -82,12 +127,23 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
     );
   }
 
+  const isExpired = status === PaymentStatus.FAILED;
+
   return (
     <div className="space-y-8">
       <div className="text-center p-6 bg-muted/30 rounded-3xl border-dashed border-2 border-border">
-        <h2 className="text-2xl font-bold font-heading">Đang chờ thanh toán</h2>
+        <h2 className="text-2xl font-bold font-heading">{isExpired ? 'Giao dịch đã hết hạn' : 'Đang chờ thanh toán'}</h2>
         <p className="text-sm text-muted-foreground mt-2">
-          Giao dịch sẽ hết hạn sau <span className="font-bold text-foreground">{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}</span>
+          {isExpired ? (
+            'Vui lòng tạo lại đơn hoặc liên hệ cửa hàng nếu bạn đã chuyển khoản.'
+          ) : (
+            <>
+              Giao dịch sẽ hết hạn sau{' '}
+              <span className="font-bold text-foreground">
+                {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+              </span>
+            </>
+          )}
         </p>
       </div>
 
@@ -102,36 +158,36 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">NGÂN HÀNG</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Ngân hàng</p>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
                     <p className="font-bold">Vietcombank (VCB)</p>
-                    <Copy className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => copyToClipboard('Vietcombank', 'Ngân hàng')} />
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">SỐ TÀI KHOẢN</p>
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                    <p className="font-bold">1234567890</p>
-                    <Copy className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => copyToClipboard('1234567890', 'Số tài khoản')} />
+                    <Copy className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => copyToClipboard('Vietcombank', 'ngân hàng')} />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">SỐ TIỀN</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Số tài khoản</p>
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                    <p className="font-bold">1234567890</p>
+                    <Copy className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => copyToClipboard('1234567890', 'số tài khoản')} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Số tiền</p>
                   <div className="flex items-center justify-between p-3 bg-primary/5 rounded-xl border border-primary/10">
                     <p className="font-black text-primary text-lg">
                       {order.totalAmount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
                     </p>
-                    <Copy className="h-4 w-4 text-primary cursor-pointer" onClick={() => copyToClipboard(order.totalAmount.toString(), 'Số tiền')} />
+                    <Copy className="h-4 w-4 text-primary cursor-pointer" onClick={() => copyToClipboard(String(order.totalAmount), 'số tiền')} />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">NỘI DUNG CHUYỂN KHOẢN</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Nội dung chuyển khoản</p>
                   <div className="flex items-center justify-between p-3 bg-warning/5 rounded-xl border border-warning/10">
-                    <p className="font-bold text-warning-foreground font-mono">{transferContent}</p>
-                    <Copy className="h-4 w-4 text-warning-foreground cursor-pointer" onClick={() => copyToClipboard(transferContent, 'Nội dung')} />
+                    <p className="font-bold text-warning-foreground font-mono break-all">{transferContent}</p>
+                    <Copy className="h-4 w-4 text-warning-foreground cursor-pointer shrink-0" onClick={() => copyToClipboard(transferContent, 'nội dung')} />
                   </div>
                 </div>
               </div>
@@ -139,16 +195,22 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
 
             <div className="flex flex-col items-center space-y-4">
               <div className="p-4 bg-surface-default rounded-3xl shadow-soft border-4 border-border/10">
-                <QRCodeSVG 
-                  value={`00020101021138580010A00000072701280006970403011412345678900208QRIBFTTA53037045408${order.totalAmount}5802VN62240820${transferContent}6304`}
+                <QRCodeSVG
+                  value={`BANK:VCB|ACC:1234567890|AMOUNT:${Math.round(order.totalAmount)}|CONTENT:${transferContent}`}
                   size={200}
                   level="H"
-                  includeMargin={true}
+                  includeMargin
                 />
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Đang chờ xác nhận từ hệ thống...
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">
+                  {isExpired ? <TimerReset className="h-3 w-3" /> : <Loader2 className="h-3 w-3 animate-spin" />}
+                  {isExpired ? 'Đã dừng chờ xác nhận' : 'Đang chờ xác nhận từ hệ thống'}
+                </div>
+                <Button type="button" variant="outline" className="rounded-full" onClick={() => checkPaymentStatus()} disabled={isChecking || isExpired}>
+                  {isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                  Kiểm tra thanh toán
+                </Button>
               </div>
             </div>
           </motion.div>
@@ -163,18 +225,15 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
               <ExternalLink className="h-10 w-10 text-primary" />
             </div>
             <div className="text-center space-y-2">
-              <h3 className="text-xl font-bold font-heading">Chuyển hướng đến cổng thanh toán</h3>
+              <h3 className="text-xl font-bold font-heading">Đơn hàng đã được ghi nhận</h3>
               <p className="text-sm text-muted-foreground">
-                Vui lòng nhấn nút bên dưới để tiếp tục thanh toán qua {order.paymentMethod}
+                Phương thức {order.paymentMethod} đang chờ hệ thống thanh toán thật hoặc admin xác nhận.
               </p>
             </div>
-            <Button className="rounded-full px-8 h-12">
-              THANH TOÁN NGAY
+            <Button type="button" variant="outline" className="rounded-full px-8 h-12" onClick={() => checkPaymentStatus()} disabled={isChecking}>
+              {isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Kiểm tra trạng thái
             </Button>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Chờ bạn hoàn tất thanh toán...
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -182,8 +241,8 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
       <div className="p-4 bg-info/5 border border-info/10 rounded-2xl flex gap-4 items-start text-xs text-info-foreground leading-relaxed">
         <Check className="h-4 w-4 shrink-0 mt-0.5" />
         <p>
-          Hệ thống sẽ tự động xác nhận sau khi chúng tôi nhận được tiền (từ 1-5 phút). 
-          Nếu quá 15 phút chưa thấy xác nhận, vui lòng liên hệ hotline <strong>0931.454.176</strong> để được hỗ trợ nhanh nhất.
+          Hệ thống chỉ báo thành công khi đơn hàng được xác nhận thanh toán trong dữ liệu thật. Nếu quá 15 phút chưa thấy xác nhận,
+          vui lòng liên hệ hotline <strong>0931.454.176</strong> để được hỗ trợ nhanh nhất.
         </p>
       </div>
     </div>

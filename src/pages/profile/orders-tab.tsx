@@ -60,7 +60,7 @@ export const OrdersTab: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border/50">
         <div className="space-y-1">
-          <h2 className="text-2xl font-black uppercase italic tracking-tight font-sans">ĐƠN HÀNG CỦA TÔI</h2>
+          <h2 className="text-2xl font-black uppercase italic tracking-tight font-sans">ĐƠN HÀNG CỦA TÔI</h2>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Theo dõi trạng thái các đơn hàng Hai Tụi Mình</p>
         </div>
         

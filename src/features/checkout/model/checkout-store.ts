@@ -16,7 +16,7 @@ interface CheckoutState {
   setShippingInfo: (info: ShippingInfo) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setShippingMethod: (methodId: ShippingMethodId) => void;
-  createOrder: (items: any[], totalAmount: number) => Order;
+  createOrder: (items: any[], totalAmount: number) => Promise<Order>;
   resetCheckout: () => void;
   updateOrderStatus: (status: OrderStatus, paymentStatus?: PaymentStatus) => void;
 }
@@ -33,7 +33,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       setPaymentMethod: (method) => set({ selectedPaymentMethod: method }),
       setShippingMethod: (methodId) => set({ selectedShippingMethod: methodId }),
       
-      createOrder: (items, totalAmount) => {
+      createOrder: async (items, totalAmount) => {
         const { shippingInfo, selectedPaymentMethod, selectedShippingMethod } = get();
         if (!shippingInfo || !selectedPaymentMethod || !selectedShippingMethod) {
           throw new Error('Missing shipping or payment info');
@@ -41,9 +41,10 @@ export const useCheckoutStore = create<CheckoutState>()(
 
         const shippingFee = calculateShippingPrice(selectedShippingMethod);
         const arrival = estimateArrival(selectedShippingMethod);
+        const fallbackOrderId = generateOrderId();
 
-        const newOrder: Order = {
-          id: generateOrderId(),
+        const draftOrder: Order = {
+          id: fallbackOrderId,
           items,
           totalAmount: totalAmount + shippingFee,
           shippingInfo,
@@ -58,8 +59,34 @@ export const useCheckoutStore = create<CheckoutState>()(
           updatedAt: new Date().toISOString(),
         };
 
-        set({ currentOrder: newOrder });
-        return newOrder;
+        const response = await fetch('/api/orders/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items,
+            shippingInfo,
+            paymentMethod: selectedPaymentMethod,
+            shippingMethodId: selectedShippingMethod,
+          }),
+        });
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || payload?.message || 'Không thể tạo đơn hàng');
+        }
+
+        const persistedOrder = {
+          ...draftOrder,
+          ...payload.data,
+          paymentMethod: selectedPaymentMethod,
+          shippingInfo,
+          shippingFee: payload.data?.shippingFee ?? shippingFee,
+          estimatedArrival: payload.data?.estimatedArrival ?? arrival,
+          trackingId: payload.data?.trackingId || payload.data?.orderNumber || draftOrder.trackingId,
+        } as Order;
+
+        set({ currentOrder: persistedOrder });
+        return persistedOrder;
       },
 
       updateOrderStatus: (status, paymentStatus) => {
@@ -88,3 +115,4 @@ export const useCheckoutStore = create<CheckoutState>()(
     }
   )
 );
+

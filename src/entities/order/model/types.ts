@@ -37,6 +37,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string; // 8-character alphanumeric
+  orderNumber?: string;
   items: OrderItem[];
   totalAmount: number;
   shippingInfo: ShippingInfo;
@@ -50,3 +51,5 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
 }
+
+

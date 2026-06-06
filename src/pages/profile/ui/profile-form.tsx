@@ -98,7 +98,7 @@ export const ProfileForm: React.FC = () => {
     try {
       const compressedBase64 = await compressImage(file);
       setPendingAvatar(compressedBase64);
-      toast.success('Ảnh đại diện đã sẵn sàng. Nhấn “Lưu thông tin” để cập nhật.');
+      toast.success('Ảnh đại diện đã sẵn sàng. Nhấn "Lưu thông tin" để cập nhật.');
     } catch {
       toast.error('Không thể xử lý ảnh vừa chọn');
     } finally {
