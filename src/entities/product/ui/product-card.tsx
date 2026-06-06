@@ -62,7 +62,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
     >
       <Card className={cn(
         "overflow-hidden border-border/50 shadow-soft group cursor-pointer transition-all duration-500",
-        showSuccess ? "ring-2 ring-primary/50 bg-primary/5" : "bg-surface-default hover:bg-surface-elevated"
+        showSuccess ? "ring-2 ring-primary/50 bg-primary/10" : "bg-card hover:bg-surface-elevated"
       )}>
         <div className="relative overflow-hidden">
           <AspectRatio ratio={4 / 5}>
@@ -128,7 +128,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
             <Button 
               className={cn(
                 "w-full rounded-2xl transition-all duration-300 font-black tracking-widest h-11 text-[10px] uppercase",
-                showSuccess ? "bg-success text-success-foreground" : "bg-foreground text-background hover:bg-foreground/90"
+                showSuccess ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"
               )}
               onClick={handleAddToCart}
               loading={isAdding}
@@ -140,7 +140,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
           </div>
         </div>
         
-        <CardContent className="p-4 space-y-2 bg-surface-default group-hover:bg-surface-elevated transition-colors">
+        <CardContent className="p-4 space-y-2 bg-card group-hover:bg-surface-elevated transition-colors">
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.2em] font-black">
               {categoryLabel}
@@ -177,9 +177,9 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
           </div>
         </CardContent>
         
-        <CardFooter className="px-4 pb-5 pt-0 bg-surface-default group-hover:bg-surface-elevated transition-colors">
-          <p className="font-heading font-black text-base text-primary/80 italic">
-            {product.price.toLocaleString('vi-VN')} <span className="text-[10px] not-italic opacity-40">VND</span>
+        <CardFooter className="px-4 pb-5 pt-0 bg-card group-hover:bg-surface-elevated transition-colors">
+          <p className="font-heading font-black text-base text-accent italic">
+            {product.price.toLocaleString('vi-VN')} <span className="text-[10px] not-italic opacity-55">VND</span>
           </p>
         </CardFooter>
       </Card>
