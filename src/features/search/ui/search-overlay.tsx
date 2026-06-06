@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ArrowRight, Clock, Loader2, Package, Search as SearchIcon, Sparkles, TrendingUp, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { productService } from '@/src/entities/product/api/product-service';
+import { getProductUrl } from '@/src/entities/product/lib/product-url';
 import { Button } from '@/src/shared/ui/button';
 import { cn } from '@/src/shared/lib/utils';
 import { useSearchStore } from '../model/store';
@@ -177,7 +178,7 @@ export const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
                             handleSearch(suggestions[selectedIndex]);
                           } else {
                             const product = instantResults[selectedIndex - suggestions.length];
-                            navigate(`/product/${product.id}`);
+                            navigate(getProductUrl(product));
                             onClose();
                           }
                         } else {
@@ -259,7 +260,7 @@ export const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
                               key={product.id}
                               onMouseEnter={() => setSelectedIndex(globalIndex)}
                               onClick={() => {
-                                navigate(`/product/${product.id}`);
+                                navigate(getProductUrl(product));
                                 onClose();
                               }}
                               className={cn(

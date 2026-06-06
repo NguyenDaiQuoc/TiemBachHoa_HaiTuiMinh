@@ -9,6 +9,7 @@ import { Button } from '@/src/shared/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCartStore } from '@/src/entities/cart/model/store';
 import { useWishlistStore } from '../model/wishlist-store';
+import { getProductUrl } from '../lib/product-url';
 import { toast } from 'sonner';
 import { cn } from "@shared/lib/utils";
 
@@ -58,7 +59,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       layout
       className="relative"
-      onClick={() => navigate(`/product/${product.id}`)}
+      onClick={() => navigate(getProductUrl(product))}
     >
       <Card className={cn(
         "overflow-hidden border-border/50 shadow-soft group cursor-pointer transition-all duration-500",

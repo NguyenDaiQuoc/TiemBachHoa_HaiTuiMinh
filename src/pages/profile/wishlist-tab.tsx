@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { useWishlistStore } from '@/src/shared/store/wishlist-store';
 import { productService } from '@/src/entities/product/api/product-service';
 import { Product } from '@/src/entities/product/model/types';
+import { getProductUrl } from '@/src/entities/product/lib/product-url';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCartStore } from '@/src/shared/store/cart-store';
 import { toast } from 'sonner';
@@ -69,7 +70,7 @@ export const WishlistTab: React.FC = () => {
               >
                 <Card className="group flex h-full flex-col overflow-hidden rounded-[32px] border-none bg-white/80 p-4 shadow-soft backdrop-blur-md transition-all hover:shadow-xl dark:bg-slate-900/80">
                   <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] bg-muted/30">
-                    <Link to={`/product/${item.id}`} className="block h-full w-full">
+                    <Link to={getProductUrl(item)} className="block h-full w-full">
                       <img src={item.image} alt={item.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
                     </Link>
                     <button
@@ -108,7 +109,7 @@ export const WishlistTab: React.FC = () => {
                         <ShoppingBag className="h-3.5 w-3.5" />
                         Cho vào giỏ
                       </Button>
-                      <Link to={`/product/${item.id}`} className="shrink-0">
+                      <Link to={getProductUrl(item)} className="shrink-0">
                         <Button variant="ghost" className="h-12 w-12 rounded-2xl bg-muted/30 shadow-sm transition-all hover:bg-primary hover:text-white">
                           <ArrowUpRight className="h-5 w-5" />
                         </Button>

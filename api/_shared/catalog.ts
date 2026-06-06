@@ -5,19 +5,22 @@ const RECEIPT_CATEGORY_SLUG = 'san-pham-nhap-kho';
 
 const CORE_CATEGORIES = [
   {
-    name: 'Đồ công nghệ',
+    name: '?? c?ng ngh?',
     slug: 'cong-nghe',
-    description: 'Thiết bị và phụ kiện công nghệ chính hãng.',
+    description: 'Thi?t b? v? ph? ki?n c?ng ngh? ch?nh h?ng.',
+    image: 'https://images.unsplash.com/photo-1549463512-2051282a77bb?q=80&w=800&auto=format&fit=crop',
   },
   {
-    name: 'Đồ gia dụng',
+    name: '?? gia d?ng',
     slug: 'gia-dung',
-    description: 'Sản phẩm gia dụng tiện ích cho cuộc sống hiện đại.',
+    description: 'S?n ph?m gia d?ng ti?n ?ch cho cu?c s?ng hi?n ??i.',
+    image: 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?q=80&w=800&auto=format&fit=crop',
   },
   {
-    name: 'Mỹ phẩm',
+    name: 'M? ph?m',
     slug: 'my-pham',
-    description: 'Mỹ phẩm chính hãng, chăm sóc da và làm đẹp mỗi ngày.',
+    description: 'M? ph?m ch?nh h?ng, ch?m s?c da v? l?m ??p m?i ng?y.',
+    image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=800&auto=format&fit=crop',
   },
 ];
 
@@ -28,7 +31,7 @@ export const ensureCoreCategories = async (prisma: PrismaLike) => {
     CORE_CATEGORIES.map((category) =>
       prisma.category.upsert({
         where: { slug: category.slug },
-        update: { name: category.name, description: category.description, isActive: true, deletedAt: null },
+        update: { name: category.name, description: category.description, image: category.image, isActive: true, deletedAt: null },
         create: { ...category, isActive: true },
       })
     )

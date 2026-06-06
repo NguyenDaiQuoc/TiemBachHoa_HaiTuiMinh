@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useCartStore } from '@/src/shared/store/cart-store';
 import { toast } from 'sonner';
 import type { Product } from '@/src/entities/product/model/types';
+import { getProductUrl } from '@/src/entities/product/lib/product-url';
 
 export const RecentlyViewedTab: React.FC = () => {
   const { products, clear } = useRecentlyViewedStore();
@@ -50,7 +51,7 @@ export const RecentlyViewedTab: React.FC = () => {
                 transition={{ delay: i * 0.05 }}
               >
                 <Card className="group relative flex h-full flex-col overflow-hidden rounded-[32px] border-none bg-white/80 shadow-soft backdrop-blur-md transition-all duration-500 hover:shadow-xl dark:bg-slate-900/80">
-                  <Link to={`/product/${item.id}`} className="relative block aspect-square overflow-hidden bg-muted/30 p-4">
+                  <Link to={getProductUrl(item)} className="relative block aspect-square overflow-hidden bg-muted/30 p-4">
                     <img src={item.image} alt={item.name} className="h-full w-full rounded-2xl object-cover transition-transform duration-700 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-primary/0 transition-colors duration-500 group-hover:bg-primary/5" />
                   </Link>
@@ -74,7 +75,7 @@ export const RecentlyViewedTab: React.FC = () => {
                         >
                           <ShoppingBag className="h-4 w-4" />
                         </Button>
-                        <Link to={`/product/${item.id}`}>
+                        <Link to={getProductUrl(item)}>
                           <Button
                             size="icon"
                             variant="ghost"

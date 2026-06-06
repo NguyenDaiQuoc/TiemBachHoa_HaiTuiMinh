@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { cn } from '@/src/shared/lib/utils';
@@ -12,18 +12,35 @@ interface ProductGalleryProps {
 export const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [zoomPoint, setZoomPoint] = useState<{ x: number; y: number } | null>(null);
+  const safeImages = images.length ? images : ['/favicon.svg'];
 
-  const next = () => setActiveIndex((prev) => (prev + 1) % images.length);
-  const prev = () => setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
+  useEffect(() => {
+    setActiveIndex(0);
+    setZoomPoint(null);
+  }, [productName, images.length]);
+
+  const next = () => setActiveIndex((prev) => (prev + 1) % safeImages.length);
+  const prev = () => setActiveIndex((prev) => (prev - 1 + safeImages.length) % safeImages.length);
 
   return (
     <div className="space-y-4">
       {/* Main Image */}
-      <div className="relative aspect-square overflow-hidden rounded-[32px] bg-muted/20 border border-black/5 group">
+      <div
+        className="relative aspect-square overflow-hidden rounded-[32px] bg-muted/20 border border-black/5 group cursor-zoom-in"
+        onMouseMove={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          setZoomPoint({
+            x: ((event.clientX - rect.left) / rect.width) * 100,
+            y: ((event.clientY - rect.top) / rect.height) * 100,
+          });
+        }}
+        onMouseLeave={() => setZoomPoint(null)}
+      >
         <AnimatePresence mode="wait">
           <motion.img
-            key={images[activeIndex]}
-            src={images[activeIndex]}
+            key={safeImages[activeIndex]}
+            src={safeImages[activeIndex]}
             alt={productName}
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -32,6 +49,23 @@ export const ProductGallery = ({ images, productName }: ProductGalleryProps) => 
             className="h-full w-full object-contain p-8"
           />
         </AnimatePresence>
+
+        {zoomPoint && (
+          <div
+            className="pointer-events-none absolute inset-0 z-20 hidden rounded-[32px] border border-primary/25 bg-background/90 shadow-2xl ring-1 ring-background/70 md:block"
+            style={{
+              backgroundImage: `url(${safeImages[activeIndex]})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: '220%',
+              backgroundPosition: `${zoomPoint.x}% ${zoomPoint.y}%`,
+            }}
+            aria-hidden="true"
+          >
+            <div className="absolute bottom-4 left-4 rounded-full bg-foreground/70 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-background backdrop-blur">
+              Di chuột để xem cận cảnh
+            </div>
+          </div>
+        )}
 
         {/* Navigation Arrows */}
         <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
@@ -66,7 +100,7 @@ export const ProductGallery = ({ images, productName }: ProductGalleryProps) => 
 
       {/* Thumbnails */}
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
-        {images.map((img, idx) => (
+        {safeImages.map((img, idx) => (
           <button
             key={idx}
             onClick={() => setActiveIndex(idx)}
@@ -96,7 +130,7 @@ export const ProductGallery = ({ images, productName }: ProductGalleryProps) => 
             >
               ĐÓNG
             </Button>
-            <img src={images[activeIndex]} alt={productName} className="max-h-full max-w-full object-contain" />
+            <img src={safeImages[activeIndex]} alt={productName} className="max-h-full max-w-full object-contain" />
           </motion.div>
         )}
       </AnimatePresence>

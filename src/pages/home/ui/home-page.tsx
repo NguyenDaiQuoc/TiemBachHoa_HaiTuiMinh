@@ -1,5 +1,7 @@
 import { ProductGrid } from '@/src/widgets/product-grid';
 import { Product } from '@/src/entities/product/model/types';
+import { getProductUrl } from '@/src/entities/product/lib/product-url';
+import { productService } from '@/src/entities/product/api/product-service';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Truck, RotateCcw, BadgeCheck, Timer, Zap, Sparkles, Flame, TrendingUp } from 'lucide-react';
@@ -9,6 +11,7 @@ import { useState, useEffect } from 'react';
 const SAMPLE_PRODUCTS: Product[] = [
   {
     id: 'p1',
+    slug: 'kem-duong-phuc-hoi-b5',
     name: 'Kem Dưỡng Phục Hồi B5',
     price: 450000,
     oldPrice: 650000,
@@ -23,6 +26,7 @@ const SAMPLE_PRODUCTS: Product[] = [
   } as any,
   {
     id: 'p2',
+    slug: 'loa-bluetooth-marshall-emberton',
     name: 'Loa Bluetooth Marshall Emberton',
     price: 3650000,
     oldPrice: 4200000,
@@ -34,6 +38,7 @@ const SAMPLE_PRODUCTS: Product[] = [
   } as any,
   {
     id: 'p3',
+    slug: 'may-loc-khong-khi-mi-air',
     name: 'Máy Lọc Không Khí Mi Air',
     price: 2990000,
     description: 'Thiết kế tối giản, công nghệ lọc HEPA tiên tiến cho ngôi nhà trong lành.',
@@ -44,6 +49,7 @@ const SAMPLE_PRODUCTS: Product[] = [
   } as any,
   {
     id: 'p4',
+    slug: 'sua-rua-mat-tao-bot-chiet-xuat-tra-xanh',
     name: 'Sữa Rửa Mặt Tạo Bọt Chiết Xuất Trà Xanh',
     price: 280000,
     description: 'Làm sạch nhẹ nhàng, kháng khuẩn và ngừa mụn hiệu quả.',
@@ -54,6 +60,7 @@ const SAMPLE_PRODUCTS: Product[] = [
   } as any,
   {
     id: 'p5',
+    slug: 'may-pha-ca-phe-mini-tien-loi',
     name: 'Máy Pha Cà Phê Mini Tiện Lợi',
     price: 1550000,
     description: 'Thưởng thức cà phê chuẩn vị tại nhà chỉ trong 30 giây.',
@@ -69,7 +76,8 @@ const CATEGORIES = [
     title: "Mỹ Phẩm Chính Hãng",
     tag: "SKINCARE & BEAUTY",
     image: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=1200&auto=format&fit=crop",
-    preview: "https://images.unsplash.com/photo-1596462502278-27bfad8f63ef?q=80&w=800&auto=format&fit=crop",
+    preview: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=800&auto=format&fit=crop",
+    fallback: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=800&auto=format&fit=crop",
     color: "rose"
   },
   {
@@ -78,6 +86,7 @@ const CATEGORIES = [
     tag: "GADGETS & TECH",
     image: "https://images.unsplash.com/photo-1549463512-2051282a77bb?q=80&w=1200&auto=format&fit=crop",
     preview: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800&auto=format&fit=crop",
+    fallback: "https://images.unsplash.com/photo-1549463512-2051282a77bb?q=80&w=800&auto=format&fit=crop",
     color: "blue"
   },
   {
@@ -86,38 +95,86 @@ const CATEGORIES = [
     tag: "SMART HOME",
     image: "https://images.unsplash.com/photo-1585338107529-13afc5f02586?q=80&w=1200&auto=format&fit=crop",
     preview: "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=800&auto=format&fit=crop",
+    fallback: "https://images.unsplash.com/photo-1585338107529-13afc5f02586?q=80&w=800&auto=format&fit=crop",
     color: "amber"
   }
 ];
 
+type ActiveCampaignResponse = {
+  campaign: {
+    id: string;
+    name: string;
+    slug: string;
+    type: 'FLASH_SALE' | 'DEAL' | 'PROMOTION';
+    description?: string | null;
+    endsAt?: string | null;
+  };
+  products: Product[];
+};
+
+const getTimeLeft = (endsAt?: string | null) => {
+  if (!endsAt) return { h: 0, m: 0, s: 0, totalMs: 0 };
+  const totalMs = Math.max(0, new Date(endsAt).getTime() - Date.now());
+  const totalSeconds = Math.floor(totalMs / 1000);
+  return {
+    h: Math.floor(totalSeconds / 3600),
+    m: Math.floor((totalSeconds % 3600) / 60),
+    s: totalSeconds % 60,
+    totalMs,
+  };
+};
+
 export const HomePage = () => {
-  const [timeLeft, setTimeLeft] = useState({ h: 2, m: 45, s: 18 });
+  const [activeDeal, setActiveDeal] = useState<ActiveCampaignResponse | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(null));
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        let { h, m, s } = prev;
-        if (h === 0 && m === 0 && s === 0) {
-            clearInterval(timer);
-            return prev;
-        }
-        if (s > 0) s--;
-        else {
-          s = 59;
-          if (m > 0) m--;
-          else {
-            m = 59;
-            if (h > 0) h--;
-          }
-        }
-        return { h, m, s };
+    let active = true;
+    productService.getFilteredProducts({ sortBy: 'popular', limit: 12 }).then((data) => {
+      if (active) setProducts(data);
+    }).catch(() => {
+      if (active) setProducts([]);
+    });
+
+    fetch('/api/campaigns/active?type=DEAL,FLASH_SALE')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (!active) return;
+        const data = payload?.data || null;
+        setActiveDeal(data);
+        setTimeLeft(getTimeLeft(data?.campaign?.endsAt));
+      })
+      .catch(() => {
+        if (active) setActiveDeal(null);
       });
-    }, 1000);
-    return () => clearInterval(timer);
+
+    return () => {
+      active = false;
+    };
   }, []);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(getTimeLeft(activeDeal?.campaign.endsAt));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [activeDeal?.campaign.endsAt]);
+
   const formatNum = (n: number) => n.toString().padStart(2, '0');
+  const displayProducts = products.length ? products : SAMPLE_PRODUCTS;
+  const productsByCategory = (categorySlug: string, fallback: Product[]) => {
+    const matched = displayProducts.filter((product) => {
+      const category = product.category;
+      if (typeof category === 'string') return category.toLowerCase().includes(categorySlug);
+      return category?.slug === categorySlug || category?.name?.toLowerCase().includes(categorySlug.replace('-', ' '));
+    });
+
+    return (matched.length ? matched : fallback).slice(0, 3);
+  };
+  const dealProducts = activeDeal?.products?.length ? activeDeal.products : displayProducts.slice(0, 2);
+  const dealLink = activeDeal?.campaign?.slug ? `/${activeDeal.campaign.slug}` : '/flash-sale';
   return (
       <div className="container mx-auto px-4 py-12 space-y-20">
         <section className="space-y-6 text-center py-10 md:py-20 animate-in fade-in slide-in-from-bottom-10 duration-1000">
@@ -191,7 +248,7 @@ export const HomePage = () => {
                 </div>
               </div>
               
-              <Link to="/search" className="inline-block">
+              <Link to={dealLink} className="inline-block">
                 <button className="bg-primary text-primary-foreground px-8 py-4 rounded-full font-black uppercase tracking-widest italic hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20">
                   Xem tất cả Deal <ArrowRight className="inline-block ml-2 w-5 h-5" />
                 </button>
@@ -199,8 +256,8 @@ export const HomePage = () => {
             </div>
 
             <div className="flex-1 w-full grid grid-cols-2 gap-4">
-              {SAMPLE_PRODUCTS.slice(0, 2).map((product, i) => (
-                <Link key={i} to={`/product/${product.id}`} className="block group/item">
+              {dealProducts.slice(0, 2).map((product, i) => (
+                <Link key={product.id || i} to={getProductUrl(product)} className="block group/item">
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-4 space-y-4 transition-all hover:bg-white/10">
                     <div className="aspect-square rounded-2xl overflow-hidden relative">
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-700" />
@@ -211,7 +268,7 @@ export const HomePage = () => {
                     <div className="space-y-1 text-background">
                       <h3 className="text-xs font-black uppercase tracking-tight line-clamp-1 group-hover/item:text-primary transition-colors">{product.name}</h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-primary italic">{(product.price / 2).toLocaleString('vi-VN')} đ</span>
+                        <span className="text-sm font-black text-primary italic">{(product.promotionalPrice || product.price / 2).toLocaleString('vi-VN')} đ</span>
                         <span className="text-[10px] line-through opacity-40 font-bold">{product.price.toLocaleString('vi-VN')} đ</span>
                       </div>
                     </div>
@@ -271,7 +328,15 @@ export const HomePage = () => {
                    )}
                  >
                    <div className="aspect-[4/5] overflow-hidden relative">
-                     <img src={col.preview} alt={col.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+                     <img
+                       src={col.preview}
+                       alt={col.title}
+                       referrerPolicy="no-referrer"
+                       onError={(event) => {
+                         event.currentTarget.src = col.fallback;
+                       }}
+                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                     />
                      <div className="absolute top-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
                         <div className="size-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white">
                            <ArrowRight className="w-5 h-5 -rotate-45" />
@@ -291,7 +356,7 @@ export const HomePage = () => {
           </div>
         </section>
 
-        <ProductGrid title="Sản phẩm hot tuần này" products={SAMPLE_PRODUCTS} />
+        <ProductGrid title="Sản phẩm hot tuần này" products={displayProducts} />
         
         {/* Bestseller Ranking */}
         <section className="space-y-12">
@@ -304,15 +369,15 @@ export const HomePage = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {[
-              { category: "MỸ PHẨM", items: SAMPLE_PRODUCTS.slice(0, 3) },
-              { category: "CÔNG NGHỆ", items: [SAMPLE_PRODUCTS[2], SAMPLE_PRODUCTS[0], SAMPLE_PRODUCTS[4]] },
-              { category: "GIA DỤNG", items: [SAMPLE_PRODUCTS[1], SAMPLE_PRODUCTS[4], SAMPLE_PRODUCTS[2]] },
+              { category: "MỸ PHẨM", items: productsByCategory('my-pham', SAMPLE_PRODUCTS.slice(0, 3)) },
+              { category: "CÔNG NGHỆ", items: productsByCategory('cong-nghe', [SAMPLE_PRODUCTS[2], SAMPLE_PRODUCTS[0], SAMPLE_PRODUCTS[4]]) },
+              { category: "GIA DỤNG", items: productsByCategory('gia-dung', [SAMPLE_PRODUCTS[1], SAMPLE_PRODUCTS[4], SAMPLE_PRODUCTS[2]]) },
             ].map((rank, i) => (
               <div key={i} className="p-8 rounded-[40px] border border-border/50 bg-surface-default hover:bg-surface-elevated transition-colors shadow-soft">
                 <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-8 pb-4 border-b border-primary/10">{rank.category}</h3>
                 <div className="space-y-6">
                   {rank.items.map((item, idx) => (
-                    <Link key={idx} to={`/product/${item.id}`} className="flex items-center gap-4 group/rank">
+                    <Link key={idx} to={getProductUrl(item)} className="flex items-center gap-4 group/rank">
                       <span className="text-4xl font-black italic text-muted-foreground/20 group-hover/rank:text-primary/40 transition-colors w-12 tracking-tighter">0{idx + 1}</span>
                       <div className="size-16 rounded-2xl overflow-hidden flex-shrink-0 bg-muted">
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover/rank:scale-110 transition-transform duration-500" />

@@ -178,11 +178,12 @@ export const ProductDetailPage = () => {
   const recentlyViewedProducts = useRecentlyViewedStore((state) => state.products);
   const addItem = useCartStore((state) => state.addItem);
   const isAuthenticated = useAuthStore((state) => !!state.token);
+  const canonicalProductKey = product?.id || id || '';
 
-  const socialProofQuery = useProductSocialProof(id || '');
-  const reviewsQuery = useProductReviews(id || '', { sort: reviewSort, withMedia: reviewOnlyMedia });
-  const createReviewMutation = useCreateProductReview(id || '');
-  const helpfulMutation = useToggleReviewHelpful(id || '');
+  const socialProofQuery = useProductSocialProof(canonicalProductKey);
+  const reviewsQuery = useProductReviews(canonicalProductKey, { sort: reviewSort, withMedia: reviewOnlyMedia });
+  const createReviewMutation = useCreateProductReview(canonicalProductKey);
+  const helpfulMutation = useToggleReviewHelpful(canonicalProductKey);
 
   const reviewsSummary = reviewsQuery.data?.summary;
   const communityReviews = reviewsQuery.data?.reviews || [];
@@ -194,6 +195,9 @@ export const ProductDetailPage = () => {
     productService.getProductById(id).then((data) => {
       if (data) {
         setProduct(data);
+        if (data.slug && id !== data.slug) {
+          navigate(`/product/${encodeURIComponent(data.slug)}`, { replace: true });
+        }
         setActivePrice(data.price);
         addRecentlyViewed(data);
 
@@ -206,12 +210,12 @@ export const ProductDetailPage = () => {
 
       setIsLoading(false);
     });
-  }, [id, addRecentlyViewed]);
+  }, [id, addRecentlyViewed, navigate]);
 
   useEffect(() => {
-    if (!id) return;
-    trackProductView(id).catch(() => undefined);
-  }, [id]);
+    if (!product?.id) return;
+    trackProductView(product.id).catch(() => undefined);
+  }, [product?.id]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -224,7 +228,7 @@ export const ProductDetailPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const recentlyViewed = useMemo(() => recentlyViewedProducts.filter((entry) => entry.id !== id), [id, recentlyViewedProducts]);
+  const recentlyViewed = useMemo(() => recentlyViewedProducts.filter((entry) => entry.id !== product?.id), [product?.id, recentlyViewedProducts]);
 
   const relatedProducts = useMemo(
     () => Array.from({ length: 4 }).map((_, index) => ({ ...product, id: `rel-${index}` })).filter(Boolean) as Product[],
@@ -877,5 +881,4 @@ export const ProductDetailPage = () => {
     </div>
   );
 };
-
 

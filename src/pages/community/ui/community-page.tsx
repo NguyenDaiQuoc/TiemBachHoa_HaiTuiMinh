@@ -16,6 +16,7 @@ import { Button } from '@/src/shared/ui/button';
 import { Input } from '@/src/shared/ui/input';
 import { useAuthStore } from '@/src/shared/model/auth-store';
 import { cn } from '@/src/shared/lib/utils';
+import { getProductUrl } from '@/src/entities/product/lib/product-url';
 import { toast } from 'sonner';
 
 const cardMotion = {
@@ -222,7 +223,7 @@ export const CommunityPage = () => {
                   </div>
 
                   <Link
-                    to={`/product/${item.product.id}`}
+                    to={getProductUrl(item.product as any)}
                     className="flex gap-4 rounded-[24px] border border-border/50 bg-background p-4 transition-colors hover:bg-muted/50"
                   >
                     <img src={item.product.image} alt={item.product.name} className="h-24 w-24 rounded-2xl object-cover" loading="lazy" />
@@ -387,7 +388,7 @@ export const CommunityPage = () => {
               {trendingProducts.map((product) => (
                 <Link
                   key={product.id}
-                  to={`/product/${product.id}`}
+                  to={getProductUrl(product as any)}
                   className="flex items-center gap-4 rounded-2xl border border-border/60 bg-background p-3 transition-colors hover:bg-muted/50"
                 >
                   <img src={product.image} alt={product.name} className="h-16 w-16 rounded-2xl object-cover" loading="lazy" />

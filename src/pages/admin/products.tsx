@@ -12,6 +12,7 @@ import {
   Printer,
   Plus,
   Search,
+  Tags,
   Trash2,
   Warehouse,
   X,
@@ -207,6 +208,15 @@ const formatCurrencyInput = (value: number) => new Intl.NumberFormat('vi-VN').fo
 
 const normalizeLookupText = (value: string) => value.trim().toLowerCase();
 
+const slugifyProductName = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || `combo-${Date.now()}`;
+
 const readFileAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -243,8 +253,13 @@ export const AdminProducts = () => {
   const [receiptNote, setReceiptNote] = useState('');
   const [receiptLines, setReceiptLines] = useState<ReceiptLineDraft[]>([createEmptyLine()]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isComboDialogOpen, setIsComboDialogOpen] = useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [comboName, setComboName] = useState('');
+  const [comboPrice, setComboPrice] = useState(0);
+  const [comboCategoryId, setComboCategoryId] = useState('');
+  const [comboProductIds, setComboProductIds] = useState<string[]>([]);
 
   const { data, isLoading, refetch } = useProducts({ query: catalogQuery, page: 1, limit: 200 });
   const { data: categoryData } = useCategories();
@@ -298,6 +313,8 @@ export const AdminProducts = () => {
   const products = useMemo(() => data?.items || [], [data]);
   const categories = useMemo(() => (categoryData || []).filter((category: { isActive?: boolean }) => category.isActive !== false), [categoryData]);
   const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
+  const comboProducts = useMemo(() => comboProductIds.map((id) => productMap.get(id)).filter((product): product is Product => Boolean(product)), [comboProductIds, productMap]);
+  const comboSuggestedPrice = useMemo(() => Math.max(0, comboProducts.reduce((sum, product) => sum + product.price, 0)), [comboProducts]);
   const findProductForLine = (line: ReceiptLineDraft) => {
     const selected = line.productId ? productMap.get(line.productId) : null;
     if (selected) return selected;
@@ -586,6 +603,14 @@ export const AdminProducts = () => {
     setIsFormOpen(true);
   };
 
+  const openCreateComboDialog = () => {
+    setComboName('');
+    setComboPrice(0);
+    setComboProductIds([]);
+    setComboCategoryId(categories[0]?.id || '');
+    setIsComboDialogOpen(true);
+  };
+
   const openEditDialog = (product: Product) => {
     setSelectedProduct(product);
     setIsFormOpen(true);
@@ -619,6 +644,51 @@ export const AdminProducts = () => {
       refetch();
     } catch (error: any) {
       toast.error(error.message || 'Không thể lưu sản phẩm');
+    }
+  };
+
+  const handleCreateCombo = async () => {
+    if (!comboName.trim()) {
+      toast.error(locale === 'vi' ? 'Vui lòng nhập tên combo.' : 'Enter a combo name.');
+      return;
+    }
+    if (comboProducts.length < 2) {
+      toast.error(locale === 'vi' ? 'Combo cần ít nhất 2 sản phẩm.' : 'A combo needs at least 2 products.');
+      return;
+    }
+    if (!comboCategoryId) {
+      toast.error(locale === 'vi' ? 'Vui lòng chọn danh mục cho combo.' : 'Select a combo category.');
+      return;
+    }
+
+    const finalPrice = Math.max(1, comboPrice || Math.round(comboSuggestedPrice * 0.9));
+    const stock = Math.max(0, Math.min(...comboProducts.map((product) => Math.max(0, product.stock || 0))));
+
+    try {
+      await createMutation.mutateAsync({
+        name: comboName.trim(),
+        slug: `${slugifyProductName(comboName)}-${Date.now().toString(36)}`,
+        sku: `COMBO-${Date.now()}`,
+        description: `Combo gồm: ${comboProducts.map((product) => product.name).join(', ')}.`,
+        costPrice: comboProducts.reduce((sum, product) => sum + (product.costPrice || 0), 0),
+        price: finalPrice,
+        promotionalPrice: finalPrice,
+        images: comboProducts.map(getPrimaryImage).filter(Boolean).slice(0, 4),
+        categoryId: comboCategoryId,
+        brand: 'Hai Tụi Mình Combo',
+        subcategory: 'Combo',
+        tags: ['combo', ...comboProducts.map((product) => `combo:${product.id}`)],
+        stock,
+        initialStock: stock,
+        reorderLevel: 0,
+        variants: [],
+      });
+      toast.success(locale === 'vi' ? 'Đã tạo combo sản phẩm.' : 'Product combo created.');
+      setIsComboDialogOpen(false);
+      await queryClient.invalidateQueries({ queryKey: productKeys.all });
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || (locale === 'vi' ? 'Không thể tạo combo.' : 'Unable to create combo.'));
     }
   };
 
@@ -657,6 +727,10 @@ export const AdminProducts = () => {
         <div className="grid gap-3 sm:flex sm:flex-wrap">
           <Button variant="outline" onClick={exportCatalog} className="h-11 rounded-xl border-2 border-border px-6 text-[10px] font-black uppercase tracking-widest">
             {t.exportExcel}
+          </Button>
+          <Button variant="outline" onClick={openCreateComboDialog} className="h-11 rounded-xl border-2 border-primary/30 px-6 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10">
+            <Tags className="mr-2 h-4 w-4" />
+            {locale === 'vi' ? 'Tạo combo' : 'Create combo'}
           </Button>
           <Button onClick={openCreateDialog} className="h-11 rounded-xl bg-primary px-6 text-[10px] font-black uppercase tracking-widest">
             <Plus className="mr-2 h-4 w-4" />
@@ -1228,6 +1302,103 @@ export const AdminProducts = () => {
                 {editingReceipt ? t.updateReceipt : t.saveReceipt}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isComboDialogOpen} onOpenChange={setIsComboDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[32px] border-none bg-surface-default p-8 shadow-2xl sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">{locale === 'vi' ? 'Tạo combo sản phẩm' : 'Create product combo'}</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{locale === 'vi' ? 'Tên combo' : 'Combo name'}</label>
+                <Input value={comboName} onChange={(event) => setComboName(event.target.value)} placeholder="Combo chăm sóc da mùa hè" className="h-12 rounded-2xl bg-background" />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{locale === 'vi' ? 'Danh mục' : 'Category'}</label>
+                  <select value={comboCategoryId} onChange={(event) => setComboCategoryId(event.target.value)} className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm font-bold outline-none">
+                    <option value="">{locale === 'vi' ? 'Chọn danh mục' : 'Select category'}</option>
+                    {categories.map((category: { id: string; name: string }) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{locale === 'vi' ? 'Giá combo' : 'Combo price'}</label>
+                  <Input
+                    inputMode="numeric"
+                    value={comboPrice ? formatCurrencyInput(comboPrice) : ''}
+                    onChange={(event) => setComboPrice(normalizeCurrencyInput(event.target.value))}
+                    placeholder={formatCurrencyInput(Math.round(comboSuggestedPrice * 0.9))}
+                    className="h-12 rounded-2xl bg-background text-right font-bold tabular-nums"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border/50 bg-background p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{locale === 'vi' ? 'Tóm tắt' : 'Summary'}</p>
+                <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-muted-foreground">Items</p>
+                    <p className="font-black">{comboProducts.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-muted-foreground">Giá lẻ</p>
+                    <p className="font-black">{formatCurrencyVND(comboSuggestedPrice)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-muted-foreground">Tồn combo</p>
+                    <p className="font-black">{comboProducts.length ? Math.min(...comboProducts.map((product) => Math.max(0, product.stock || 0))) : 0}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{locale === 'vi' ? 'Chọn sản phẩm trong combo' : 'Select combo products'}</label>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black text-primary">{comboProducts.length}</span>
+              </div>
+              <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                {products.map((product) => {
+                  const checked = comboProductIds.includes(product.id);
+                  return (
+                    <label key={product.id} className={cn('flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition-colors', checked ? 'border-primary/40 bg-primary/10' : 'border-border/50 bg-background hover:bg-muted/40')}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          setComboProductIds((current) => event.target.checked ? [...current, product.id] : current.filter((id) => id !== product.id));
+                        }}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      <img src={getPrimaryImage(product)} alt="" className="h-12 w-12 rounded-xl object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm font-black">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatCurrencyVND(product.price)} • SL {product.stock}</p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsComboDialogOpen(false)} className="h-11 rounded-xl px-6 text-[10px] font-black uppercase tracking-widest">
+              {locale === 'vi' ? 'Hủy' : 'Cancel'}
+            </Button>
+            <Button onClick={() => void handleCreateCombo()} disabled={createMutation.isPending} className="h-11 rounded-xl px-6 text-[10px] font-black uppercase tracking-widest">
+              {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Tags className="mr-2 h-4 w-4" />}
+              {locale === 'vi' ? 'Lưu combo' : 'Save combo'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
