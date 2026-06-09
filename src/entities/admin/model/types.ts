@@ -188,6 +188,7 @@ export interface InventoryReceiptLineInput {
 }
 
 export interface InventoryReceiptUpsertPayload {
+  mode?: 'RESTOCK' | 'ON_DEMAND';
   supplier?: string | null;
   note?: string | null;
   receivedAt?: string | null;
@@ -287,7 +288,7 @@ export interface GenerateMarketingImagePayload {
 export interface InventoryReceiptPayload {
   id: string;
   code: string;
-  mode: 'RESTOCK' | 'NEW_PRODUCT';
+  mode: 'RESTOCK' | 'NEW_PRODUCT' | 'ON_DEMAND';
   supplier?: string | null;
   note?: string | null;
   createdAt: string;

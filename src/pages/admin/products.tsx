@@ -41,6 +41,7 @@ import type { AdminOutletContext } from '@/src/app/layouts/admin-layout';
 import { ProductForm } from './components/product-form';
 
 type ProductTab = 'receiving' | 'warehouse' | 'catalog';
+type ReceiptMode = 'RESTOCK' | 'ON_DEMAND';
 
 type ReceiptLineDraft = {
   id: string;
@@ -69,6 +70,10 @@ const copy = {
     quickView: 'Xem nhanh',
     receivingTitle: 'Phiếu nhập hàng',
     receivingHint: 'Mỗi phiếu nhập đại diện cho một hóa đơn theo ngày và nhà cung cấp. Có thể thêm nhiều mặt hàng trong cùng một phiếu.',
+    receiptModeLabel: 'Kieu nhap',
+    receiptModeRestock: 'Nhap kho',
+    receiptModeOnDemand: 'Nguon cung thu 3',
+    receiptModeHelp: 'Chon nhap kho neu muon cong ton; chon nguon cung thu 3 neu chi ghi nhan dau vao theo don.',
     createReceipt: 'Tạo phiếu nhập',
     editReceipt: 'Sửa phiếu nhập',
     supplier: 'Nhà cung cấp',
@@ -131,6 +136,10 @@ const copy = {
     quickView: 'Quick view',
     receivingTitle: 'Inventory receipts',
     receivingHint: 'Each receipt represents one supplier invoice per day and can contain multiple products.',
+    receiptModeLabel: 'Import mode',
+    receiptModeRestock: 'Restock',
+    receiptModeOnDemand: 'Third-party source',
+    receiptModeHelp: 'Use restock when inventory should increase; use third-party source when you only want to record incoming supply.',
     createReceipt: 'Create receipt',
     editReceipt: 'Edit receipt',
     supplier: 'Supplier',
@@ -254,6 +263,7 @@ export const AdminProducts = () => {
   const [isSupplierPickerOpen, setIsSupplierPickerOpen] = useState(false);
   const [receiptDate, setReceiptDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [receiptNote, setReceiptNote] = useState('');
+  const [receiptMode, setReceiptMode] = useState<ReceiptMode>('RESTOCK');
   const [receiptLines, setReceiptLines] = useState<ReceiptLineDraft[]>([createEmptyLine()]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isComboDialogOpen, setIsComboDialogOpen] = useState(false);
@@ -374,6 +384,7 @@ export const AdminProducts = () => {
   const validReceiptLines = resolvedReceiptLines;
   const receiptPreview = {
     code: editingReceipt?.code || `DRAFT-${receiptDate.replaceAll('-', '') || Date.now()}`,
+    mode: receiptMode,
     supplier: receiptSupplier || null,
     note: receiptNote || null,
     createdAt: receiptDate ? new Date(`${receiptDate}T08:00:00`).toISOString() : new Date().toISOString(),
@@ -391,6 +402,7 @@ export const AdminProducts = () => {
     setReceiptSupplier('');
     setReceiptDate(new Date().toISOString().slice(0, 10));
     setReceiptNote('');
+    setReceiptMode('RESTOCK');
     setReceiptLines([createEmptyLine()]);
   };
 
@@ -399,6 +411,7 @@ export const AdminProducts = () => {
     setReceiptSupplier(receipt.supplier || '');
     setReceiptDate(new Date(receipt.createdAt).toISOString().slice(0, 10));
     setReceiptNote(receipt.note || '');
+    setReceiptMode(receipt.mode === 'ON_DEMAND' ? 'ON_DEMAND' : 'RESTOCK');
     setReceiptLines(
       receipt.items.map((item) => ({
         id: crypto.randomUUID(),
@@ -567,6 +580,7 @@ export const AdminProducts = () => {
     }
 
     const payload: InventoryReceiptUpsertPayload = {
+      mode: receiptMode,
       supplier: receiptSupplier || undefined,
       note: receiptNote || undefined,
       receivedAt: new Date(`${receiptDate}T08:00:00`).toISOString(),
@@ -1041,7 +1055,7 @@ export const AdminProducts = () => {
 
       <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
         <DialogContent className="max-h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-y-auto overflow-x-hidden rounded-[24px] border-none bg-surface-default p-4 shadow-2xl sm:w-full sm:rounded-[32px] sm:p-6 lg:p-8 xl:max-w-6xl">
-          <DialogHeader className="sticky top-0 z-20 -mx-1 rounded-[22px] bg-surface-default/95 px-1 pb-4 backdrop-blur sm:-mx-2 sm:rounded-[28px] sm:px-2">
+          <DialogHeader className="-mx-1 rounded-[22px] bg-surface-default px-1 pb-4 sm:-mx-2 sm:rounded-[28px] sm:px-2">
             <DialogTitle className="pr-10 text-xl font-black uppercase italic tracking-tight sm:text-2xl">{editingReceipt ? t.editReceipt : t.createReceipt}</DialogTitle>
             <div className="flex flex-wrap gap-2 pt-3">
               <Button
@@ -1146,6 +1160,37 @@ export const AdminProducts = () => {
               </div>
             </div>
 
+            <div className="rounded-[24px] border border-border/50 bg-background p-4 sm:rounded-[28px]">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t.receiptModeLabel}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t.receiptModeHelp}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 rounded-[20px] bg-muted/30 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setReceiptMode('RESTOCK')}
+                    className={cn(
+                      'h-11 rounded-[16px] px-4 text-[10px] font-black uppercase tracking-widest transition-all',
+                      receiptMode === 'RESTOCK' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background hover:text-foreground'
+                    )}
+                  >
+                    {t.receiptModeRestock}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReceiptMode('ON_DEMAND')}
+                    className={cn(
+                      'h-11 rounded-[16px] px-4 text-[10px] font-black uppercase tracking-widest transition-all',
+                      receiptMode === 'ON_DEMAND' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background hover:text-foreground'
+                    )}
+                  >
+                    {t.receiptModeOnDemand}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="rounded-[24px] border border-border/50 bg-muted/20 p-3 sm:rounded-[28px] sm:p-4">
               <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
@@ -1161,7 +1206,7 @@ export const AdminProducts = () => {
               </div>
 
               <div className="mt-4 rounded-[24px] border border-border/50 bg-background/50 sm:rounded-[28px]">
-                <div className="hidden xl:grid xl:grid-cols-[72px_96px_minmax(0,1fr)_180px_112px_148px_148px_160px] xl:gap-5 xl:rounded-t-[28px] xl:border-b xl:border-border/50 xl:bg-background/95 xl:px-4 xl:py-3 xl:backdrop-blur xl:sticky xl:top-0 xl:z-10">
+                <div className="hidden xl:grid xl:grid-cols-[72px_96px_minmax(0,1.15fr)_minmax(0,0.95fr)_112px_148px_148px_160px] xl:gap-5 xl:rounded-t-[28px] xl:border-b xl:border-border/50 xl:bg-background/95 xl:px-4 xl:py-3 xl:backdrop-blur">
                   <p className="text-center text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">STT</p>
                   <p className="text-center text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{locale === 'vi' ? 'Ảnh' : 'Image'}</p>
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{t.lineProduct}</p>
@@ -1265,19 +1310,22 @@ export const AdminProducts = () => {
 
                         <div className="space-y-3">
                           <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground xl:hidden">{locale === 'vi' ? 'Danh muc' : 'Category'}</label>
-                          <select
-                            value={line.categoryId || selectedLineProduct?.categoryId || ''}
-                            disabled={!!selectedLineProduct}
-                            onChange={(event) => updateReceiptLine(line.id, { categoryId: event.target.value })}
-                            className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm font-medium text-foreground outline-none disabled:cursor-not-allowed disabled:opacity-70"
-                          >
-                            <option value="">{locale === 'vi' ? 'Chon danh muc' : 'Select category'}</option>
-                            {categories.map((category: { id: string; name: string }) => (
-                              <option key={category.id} value={category.id}>
-                                {category.name}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="relative">
+                            <select
+                              value={line.categoryId || selectedLineProduct?.categoryId || ''}
+                              disabled={!!selectedLineProduct}
+                              onChange={(event) => updateReceiptLine(line.id, { categoryId: event.target.value })}
+                              className="h-12 w-full appearance-none rounded-2xl border border-border bg-background px-4 pr-11 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-70"
+                            >
+                              <option value="">{locale === 'vi' ? 'Chon danh muc' : 'Select category'}</option>
+                              {categories.map((category: { id: string; name: string }) => (
+                                <option key={category.id} value={category.id}>
+                                  {category.name}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          </div>
                         </div>
 
                         <div className="space-y-3">

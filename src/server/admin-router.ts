@@ -54,6 +54,7 @@ const receiptLineSchema = z.object({
 });
 
 const inventoryReceiptSchema = z.object({
+  mode: z.enum(['RESTOCK', 'ON_DEMAND']).optional().default('RESTOCK'),
   supplier: z.string().min(2).max(160).optional().nullable(),
   note: z.string().max(500).optional().nullable(),
   receivedAt: z.string().datetime().optional().nullable(),
@@ -260,26 +261,36 @@ const createUniqueProductSlug = async (tx: any, name: string) => {
 const resolveReceiptProduct = async (
   tx: any,
   line: { productId?: string | null; productName?: string | null; categoryId?: string | null; imageUrl?: string | null; quantity: number; costPrice: number; salePrice: number },
-  categoryId: string
+  categoryId: string,
+  options: { affectsStock: boolean; supplier?: string | null }
 ) => {
   const imageUrl = normalizeOptionalText(line.imageUrl || null);
+  const sourceTags = options.affectsStock
+    ? []
+    : ['on-demand', 'external-supply', ...(options.supplier ? [`supplier:${options.supplier}`] : [])];
 
   if (line.productId) {
     const product = await tx.product.findUnique({
       where: { id: line.productId },
-      select: { id: true, stock: true, initialStock: true, images: true },
+      select: { id: true, stock: true, initialStock: true, images: true, tags: true },
     });
     if (!product) throw new Error('Co san pham trong phieu nhap khong hop le.');
 
     const nextImages = imageUrl && !product.images.includes(imageUrl) ? [imageUrl, ...product.images] : product.images;
+    const nextTags = Array.from(new Set([...(product.tags || []), ...sourceTags]));
     await tx.product.update({
       where: { id: product.id },
       data: {
-        stock: { increment: line.quantity },
-        initialStock: Math.max(product.initialStock, product.stock + line.quantity),
+        ...(options.affectsStock
+          ? {
+              stock: { increment: line.quantity },
+              initialStock: Math.max(product.initialStock, product.stock + line.quantity),
+            }
+          : {}),
         costPrice: line.costPrice,
         price: line.salePrice,
         images: nextImages.length ? nextImages : [DEFAULT_PRODUCT_IMAGE],
+        tags: nextTags,
         isActive: true,
         deletedAt: null,
       },
@@ -300,9 +311,10 @@ const resolveReceiptProduct = async (
       price: line.salePrice,
       images: [imageUrl || DEFAULT_PRODUCT_IMAGE],
       categoryId,
-      stock: line.quantity,
-      initialStock: line.quantity,
+      stock: options.affectsStock ? line.quantity : 0,
+      initialStock: options.affectsStock ? line.quantity : 0,
       reorderLevel: 0,
+      tags: sourceTags,
       variantsJson: [],
       isActive: true,
     },
@@ -312,7 +324,11 @@ const resolveReceiptProduct = async (
   return product.id;
 };
 
-const applyReceiptLines = async (tx: any, items: Array<{ productId?: string | null; productName?: string | null; categoryId?: string | null; imageUrl?: string | null; quantity: number; costPrice: number; salePrice: number }>) => {
+const applyReceiptLines = async (
+  tx: any,
+  items: Array<{ productId?: string | null; productName?: string | null; categoryId?: string | null; imageUrl?: string | null; quantity: number; costPrice: number; salePrice: number }>,
+  options: { affectsStock?: boolean; supplier?: string | null } = {}
+) => {
   if (!items.length) throw new Error('Phieu nhap can it nhat 1 san pham.');
   if (items.some((item) => (!item.productId && (!normalizeOptionalText(item.productName || null) || !item.categoryId)) || item.quantity <= 0 || item.salePrice <= 0)) {
     throw new Error('Phieu nhap can day du san pham, so luong va gia ban.');
@@ -322,7 +338,10 @@ const applyReceiptLines = async (tx: any, items: Array<{ productId?: string | nu
 
   return Promise.all(
     items.map(async (item) => ({
-      productId: await resolveReceiptProduct(tx, item, item.categoryId || fallbackCategory?.id || ''),
+      productId: await resolveReceiptProduct(tx, item, item.categoryId || fallbackCategory?.id || '', {
+        affectsStock: options.affectsStock !== false,
+        supplier: options.supplier,
+      }),
       quantity: item.quantity,
       costPrice: item.costPrice,
       salePrice: item.salePrice,
@@ -1577,12 +1596,12 @@ router.post('/inventory/receipts', async (req: any, res, next) => {
   try {
     const data = inventoryReceiptSchema.parse(req.body);
     const receipt = await prisma.$transaction(async (tx) => {
-      const receiptItems = await applyReceiptLines(tx, data.items);
+      const receiptItems = await applyReceiptLines(tx, data.items, { affectsStock: data.mode !== 'ON_DEMAND', supplier: data.supplier });
 
       return tx.stockReceipt.create({
         data: {
           code: `PN-${Date.now()}`,
-          mode: 'RESTOCK',
+          mode: data.mode,
           supplier: data.supplier || null,
           note: data.note || null,
           createdById: req.user?.id || null,
@@ -1616,16 +1635,19 @@ router.patch('/inventory/receipts/:id', async (req: any, res, next) => {
     }
 
     const receipt = await prisma.$transaction(async (tx) => {
-      for (const item of existing.items) {
-        await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
+      if (existing.mode !== 'ON_DEMAND') {
+        for (const item of existing.items) {
+          await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
+        }
       }
 
       await tx.stockReceiptItem.deleteMany({ where: { receiptId: req.params.id } });
-      const receiptItems = await applyReceiptLines(tx, data.items);
+      const receiptItems = await applyReceiptLines(tx, data.items, { affectsStock: data.mode !== 'ON_DEMAND', supplier: data.supplier });
 
       return tx.stockReceipt.update({
         where: { id: req.params.id },
         data: {
+          mode: data.mode,
           supplier: data.supplier || null,
           note: data.note || null,
           createdAt: data.receivedAt ? new Date(data.receivedAt) : existing.createdAt,
@@ -1656,20 +1678,24 @@ router.delete('/inventory/receipts/:id', async (req, res, next) => {
       return sendError(res, 'Không tìm thấy phiếu nhập.', 404);
     }
 
-    for (const item of receipt.items) {
-      if (item.product.stock < item.quantity) {
-        return sendError(res, `Không thể xóa phiếu vì tồn kho của ${item.product.name} hiện tại thấp hơn số đã nhập.`);
+    if (receipt.mode !== 'ON_DEMAND') {
+      for (const item of receipt.items) {
+        if (item.product.stock < item.quantity) {
+          return sendError(res, `Không thể xóa phiếu vì tồn kho của ${item.product.name} hiện tại thấp hơn số đã nhập.`);
+        }
       }
     }
 
     await prisma.$transaction(async (tx) => {
-      for (const item of receipt.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: { decrement: item.quantity },
-          },
-        });
+      if (receipt.mode !== 'ON_DEMAND') {
+        for (const item of receipt.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: { decrement: item.quantity },
+            },
+          });
+        }
       }
 
       await tx.stockReceipt.delete({ where: { id: req.params.id } });

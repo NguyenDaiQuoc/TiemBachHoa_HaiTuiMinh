@@ -132,20 +132,32 @@ const createUniqueMarketingCampaignSlug = async (value: string) => {
   return slug;
 };
 
-const resolveReceiptProduct = async (tx: Prisma.TransactionClient, line: ReturnType<typeof buildReceiptLine>, categoryId: string) => {
+const resolveReceiptProduct = async (
+  tx: Prisma.TransactionClient,
+  line: ReturnType<typeof buildReceiptLine>,
+  categoryId: string,
+  options: { affectsStock: boolean; supplier?: string | null }
+) => {
+  const sourceTags = options.affectsStock ? [] : ['on-demand', 'external-supply', ...(options.supplier ? [`supplier:${options.supplier}`] : [])];
   if (line.productId) {
-    const product = await tx.product.findUnique({ where: { id: line.productId }, select: { id: true, stock: true, initialStock: true, images: true } });
+    const product = await tx.product.findUnique({ where: { id: line.productId }, select: { id: true, stock: true, initialStock: true, images: true, tags: true } });
     if (!product) throw new Error('Có sản phẩm trong phiếu nhập không hợp lệ');
 
     const nextImages = line.imageUrl && !product.images.includes(line.imageUrl) ? [line.imageUrl, ...product.images] : product.images;
+    const nextTags = Array.from(new Set([...(product.tags || []), ...sourceTags]));
     await tx.product.update({
       where: { id: product.id },
       data: {
-        stock: { increment: line.quantity },
-        initialStock: Math.max(product.initialStock, product.stock + line.quantity),
+        ...(options.affectsStock
+          ? {
+              stock: { increment: line.quantity },
+              initialStock: Math.max(product.initialStock, product.stock + line.quantity),
+            }
+          : {}),
         costPrice: line.costPrice,
         price: line.salePrice,
         images: nextImages.length ? nextImages : [DEFAULT_PRODUCT_IMAGE],
+        tags: nextTags,
         isActive: true,
         deletedAt: null,
       },
@@ -166,9 +178,10 @@ const resolveReceiptProduct = async (tx: Prisma.TransactionClient, line: ReturnT
       price: line.salePrice,
       images: [line.imageUrl || DEFAULT_PRODUCT_IMAGE],
       categoryId,
-      stock: line.quantity,
-      initialStock: line.quantity,
+      stock: options.affectsStock ? line.quantity : 0,
+      initialStock: options.affectsStock ? line.quantity : 0,
       reorderLevel: 0,
+      tags: sourceTags,
       variantsJson: [],
       isActive: true,
     },
@@ -178,7 +191,7 @@ const resolveReceiptProduct = async (tx: Prisma.TransactionClient, line: ReturnT
   return product.id;
 };
 
-const applyReceiptLines = async (tx: Prisma.TransactionClient, rawItems: any[]) => {
+const applyReceiptLines = async (tx: Prisma.TransactionClient, rawItems: any[], options: { affectsStock?: boolean; supplier?: string | null } = {}) => {
   const lines = rawItems.map(buildReceiptLine);
   if (!lines.length) throw new Error('Phiếu nhập cần ít nhất 1 sản phẩm');
   if (lines.some((line) => (!line.productId && (!line.productName || !line.categoryId)) || line.quantity <= 0 || line.salePrice <= 0)) {
@@ -189,7 +202,10 @@ const applyReceiptLines = async (tx: Prisma.TransactionClient, rawItems: any[]) 
 
   return Promise.all(
     lines.map(async (line) => ({
-      productId: await resolveReceiptProduct(tx, line, line.categoryId || fallbackCategory?.id || ''),
+      productId: await resolveReceiptProduct(tx, line, line.categoryId || fallbackCategory?.id || '', {
+        affectsStock: options.affectsStock !== false,
+        supplier: options.supplier,
+      }),
       quantity: line.quantity,
       costPrice: line.costPrice,
       salePrice: line.salePrice,
@@ -454,13 +470,14 @@ const handleReceipts = async (req: IncomingMessage, res: ServerResponse, user: A
   if (req.method === 'POST') {
     const body = await readJsonBody<any>(req);
     const items = Array.isArray(body.items) ? body.items : [];
+    const mode = body.mode === 'ON_DEMAND' ? 'ON_DEMAND' : 'RESTOCK';
     if (!items.length) return fail(res, 'Phiếu nhập cần ít nhất 1 sản phẩm');
     const receipt = await prisma.$transaction(async (tx) => {
-      const receiptItems = await applyReceiptLines(tx, items);
+      const receiptItems = await applyReceiptLines(tx, items, { affectsStock: mode !== 'ON_DEMAND', supplier: textOrNull(body.supplier) });
       return tx.stockReceipt.create({
         data: {
           code: `PN-${Date.now()}`,
-          mode: 'RESTOCK',
+          mode,
           supplier: textOrNull(body.supplier),
           note: textOrNull(body.note),
           createdById: user.id,
@@ -470,7 +487,7 @@ const handleReceipts = async (req: IncomingMessage, res: ServerResponse, user: A
         include: { items: { include: { product: { select: receiptProductSelect } } } },
       });
     });
-    await createAuditLog(user, 'ADMIN_RESTOCK_PRODUCT', 'StockReceipt', receipt.id);
+    await createAuditLog(user, mode === 'ON_DEMAND' ? 'ADMIN_RECORD_ON_DEMAND_SUPPLY' : 'ADMIN_RESTOCK_PRODUCT', 'StockReceipt', receipt.id);
     return ok(res, receipt, 'Đã tạo phiếu nhập', 201);
   }
 
@@ -479,7 +496,9 @@ const handleReceipts = async (req: IncomingMessage, res: ServerResponse, user: A
     const receipt = await prisma.stockReceipt.findUnique({ where: { id }, include: { items: true } });
     if (!receipt) return fail(res, 'Không tìm thấy phiếu nhập', 404);
     await prisma.$transaction(async (tx) => {
-      for (const item of receipt.items) await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
+      if (receipt.mode !== 'ON_DEMAND') {
+        for (const item of receipt.items) await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
+      }
       await tx.stockReceipt.delete({ where: { id } });
     });
     return ok(res, null, 'Đã xóa phiếu nhập');
@@ -488,6 +507,7 @@ const handleReceipts = async (req: IncomingMessage, res: ServerResponse, user: A
   if (req.method === 'PATCH') {
     const body = await readJsonBody<any>(req);
     const items = Array.isArray(body.items) ? body.items : null;
+    const mode = body.mode === 'ON_DEMAND' ? 'ON_DEMAND' : 'RESTOCK';
     const receipt = await prisma.$transaction(async (tx) => {
       const existingReceipt = await tx.stockReceipt.findUnique({ where: { id }, include: { items: true } });
       if (!existingReceipt) throw new Error('Không tìm thấy phiếu nhập');
@@ -495,17 +515,20 @@ const handleReceipts = async (req: IncomingMessage, res: ServerResponse, user: A
       let receiptItems: Array<{ productId: string; quantity: number; costPrice: number; salePrice: number }> | null = null;
 
       if (items) {
-        for (const item of existingReceipt.items) {
-          await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
+        if (existingReceipt.mode !== 'ON_DEMAND') {
+          for (const item of existingReceipt.items) {
+            await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
+          }
         }
 
         await tx.stockReceiptItem.deleteMany({ where: { receiptId: id } });
-        receiptItems = await applyReceiptLines(tx, items);
+        receiptItems = await applyReceiptLines(tx, items, { affectsStock: mode !== 'ON_DEMAND', supplier: textOrNull(body.supplier) });
       }
 
       return tx.stockReceipt.update({
         where: { id },
         data: {
+          mode,
           supplier: textOrNull(body.supplier),
           note: textOrNull(body.note),
           createdAt: parseDate(body.receivedAt) || undefined,
