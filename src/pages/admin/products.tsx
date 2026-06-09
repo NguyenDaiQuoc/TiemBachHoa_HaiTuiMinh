@@ -4,6 +4,8 @@ import {
   AlertTriangle,
   Box,
   CalendarDays,
+  Check,
+  ChevronDown,
   ClipboardList,
   Eye,
   Loader2,
@@ -249,6 +251,7 @@ export const AdminProducts = () => {
   const [receiptSubmitting, setReceiptSubmitting] = useState(false);
   const [editingReceipt, setEditingReceipt] = useState<InventoryReceiptPayload | null>(null);
   const [receiptSupplier, setReceiptSupplier] = useState('');
+  const [isSupplierPickerOpen, setIsSupplierPickerOpen] = useState(false);
   const [receiptDate, setReceiptDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [receiptNote, setReceiptNote] = useState('');
   const [receiptLines, setReceiptLines] = useState<ReceiptLineDraft[]>([createEmptyLine()]);
@@ -315,6 +318,11 @@ export const AdminProducts = () => {
   const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const comboProducts = useMemo(() => comboProductIds.map((id) => productMap.get(id)).filter((product): product is Product => Boolean(product)), [comboProductIds, productMap]);
   const comboSuggestedPrice = useMemo(() => Math.max(0, comboProducts.reduce((sum, product) => sum + product.price, 0)), [comboProducts]);
+  const supplierSuggestions = useMemo(() => {
+    const lookup = normalizeLookupText(receiptSupplier);
+    const matched = lookup ? suppliers.filter((supplier) => normalizeLookupText(supplier.name).includes(lookup)) : suppliers;
+    return matched.slice(0, 8);
+  }, [receiptSupplier, suppliers]);
   const findProductForLine = (line: ReceiptLineDraft) => {
     const selected = line.productId ? productMap.get(line.productId) : null;
     if (selected) return selected;
@@ -1065,17 +1073,56 @@ export const AdminProducts = () => {
             <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr_1fr]">
               <div className="space-y-3">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t.supplier}</label>
-                <Input
-                  list="supplier-options"
-                  value={receiptSupplier}
-                  onChange={(event) => setReceiptSupplier(event.target.value)}
-                  className="h-12 w-full rounded-2xl border-border bg-background px-4 text-sm font-medium text-foreground"
-                />
-                <datalist id="supplier-options">
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.name} />
-                  ))}
-                </datalist>
+                <div className="relative">
+                  <Input
+                    value={receiptSupplier}
+                    onFocus={() => setIsSupplierPickerOpen(true)}
+                    onBlur={() => window.setTimeout(() => setIsSupplierPickerOpen(false), 120)}
+                    onChange={(event) => {
+                      setReceiptSupplier(event.target.value);
+                      setIsSupplierPickerOpen(true);
+                    }}
+                    placeholder={locale === 'vi' ? 'Chon hoac nhap nha cung cap' : 'Select or type a supplier'}
+                    className="h-14 w-full rounded-[22px] border-2 border-primary/35 bg-secondary/40 px-5 pr-12 text-sm font-black text-foreground shadow-[0_10px_30px_rgba(60,60,60,0.06)] outline-none transition-all placeholder:text-muted-foreground/60 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+                  />
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setIsSupplierPickerOpen((open) => !open)}
+                    className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    aria-label={locale === 'vi' ? 'Mo danh sach nha cung cap' : 'Open supplier list'}
+                  >
+                    <ChevronDown className={cn('h-4 w-4 transition-transform', isSupplierPickerOpen && 'rotate-180')} />
+                  </button>
+
+                  {isSupplierPickerOpen && supplierSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-[20px] border border-primary/20 bg-background shadow-2xl shadow-primary/10 ring-1 ring-black/5">
+                      <div className="max-h-64 overflow-y-auto p-2">
+                        {supplierSuggestions.map((supplier) => {
+                          const selected = supplier.name === receiptSupplier;
+                          return (
+                            <button
+                              key={supplier.id}
+                              type="button"
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => {
+                                setReceiptSupplier(supplier.name);
+                                setIsSupplierPickerOpen(false);
+                              }}
+                              className={cn(
+                                'flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black transition-colors',
+                                selected ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-primary/10 hover:text-primary'
+                              )}
+                            >
+                              <span className="truncate">{supplier.name}</span>
+                              {selected && <Check className="h-4 w-4 flex-shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t.receivedAt}</label>
