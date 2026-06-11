@@ -60,7 +60,7 @@ export const LoginPage: React.FC = () => {
 
       const result = await readApiResponse<{ user?: any; token?: string; error?: string }>(
         response,
-        'May chu dang tra ve du lieu khong hop le cho dang nhap. Vui long kiem tra lai API production.'
+      'Máy chủ đang trả về dữ liệu không hợp lệ cho đăng nhập. Vui lòng kiểm tra lại API production.'
       );
       if (!response.ok) throw new Error(result.error || 'Đăng nhập thất bại');
 

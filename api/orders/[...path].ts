@@ -164,6 +164,52 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
   return ok(res, { ...serializeOrder(order), paymentMethod }, 'Đã tạo đơn hàng', 201);
 };
 
+const expireCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) => {
+  if (req.method !== 'POST') return fail(res, 'Method not allowed', 405);
+
+  const body = await readJsonBody<any>(req);
+  const code = textOrNull(body.orderId) || textOrNull(body.orderNumber) || textOrNull(body.trackingId);
+  if (!code) return fail(res, 'Missing order code', 400);
+
+  const order = await prisma.order.findFirst({
+    where: { OR: [{ id: code }, { orderNumber: code }] },
+    include: { items: { include: { product: { include: { category: true } } } } },
+  });
+
+  if (!order) return fail(res, 'Order not found', 404);
+  if (order.paymentStatus === 'PAID') return fail(res, 'Order is already paid', 409);
+
+  const restoredItems = order.items.map((item) => ({
+    ...item.product,
+    image: item.image || item.product.images?.[0] || '/favicon.svg',
+    images: item.product.images?.length ? item.product.images : [item.image || '/favicon.svg'],
+    category: item.product.category,
+    quantity: item.quantity,
+    price: item.price,
+  }));
+
+  if (order.status === 'CANCELLED' || order.status === 'FAILED' || order.paymentStatus === 'FAILED') {
+    return ok(res, { order: serializeOrder(order), restoredItems }, 'Order already expired');
+  }
+
+  const expired = await prisma.$transaction(async (tx) => {
+    for (const item of order.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
+      });
+    }
+
+    return tx.order.update({
+      where: { id: order.id },
+      data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+      include: { items: true },
+    });
+  });
+
+  return ok(res, { order: serializeOrder(expired), restoredItems }, 'Expired order cancelled and stock restored');
+};
+
 const orderStage = (order: any) => {
   if (order.status === 'CANCELLED') return 'DELIVERY_FAILED';
   if (order.status === 'DELIVERED') return 'DELIVERED';
@@ -243,6 +289,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     const path = parsePath(req);
     if (path === 'checkout') return createCheckoutOrder(req, res);
+    if (path === 'expire') return expireCheckoutOrder(req, res);
     if (path === 'track') return trackOrder(req, res);
     return fail(res, 'Không tìm thấy API đơn hàng', 404);
   } catch (error) {

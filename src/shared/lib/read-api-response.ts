@@ -1,17 +1,17 @@
 export const readApiResponse = async <T = unknown>(
   response: Response,
-  fallbackMessage = 'May chu dang tra ve du lieu khong hop le. Vui long kiem tra lai API production.'
+  fallbackMessage = 'Máy chủ đang trả về dữ liệu không hợp lệ. Vui lòng kiểm tra lại API production.'
 ): Promise<T> => {
   const text = await response.text();
   const contentType = response.headers.get('content-type') || '';
 
   if (!text) {
-    throw new Error('May chu chua tra ve du lieu. Vui long kiem tra cau hinh API production.');
+    throw new Error('Máy chủ chưa trả về dữ liệu. Vui lòng kiểm tra cấu hình API production.');
   }
 
   if (!contentType.toLowerCase().includes('application/json')) {
     if (!response.ok) {
-      throw new Error(`API production dang loi (${response.status}). Vui long kiem tra Vercel Function logs va bien moi truong.`);
+      throw new Error(`API production đang lỗi (${response.status}). Vui lòng kiểm tra Vercel Function logs và biến môi trường.`);
     }
 
     throw new Error(fallbackMessage);

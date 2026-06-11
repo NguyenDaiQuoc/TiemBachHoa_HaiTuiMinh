@@ -99,11 +99,13 @@ const buildReceiptLine = (item: any) => {
   const costPrice = Math.max(0, numberOr(item.costPrice));
   const salePrice = Math.max(1, numberOr(item.salePrice, 1));
   const imageUrl = textOrNull(item.imageUrl);
+  const imageUrls = Array.from(new Set([...(Array.isArray(item.imageUrls) ? item.imageUrls : []), imageUrl].map(textOrNull).filter((value): value is string => Boolean(value))));
+  const sku = textOrNull(item.sku);
   const productName = textOrNull(item.productName || item.name || item.search);
   const productId = textOrNull(item.productId);
   const categoryId = textOrNull(item.categoryId);
 
-  return { productId, productName, categoryId, imageUrl, quantity, costPrice, salePrice };
+  return { productId, productName, categoryId, sku, imageUrl, imageUrls, quantity, costPrice, salePrice };
 };
 
 const createUniqueProductSlug = async (tx: Prisma.TransactionClient, name: string) => {
@@ -143,7 +145,7 @@ const resolveReceiptProduct = async (
     const product = await tx.product.findUnique({ where: { id: line.productId }, select: { id: true, stock: true, initialStock: true, images: true, tags: true } });
     if (!product) throw new Error('Có sản phẩm trong phiếu nhập không hợp lệ');
 
-    const nextImages = line.imageUrl && !product.images.includes(line.imageUrl) ? [line.imageUrl, ...product.images] : product.images;
+    const nextImages = Array.from(new Set([...(line.imageUrls || []), ...product.images]));
     const nextTags = Array.from(new Set([...(product.tags || []), ...sourceTags]));
     await tx.product.update({
       where: { id: product.id },
@@ -157,6 +159,7 @@ const resolveReceiptProduct = async (
         costPrice: line.costPrice,
         price: line.salePrice,
         images: nextImages.length ? nextImages : [DEFAULT_PRODUCT_IMAGE],
+        ...(line.sku ? { sku: line.sku } : {}),
         tags: nextTags,
         isActive: true,
         deletedAt: null,
@@ -174,9 +177,10 @@ const resolveReceiptProduct = async (
       name: line.productName,
       slug,
       description: 'Sản phẩm được tạo tự động từ phiếu nhập kho.',
+      sku: line.sku,
       costPrice: line.costPrice,
       price: line.salePrice,
-      images: [line.imageUrl || DEFAULT_PRODUCT_IMAGE],
+      images: line.imageUrls.length ? line.imageUrls : [DEFAULT_PRODUCT_IMAGE],
       categoryId,
       stock: options.affectsStock ? line.quantity : 0,
       initialStock: options.affectsStock ? line.quantity : 0,

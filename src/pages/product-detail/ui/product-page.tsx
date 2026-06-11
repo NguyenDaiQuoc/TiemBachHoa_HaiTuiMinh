@@ -491,6 +491,7 @@ export const ProductDetailPage = () => {
               </div>
             </div>
 
+            {false && (
             <div className="rounded-[32px] border border-primary/15 bg-primary/5 p-6">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
@@ -519,6 +520,7 @@ export const ProductDetailPage = () => {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
+            )}
           </div>
         </div>
 
@@ -881,4 +883,3 @@ export const ProductDetailPage = () => {
     </div>
   );
 };
-

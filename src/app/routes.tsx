@@ -110,6 +110,16 @@ const RouteTitleManager = () => {
   return null;
 };
 
+const RouteScrollManager = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname]);
+
+  return null;
+};
+
 const useAuthHydration = (
   token: string | null,
   isHydrated: boolean,
@@ -159,6 +169,7 @@ export const AppRoutes = () => {
     <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <RouteTitleManager />
+        <RouteScrollManager />
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/" element={<HomePage />} />
@@ -220,4 +231,3 @@ export const AppRoutes = () => {
     </ErrorBoundary>
   );
 };
-

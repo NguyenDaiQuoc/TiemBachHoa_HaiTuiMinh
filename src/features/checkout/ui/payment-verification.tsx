@@ -8,12 +8,25 @@ import { Check, Loader2, Copy, ExternalLink, ArrowRight, RefreshCw, TimerReset }
 import { Button } from '@/src/shared/ui/button';
 import { toast } from 'sonner';
 import { useCheckoutStore } from '../model/checkout-store';
+import { useCartStore } from '@/src/entities/cart/model/store';
 
 interface PaymentVerificationProps {
   order: Order;
 }
 
 const PAYMENT_WINDOW_SECONDS = 10 * 60;
+
+const readViteEnv = (key: string) => {
+  const meta = import.meta as unknown as { env?: Record<string, string | undefined> };
+  return meta.env?.[key] || '';
+};
+
+const bankTransferConfig = {
+  bankName: readViteEnv('VITE_BANK_NAME'),
+  bankCode: readViteEnv('VITE_BANK_CODE'),
+  accountNumber: readViteEnv('VITE_BANK_ACCOUNT_NUMBER'),
+  accountHolder: readViteEnv('VITE_BANK_ACCOUNT_HOLDER'),
+};
 
 const isPaidStatus = (value?: string) => value === 'PAID' || value === PaymentStatus.SUCCESS;
 
@@ -23,13 +36,21 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
   );
   const [countdown, setCountdown] = useState(PAYMENT_WINDOW_SECONDS);
   const [isChecking, setIsChecking] = useState(false);
+  const [isExpiring, setIsExpiring] = useState(false);
   const { updateOrderStatus } = useCheckoutStore();
+  const restoreItems = useCartStore((state) => state.restoreItems);
 
   const trackingCode = order.trackingId || order.orderNumber || order.id;
+  const bankName = bankTransferConfig.bankName || bankTransferConfig.bankCode || 'Chưa cấu hình ngân hàng';
+  const accountNumber = bankTransferConfig.accountNumber || 'Chưa cấu hình số tài khoản';
+  const accountHolder = bankTransferConfig.accountHolder || 'Chưa cấu hình chủ tài khoản';
   const transferContent = useMemo(
     () => generateTransferContent(order.orderNumber || order.id, order.shippingInfo.fullName),
     [order.id, order.orderNumber, order.shippingInfo.fullName]
   );
+  const bankQrValue = bankTransferConfig.accountNumber
+    ? `BANK:${bankTransferConfig.bankCode || bankTransferConfig.bankName}|ACC:${bankTransferConfig.accountNumber}|NAME:${bankTransferConfig.accountHolder}|AMOUNT:${Math.round(order.totalAmount)}|CONTENT:${transferContent}`
+    : `PAYMENT_CONFIG_MISSING|ORDER:${trackingCode}|AMOUNT:${Math.round(order.totalAmount)}|CONTENT:${transferContent}`;
 
   const checkPaymentStatus = useCallback(
     async (isSilent = false) => {
@@ -68,6 +89,37 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
     [trackingCode, updateOrderStatus]
   );
 
+  const expireOrder = useCallback(async () => {
+    if (!trackingCode || isExpiring) return;
+    setIsExpiring(true);
+
+    try {
+      const response = await fetch('/api/orders/expire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, orderNumber: order.orderNumber, trackingId: trackingCode }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || payload?.message || 'Không thể hủy đơn quá hạn');
+      }
+
+      const restoredItems = Array.isArray(payload.data?.restoredItems) ? payload.data.restoredItems : [];
+      if (restoredItems.length) restoreItems(restoredItems);
+      setStatus(PaymentStatus.FAILED);
+      updateOrderStatus(OrderStatus.CANCELLED, PaymentStatus.FAILED);
+      toast.info('Don thanh toan da het han', {
+        description: restoredItems.length ? 'Sản phẩm đã được hoàn tồn kho và đưa lại vào giỏ hàng.' : 'Đơn hàng đã được hủy tự động.',
+      });
+    } catch (error) {
+      setStatus(PaymentStatus.FAILED);
+      toast.error(error instanceof Error ? error.message : 'Không thể hủy đơn quá hạn');
+    } finally {
+      setIsExpiring(false);
+    }
+  }, [isExpiring, order.id, order.orderNumber, restoreItems, trackingCode, updateOrderStatus]);
+
   useEffect(() => {
     if (status === PaymentStatus.SUCCESS || status === PaymentStatus.FAILED) return;
 
@@ -75,7 +127,7 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
       setCountdown((prev) => {
         if (prev <= 1) {
           window.clearInterval(timer);
-          setStatus(PaymentStatus.FAILED);
+          void expireOrder();
           return 0;
         }
         return prev - 1;
@@ -83,7 +135,7 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [status]);
+  }, [expireOrder, status]);
 
   useEffect(() => {
     if (status !== PaymentStatus.PENDING) return;
@@ -160,16 +212,16 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
                 <div className="space-y-1">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Ngân hàng</p>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                    <p className="font-bold">Vietcombank (VCB)</p>
-                    <Copy className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => copyToClipboard('Vietcombank', 'ngân hàng')} />
+                    <p className="font-bold">{bankName}</p>
+                    <Copy className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => copyToClipboard(bankName, 'ngân hàng')} />
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Số tài khoản</p>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                    <p className="font-bold">1234567890</p>
-                    <Copy className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => copyToClipboard('1234567890', 'số tài khoản')} />
+                    <p className="font-bold">{accountNumber}</p>
+                    <Copy className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => copyToClipboard(accountNumber, 'số tài khoản')} />
                   </div>
                 </div>
 
@@ -196,7 +248,7 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
             <div className="flex flex-col items-center space-y-4">
               <div className="p-4 bg-surface-default rounded-3xl shadow-soft border-4 border-border/10">
                 <QRCodeSVG
-                  value={`BANK:VCB|ACC:1234567890|AMOUNT:${Math.round(order.totalAmount)}|CONTENT:${transferContent}`}
+                  value={bankQrValue}
                   size={200}
                   level="H"
                   includeMargin

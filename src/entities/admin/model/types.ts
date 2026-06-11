@@ -181,7 +181,9 @@ export interface InventoryReceiptLineInput {
   productId?: string;
   productName?: string;
   categoryId?: string | null;
+  sku?: string | null;
   imageUrl?: string | null;
+  imageUrls?: string[];
   quantity: number;
   costPrice: number;
   salePrice: number;

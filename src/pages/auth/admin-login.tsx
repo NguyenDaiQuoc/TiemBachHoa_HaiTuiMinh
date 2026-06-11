@@ -62,7 +62,7 @@ export const AdminLoginPage: React.FC = () => {
 
       const result = await readApiResponse<{ user?: any; token?: string; error?: string }>(
         response,
-        'May chu dang tra ve du lieu khong hop le cho dang nhap quan tri. Vui long kiem tra lai API production.'
+      'Máy chủ đang trả về dữ liệu không hợp lệ cho đăng nhập quản trị. Vui lòng kiểm tra lại API production.'
       );
       if (!response.ok) throw new Error(result.error || 'Đăng nhập quản trị thất bại');
       if (!isAdminRole(result.user?.role)) throw new Error('Tài khoản này không có quyền truy cập khu vực quản trị');

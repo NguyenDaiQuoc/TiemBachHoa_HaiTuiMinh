@@ -9,6 +9,7 @@ interface CartItem extends Product {
 interface CartStore {
   items: CartItem[];
   addItem: (product: Product) => void;
+  restoreItems: (products: Array<Product & { quantity?: number }>) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -35,6 +36,23 @@ export const useCartStore = create<CartStore>()(
         } else {
           set({ items: [...items, { ...product, quantity: 1 }] });
         }
+      },
+      restoreItems: (products) => {
+        const items = get().items;
+        const nextItems = [...items];
+
+        for (const product of products) {
+          const quantity = Math.max(1, Number(product.quantity) || 1);
+          const existingIndex = nextItems.findIndex((item) => item.id === product.id);
+
+          if (existingIndex >= 0) {
+            nextItems[existingIndex] = { ...nextItems[existingIndex], quantity: nextItems[existingIndex].quantity + quantity };
+          } else {
+            nextItems.push({ ...product, quantity });
+          }
+        }
+
+        set({ items: nextItems });
       },
       removeItem: (productId) => {
         set({ items: get().items.filter((item) => item.id !== productId) });

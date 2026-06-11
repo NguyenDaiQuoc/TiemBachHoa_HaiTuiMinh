@@ -47,8 +47,10 @@ type ReceiptLineDraft = {
   id: string;
   productId: string;
   categoryId: string;
+  sku: string;
   search: string;
   imageUrl: string;
+  imageUrls: string[];
   quantity: number;
   costPrice: number;
   salePrice: number;
@@ -73,7 +75,7 @@ const copy = {
     receiptModeLabel: 'Kieu nhap',
     receiptModeRestock: 'Nhap kho',
     receiptModeOnDemand: 'Nguon cung thu 3',
-    receiptModeHelp: 'Chon nhap kho neu muon cong ton; chon nguon cung thu 3 neu chi ghi nhan dau vao theo don.',
+    receiptModeHelp: 'Chọn nhập kho nếu muốn cộng tồn; chọn nguồn cung thứ 3 nếu chỉ ghi nhận đầu vào theo đơn.',
     createReceipt: 'Tạo phiếu nhập',
     editReceipt: 'Sửa phiếu nhập',
     supplier: 'Nhà cung cấp',
@@ -203,8 +205,10 @@ const createEmptyLine = (): ReceiptLineDraft => ({
   id: crypto.randomUUID(),
   productId: '',
   categoryId: '',
+  sku: '',
   search: '',
   imageUrl: '',
+  imageUrls: [],
   quantity: 1,
   costPrice: 0,
   salePrice: 0,
@@ -244,11 +248,11 @@ export const AdminProducts = () => {
     createReceipt: locale === 'vi' ? 'Tao phieu nhap moi' : 'Create a new receipt',
     exportExcel: locale === 'vi' ? 'Xuat phieu nhap ra Excel' : 'Export receipt to Excel',
     exportPdf: locale === 'vi' ? 'In hoac tai PDF phieu nhap' : 'Print or download receipt PDF',
-    addLine: locale === 'vi' ? 'Them mot dong san pham' : 'Add one product line',
+    addLine: locale === 'vi' ? 'Thêm một dòng sản phẩm' : 'Add one product line',
     editReceipt: locale === 'vi' ? 'Sua phieu nhap' : 'Edit receipt',
     deleteReceipt: locale === 'vi' ? 'Xoa phieu nhap' : 'Delete receipt',
-    removeLine: locale === 'vi' ? 'Xoa dong san pham' : 'Remove product line',
-    uploadImage: locale === 'vi' ? 'Tai anh san pham' : 'Upload product image',
+    removeLine: locale === 'vi' ? 'Xóa dòng sản phẩm' : 'Remove product line',
+    uploadImage: locale === 'vi' ? 'Tải ảnh sản phẩm' : 'Upload product image',
   };
   const [activeTab, setActiveTab] = useState<ProductTab>('receiving');
   const [catalogQuery, setCatalogQuery] = useState('');
@@ -375,7 +379,8 @@ export const AdminProducts = () => {
         line,
         product,
         productName: product?.name || line.search.trim(),
-        imageUrl: line.imageUrl.trim() || (product ? getPrimaryImage(product) : ''),
+        imageUrls: line.imageUrls.length ? line.imageUrls : [line.imageUrl.trim() || (product ? getPrimaryImage(product) : '')].filter(Boolean),
+        imageUrl: line.imageUrl.trim() || line.imageUrls[0] || (product ? getPrimaryImage(product) : ''),
       };
     })
     .filter((item) => !!item.product || !!item.productName);
@@ -417,8 +422,10 @@ export const AdminProducts = () => {
         id: crypto.randomUUID(),
         productId: item.productId,
         categoryId: '',
+        sku: item.product?.sku || '',
         search: item.product?.name || item.product?.sku || '',
         imageUrl: item.product?.images?.[0] || '',
+        imageUrls: item.product?.images || [],
         quantity: item.quantity,
         costPrice: item.costPrice,
         salePrice: item.salePrice,
@@ -531,21 +538,25 @@ export const AdminProducts = () => {
     updateReceiptLine(lineId, {
       productId: product.id,
       categoryId: product.categoryId || '',
+      sku: product.sku || '',
       search: product.name,
       imageUrl: getPrimaryImage(product),
+      imageUrls: product.images?.length ? product.images : [getPrimaryImage(product)],
       costPrice: product.costPrice || 0,
       salePrice: product.price,
     });
   };
 
-  const handleReceiptImageUpload = async (lineId: string, file?: File) => {
-    if (!file) return;
+  const handleReceiptImageUpload = async (lineId: string, files?: FileList | null) => {
+    if (!files?.length) return;
 
     try {
-      const imageUrl = await readFileAsDataUrl(file);
-      updateReceiptLine(lineId, { imageUrl });
+      const imageUrls = await Promise.all(Array.from(files).map(readFileAsDataUrl));
+      const line = receiptLines.find((item) => item.id === lineId);
+      const nextImages = [...imageUrls, ...(line?.imageUrls || [])].filter(Boolean).slice(0, 8);
+      updateReceiptLine(lineId, { imageUrl: nextImages[0] || '', imageUrls: nextImages });
     } catch {
-      toast.error(locale === 'vi' ? 'Khong the doc anh san pham.' : 'Unable to read product image.');
+      toast.error(locale === 'vi' ? 'Không thể đọc ảnh sản phẩm.' : 'Unable to read product image.');
     }
   };
 
@@ -564,11 +575,13 @@ export const AdminProducts = () => {
   };
 
   const handleSaveReceipt = async () => {
-    const normalizedLines = validReceiptLines.map(({ line, product, productName, imageUrl }) => ({
+    const normalizedLines = validReceiptLines.map(({ line, product, productName, imageUrl, imageUrls }) => ({
       productId: product?.id,
       productName: product ? undefined : productName,
       categoryId: product ? undefined : line.categoryId || undefined,
+      sku: line.sku.trim() || product?.sku || undefined,
       imageUrl: imageUrl || undefined,
+      imageUrls: imageUrls.length ? imageUrls : undefined,
       quantity: Math.max(1, Number(line.quantity) || 1),
       costPrice: Math.max(0, Number(line.costPrice) || 0),
       salePrice: Math.max(1, Number(line.salePrice) || 0),
@@ -1096,7 +1109,7 @@ export const AdminProducts = () => {
                       setReceiptSupplier(event.target.value);
                       setIsSupplierPickerOpen(true);
                     }}
-                    placeholder={locale === 'vi' ? 'Chon hoac nhap nha cung cap' : 'Select or type a supplier'}
+                    placeholder={locale === 'vi' ? 'Chọn hoặc nhập nhà cung cấp' : 'Select or type a supplier'}
                     className="h-14 w-full rounded-[22px] border-2 border-primary/35 bg-secondary/40 px-5 pr-12 text-sm font-black text-foreground shadow-[0_10px_30px_rgba(60,60,60,0.06)] outline-none transition-all placeholder:text-muted-foreground/60 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
                   />
                   <button
@@ -1206,11 +1219,12 @@ export const AdminProducts = () => {
               </div>
 
               <div className="mt-4 rounded-[24px] border border-border/50 bg-background/50 sm:rounded-[28px]">
-                <div className="hidden xl:grid xl:grid-cols-[72px_96px_minmax(0,1.15fr)_minmax(0,0.95fr)_112px_148px_148px_160px] xl:gap-5 xl:rounded-t-[28px] xl:border-b xl:border-border/50 xl:bg-background/95 xl:px-4 xl:py-3 xl:backdrop-blur">
+                <div className="hidden 2xl:grid 2xl:grid-cols-[72px_110px_minmax(0,1.15fr)_minmax(0,0.85fr)_132px_112px_148px_148px_160px] 2xl:gap-5 2xl:rounded-t-[28px] 2xl:border-b 2xl:border-border/50 2xl:bg-background/95 2xl:px-4 2xl:py-3 2xl:backdrop-blur">
                   <p className="text-center text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">STT</p>
                   <p className="text-center text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{locale === 'vi' ? 'Ảnh' : 'Image'}</p>
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{t.lineProduct}</p>
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{locale === 'vi' ? 'Danh muc' : 'Category'}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{locale === 'vi' ? 'Danh mục' : 'Category'}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">SKU</p>
                   <p className="text-right text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{t.quantity}</p>
                   <p className="text-right text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{t.importCost}</p>
                   <p className="text-right text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{t.salePrice}</p>
@@ -1222,6 +1236,7 @@ export const AdminProducts = () => {
                   const matches = receiptLineMatches(line);
                   const selectedLineProduct = findProductForLine(line);
                   const lineTotal = line.quantity * line.costPrice;
+                  const lineImages = line.imageUrls.length ? line.imageUrls : [line.imageUrl || (selectedLineProduct ? getPrimaryImage(selectedLineProduct) : '')].filter(Boolean);
 
                   return (
                     <div key={line.id} className="rounded-[22px] border border-border/50 bg-background p-3 sm:rounded-[28px] sm:p-4">
@@ -1242,19 +1257,19 @@ export const AdminProducts = () => {
                         </Button>
                       </div>
 
-                      <div className="grid gap-5 xl:grid-cols-[72px_96px_minmax(0,1fr)_180px_112px_148px_148px_160px] xl:items-start">
+                      <div className="grid gap-5 2xl:grid-cols-[72px_110px_minmax(0,1fr)_180px_132px_112px_148px_148px_160px] 2xl:items-start">
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground xl:hidden">STT</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">STT</label>
                           <div className="flex h-12 items-center justify-center rounded-2xl border border-border bg-muted/20 px-4 text-sm font-black tabular-nums">
                             {index + 1}
                           </div>
                         </div>
 
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground xl:hidden">{locale === 'vi' ? 'Ảnh' : 'Image'}</label>
-                          <div className="relative h-16 w-20 overflow-hidden rounded-2xl border border-border bg-muted/20">
-                            {line.imageUrl || selectedLineProduct ? (
-                              <img src={line.imageUrl || getPrimaryImage(selectedLineProduct!)} alt="" className="h-full w-full object-cover" />
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">{locale === 'vi' ? 'Anh SKU' : 'SKU image'}</label>
+                          <div className="relative h-20 w-24 overflow-hidden rounded-2xl border border-border bg-muted/20">
+                            {lineImages[0] ? (
+                              <img src={lineImages[0]} alt="" className="h-full w-full object-cover" />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                                 <ImagePlus className="h-5 w-5" />
@@ -1264,9 +1279,18 @@ export const AdminProducts = () => {
                               <span className="rounded-lg bg-background/90 p-1 shadow-sm">
                                 <Upload className="h-3.5 w-3.5" />
                               </span>
-                              <input type="file" accept="image/*" className="hidden" onChange={(event) => void handleReceiptImageUpload(line.id, event.target.files?.[0])} />
+                              <input type="file" accept="image/*" multiple className="hidden" onChange={(event) => void handleReceiptImageUpload(line.id, event.target.files)} />
                             </label>
                           </div>
+                          {lineImages.length > 1 && (
+                            <div className="grid w-24 grid-cols-4 gap-1">
+                              {lineImages.slice(0, 4).map((image, imageIndex) => (
+                                <button key={`${image}-${imageIndex}`} type="button" onClick={() => updateReceiptLine(line.id, { imageUrl: image, imageUrls: [image, ...lineImages.filter((item) => item !== image)] })} className="h-6 overflow-hidden rounded-md border border-border bg-muted/20">
+                                  <img src={image} alt="" className="h-full w-full object-cover" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         <div className="space-y-3">
@@ -1300,7 +1324,7 @@ export const AdminProducts = () => {
                           )}
                           {selectedLineProduct && (
                             <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
-                              <p className="font-black">{selectedLineProduct.name}</p>
+                              <p className="truncate font-black">{selectedLineProduct.name}</p>
                               <p className="mt-1 text-xs text-muted-foreground">
                                 {selectedLineProduct.sku || 'SKU'} • {t.stock}: {selectedLineProduct.stock}
                               </p>
@@ -1309,7 +1333,7 @@ export const AdminProducts = () => {
                         </div>
 
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground xl:hidden">{locale === 'vi' ? 'Danh muc' : 'Category'}</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">{locale === 'vi' ? 'Danh mục' : 'Category'}</label>
                           <div className="relative">
                             <select
                               value={line.categoryId || selectedLineProduct?.categoryId || ''}
@@ -1317,7 +1341,7 @@ export const AdminProducts = () => {
                               onChange={(event) => updateReceiptLine(line.id, { categoryId: event.target.value })}
                               className="h-12 w-full appearance-none rounded-2xl border border-border bg-background px-4 pr-11 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-70"
                             >
-                              <option value="">{locale === 'vi' ? 'Chon danh muc' : 'Select category'}</option>
+                              <option value="">{locale === 'vi' ? 'Chọn danh mục' : 'Select category'}</option>
                               {categories.map((category: { id: string; name: string }) => (
                                 <option key={category.id} value={category.id}>
                                   {category.name}
@@ -1329,7 +1353,17 @@ export const AdminProducts = () => {
                         </div>
 
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground xl:hidden">{t.quantity}</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">SKU</label>
+                          <Input
+                            value={line.sku}
+                            onChange={(event) => updateReceiptLine(line.id, { sku: event.target.value })}
+                            placeholder="SKU-001"
+                            className="h-12 w-full rounded-2xl border-border bg-background px-4 text-sm font-medium text-foreground"
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">{t.quantity}</label>
                           <Input
                             type="number"
                             min={1}
@@ -1340,7 +1374,7 @@ export const AdminProducts = () => {
                         </div>
 
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground xl:hidden">{t.importCost}</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">{t.importCost}</label>
                           <Input
                             inputMode="numeric"
                             value={formatCurrencyInput(line.costPrice)}
@@ -1350,7 +1384,7 @@ export const AdminProducts = () => {
                         </div>
 
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground xl:hidden">{t.salePrice}</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">{t.salePrice}</label>
                           <Input
                             inputMode="numeric"
                             value={formatCurrencyInput(line.salePrice)}
@@ -1360,7 +1394,7 @@ export const AdminProducts = () => {
                         </div>
 
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground xl:hidden">{t.lineSummary}</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">{t.lineSummary}</label>
                           <div className="flex h-12 items-center justify-end rounded-2xl border border-border bg-muted/20 px-4 text-right text-sm font-black tabular-nums">{formatCurrencyVND(lineTotal)}</div>
                         </div>
                       </div>

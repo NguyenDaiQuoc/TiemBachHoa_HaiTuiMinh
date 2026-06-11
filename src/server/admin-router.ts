@@ -47,7 +47,9 @@ const receiptLineSchema = z.object({
   productId: z.string().uuid().optional().nullable(),
   productName: z.string().min(2).max(180).optional().nullable(),
   categoryId: z.string().uuid().optional().nullable(),
+  sku: z.string().max(80).optional().nullable(),
   imageUrl: z.string().optional().nullable(),
+  imageUrls: z.array(z.string()).optional().default([]),
   quantity: z.number().int().positive(),
   costPrice: z.number().min(0),
   salePrice: z.number().positive(),
@@ -238,9 +240,9 @@ const ensureReceiptCategory = async (tx: any) =>
     where: { slug: 'san-pham-nhap-kho' },
     update: { isActive: true, deletedAt: null },
     create: {
-      name: 'San pham nhap kho',
+      name: 'Sản phẩm nhập kho',
       slug: 'san-pham-nhap-kho',
-      description: 'Danh muc tu dong cho san pham duoc tao tu phieu nhap.',
+      description: 'Danh mục tự động cho sản phẩm được tạo từ phiếu nhập.',
       isActive: true,
     },
   });
@@ -260,11 +262,13 @@ const createUniqueProductSlug = async (tx: any, name: string) => {
 
 const resolveReceiptProduct = async (
   tx: any,
-  line: { productId?: string | null; productName?: string | null; categoryId?: string | null; imageUrl?: string | null; quantity: number; costPrice: number; salePrice: number },
+  line: { productId?: string | null; productName?: string | null; categoryId?: string | null; sku?: string | null; imageUrl?: string | null; imageUrls?: string[]; quantity: number; costPrice: number; salePrice: number },
   categoryId: string,
   options: { affectsStock: boolean; supplier?: string | null }
 ) => {
   const imageUrl = normalizeOptionalText(line.imageUrl || null);
+  const imageUrls = Array.from(new Set([...(line.imageUrls || []), imageUrl].map((item) => normalizeOptionalText(item || null)).filter((item): item is string => Boolean(item))));
+  const sku = normalizeOptionalText(line.sku || null);
   const sourceTags = options.affectsStock
     ? []
     : ['on-demand', 'external-supply', ...(options.supplier ? [`supplier:${options.supplier}`] : [])];
@@ -274,9 +278,9 @@ const resolveReceiptProduct = async (
       where: { id: line.productId },
       select: { id: true, stock: true, initialStock: true, images: true, tags: true },
     });
-    if (!product) throw new Error('Co san pham trong phieu nhap khong hop le.');
+    if (!product) throw new Error('Có sản phẩm trong phiếu nhập không hợp lệ.');
 
-    const nextImages = imageUrl && !product.images.includes(imageUrl) ? [imageUrl, ...product.images] : product.images;
+    const nextImages = Array.from(new Set([...imageUrls, ...product.images]));
     const nextTags = Array.from(new Set([...(product.tags || []), ...sourceTags]));
     await tx.product.update({
       where: { id: product.id },
@@ -290,6 +294,7 @@ const resolveReceiptProduct = async (
         costPrice: line.costPrice,
         price: line.salePrice,
         images: nextImages.length ? nextImages : [DEFAULT_PRODUCT_IMAGE],
+        ...(sku ? { sku } : {}),
         tags: nextTags,
         isActive: true,
         deletedAt: null,
@@ -300,16 +305,17 @@ const resolveReceiptProduct = async (
   }
 
   const productName = normalizeOptionalText(line.productName || null);
-  if (!productName) throw new Error('Phieu nhap co dong chua co ten san pham.');
+  if (!productName) throw new Error('Phiếu nhập có dòng chưa có tên sản phẩm.');
 
   const product = await tx.product.create({
     data: {
       name: productName,
       slug: await createUniqueProductSlug(tx, productName),
-      description: 'San pham duoc tao tu dong tu phieu nhap kho.',
+      description: 'Sản phẩm được tạo tự động từ phiếu nhập kho.',
+      sku,
       costPrice: line.costPrice,
       price: line.salePrice,
-      images: [imageUrl || DEFAULT_PRODUCT_IMAGE],
+      images: imageUrls.length ? imageUrls : [DEFAULT_PRODUCT_IMAGE],
       categoryId,
       stock: options.affectsStock ? line.quantity : 0,
       initialStock: options.affectsStock ? line.quantity : 0,
@@ -326,12 +332,12 @@ const resolveReceiptProduct = async (
 
 const applyReceiptLines = async (
   tx: any,
-  items: Array<{ productId?: string | null; productName?: string | null; categoryId?: string | null; imageUrl?: string | null; quantity: number; costPrice: number; salePrice: number }>,
+  items: Array<{ productId?: string | null; productName?: string | null; categoryId?: string | null; sku?: string | null; imageUrl?: string | null; imageUrls?: string[]; quantity: number; costPrice: number; salePrice: number }>,
   options: { affectsStock?: boolean; supplier?: string | null } = {}
 ) => {
-  if (!items.length) throw new Error('Phieu nhap can it nhat 1 san pham.');
+  if (!items.length) throw new Error('Phiếu nhập cần ít nhất 1 sản phẩm.');
   if (items.some((item) => (!item.productId && (!normalizeOptionalText(item.productName || null) || !item.categoryId)) || item.quantity <= 0 || item.salePrice <= 0)) {
-    throw new Error('Phieu nhap can day du san pham, so luong va gia ban.');
+    throw new Error('Phiếu nhập cần đầy đủ sản phẩm, số lượng và giá bán.');
   }
 
   const fallbackCategory = items.some((item) => !item.productId && !item.categoryId) ? await ensureReceiptCategory(tx) : null;
@@ -1631,7 +1637,7 @@ router.patch('/inventory/receipts/:id', async (req: any, res, next) => {
     });
 
     if (!existing) {
-      return sendError(res, 'Khong tim thay phieu nhap.', 404);
+      return sendError(res, 'Không tìm thấy phiếu nhập.', 404);
     }
 
     const receipt = await prisma.$transaction(async (tx) => {
