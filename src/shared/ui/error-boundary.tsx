@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import * as React from "react";
+import type { ErrorInfo, ReactNode } from "react";
 import { Button } from "./button";
 import { AlertCircle, RefreshCcw } from "lucide-react";
 
@@ -11,7 +12,7 @@ interface State {
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+export class ErrorBoundary extends React.Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,

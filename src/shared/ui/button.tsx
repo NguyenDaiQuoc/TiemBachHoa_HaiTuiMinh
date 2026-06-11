@@ -41,7 +41,7 @@ const buttonVariants = cva(
   }
 )
 
-interface ButtonProps extends ButtonPrimitive.Props, VariantProps<typeof buttonVariants> {
+interface ButtonProps extends Omit<ButtonPrimitive.Props, "size">, VariantProps<typeof buttonVariants> {
   loading?: boolean
   success?: boolean
 }
