@@ -73,7 +73,7 @@ const copy = {
     receivingTitle: 'Phiếu nhập hàng',
     receivingHint: 'Mỗi phiếu nhập đại diện cho một hóa đơn theo ngày và nhà cung cấp. Có thể thêm nhiều mặt hàng trong cùng một phiếu.',
     receiptModeLabel: 'Kieu nhap',
-    receiptModeRestock: 'Nhap kho',
+    receiptModeRestock: 'Nhập kho',
     receiptModeOnDemand: 'Nguon cung thu 3',
     receiptModeHelp: 'Chọn nhập kho nếu muốn cộng tồn; chọn nguồn cung thứ 3 nếu chỉ ghi nhận đầu vào theo đơn.',
     createReceipt: 'Tạo phiếu nhập',
@@ -245,12 +245,12 @@ export const AdminProducts = () => {
   const locale = useAdminUiStore((state) => state.locale);
   const t = copy[locale];
   const receiptTooltips = {
-    createReceipt: locale === 'vi' ? 'Tao phieu nhap moi' : 'Create a new receipt',
-    exportExcel: locale === 'vi' ? 'Xuat phieu nhap ra Excel' : 'Export receipt to Excel',
-    exportPdf: locale === 'vi' ? 'In hoac tai PDF phieu nhap' : 'Print or download receipt PDF',
+    createReceipt: locale === 'vi' ? 'Tạo phiếu nhập mới' : 'Create a new receipt',
+    exportExcel: locale === 'vi' ? 'Xuất phiếu nhập ra Excel' : 'Export receipt to Excel',
+    exportPdf: locale === 'vi' ? 'In hoặc tải PDF phiếu nhập' : 'Print or download receipt PDF',
     addLine: locale === 'vi' ? 'Thêm một dòng sản phẩm' : 'Add one product line',
-    editReceipt: locale === 'vi' ? 'Sua phieu nhap' : 'Edit receipt',
-    deleteReceipt: locale === 'vi' ? 'Xoa phieu nhap' : 'Delete receipt',
+    editReceipt: locale === 'vi' ? 'Sửa phiếu nhập' : 'Edit receipt',
+    deleteReceipt: locale === 'vi' ? 'Xóa phiếu nhập' : 'Delete receipt',
     removeLine: locale === 'vi' ? 'Xóa dòng sản phẩm' : 'Remove product line',
     uploadImage: locale === 'vi' ? 'Tải ảnh sản phẩm' : 'Upload product image',
   };

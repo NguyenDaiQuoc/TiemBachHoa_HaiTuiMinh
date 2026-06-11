@@ -1620,7 +1620,7 @@ router.post('/inventory/receipts', async (req: any, res, next) => {
       });
     });
 
-    return sendSuccess(res, receipt, 'Da tao phieu nhap thanh cong', 201);
+    return sendSuccess(res, receipt, 'Đã tạo phiếu nhập thành công', 201);
   } catch (error) {
     if (error instanceof z.ZodError) return sendError(res, error.issues[0].message);
     if (error instanceof Error) return sendError(res, error.message);
@@ -1665,7 +1665,7 @@ router.patch('/inventory/receipts/:id', async (req: any, res, next) => {
       });
     });
 
-    return sendSuccess(res, receipt, 'Da cap nhat phieu nhap');
+    return sendSuccess(res, receipt, 'Đã cập nhật phiếu nhập');
   } catch (error) {
     if (error instanceof z.ZodError) return sendError(res, error.issues[0].message);
     if (error instanceof Error) return sendError(res, error.message);
