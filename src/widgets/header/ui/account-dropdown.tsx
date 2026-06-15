@@ -101,11 +101,11 @@ export const AccountDropdown = () => {
                 </div>
                 <span className="text-xs font-black uppercase tracking-widest opacity-80 group-hover:opacity-100">Khám phá sản phẩm</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="h-10 cursor-pointer rounded-xl focus:bg-primary/5 group" onClick={() => navigate('/community')}>
+              <DropdownMenuItem className="h-10 cursor-pointer rounded-xl focus:bg-primary/5 group" onClick={() => navigate('/blog')}>
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 transition-transform group-hover:scale-110">
                   <Heart className="h-4 w-4 text-blue-500" />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest opacity-80 group-hover:opacity-100">Vào cộng đồng</span>
+                <span className="text-xs font-black uppercase tracking-widest opacity-80 group-hover:opacity-100">Cẩm nang mua sắm</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>

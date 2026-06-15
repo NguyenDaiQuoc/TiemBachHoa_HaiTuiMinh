@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronDown, Compass, Home, Layers, Menu, Moon, Package, Search, ShoppingBag, Sun, Users2 } from 'lucide-react';
+import { BookOpen, ChevronDown, Compass, Home, Layers, Menu, Moon, Package, Search, ShoppingBag, Sun } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCartStore } from '@/src/entities/cart/model/store';
 import { useThemeStore } from '@/src/shared/store/theme-store';
@@ -92,7 +92,7 @@ export const Header = () => {
   const navItems = [
     { label: 'Cửa hàng', type: 'shop' as const, path: '/products', icon: <Home className="h-5 w-5" /> },
     { label: 'Khám phá', type: null, path: '/products', icon: <Compass className="h-5 w-5" /> },
-    { label: 'Cộng đồng', type: null, path: '/community', icon: <Users2 className="h-5 w-5" /> },
+    { label: 'Cẩm nang', type: null, path: '/blog', icon: <BookOpen className="h-5 w-5" /> },
     { label: 'Theo dõi', type: null, path: '/tracking', icon: <Package className="h-5 w-5" /> },
     { label: 'Bộ sưu tập', type: 'collections' as const, path: '/collections', icon: <Layers className="h-5 w-5" /> },
   ];

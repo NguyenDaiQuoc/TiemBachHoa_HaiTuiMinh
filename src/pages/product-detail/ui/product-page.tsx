@@ -43,18 +43,19 @@ import {
 } from '@/src/entities/community/api/community-api';
 import { useAuthStore } from '@/src/shared/model/auth-store';
 import { Button } from '@/src/shared/ui/button';
+import { Seo, SITE_URL, storeStructuredData } from '@/src/shared/lib/seo';
 import { cn } from '@/src/shared/lib/utils';
 import { toast } from 'sonner';
 
 const REVIEW_SORT_OPTIONS = [
-  { id: 'recent', label: 'Mới nhất' },
-  { id: 'helpful', label: 'Hữu ích nhất' },
-  { id: 'highest', label: 'Điểm cao nhất' },
-  { id: 'lowest', label: 'Điểm thấp nhất' },
+  { id: 'recent', label: 'Má»›i nháº¥t' },
+  { id: 'helpful', label: 'Há»¯u Ã­ch nháº¥t' },
+  { id: 'highest', label: 'Äiá»ƒm cao nháº¥t' },
+  { id: 'lowest', label: 'Äiá»ƒm tháº¥p nháº¥t' },
 ] as const;
 
-const formatCurrency = (value: number) => `${value.toLocaleString('vi-VN')}đ`;
-const getCategoryLabel = (product: Product) => (typeof product.category === 'string' ? product.category : product.category?.name || 'Danh mục');
+const formatCurrency = (value: number) => `${value.toLocaleString('vi-VN')}Ä‘`;
+const getCategoryLabel = (product: Product) => (typeof product.category === 'string' ? product.category : product.category?.name || 'Danh má»¥c');
 
 const readFileAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -97,7 +98,7 @@ const ReviewCard = ({
             {review.verifiedPurchase && (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
                 <ShieldCheck className="h-3 w-3" />
-                Đã mua hàng
+                ÄÃ£ mua hÃ ng
               </span>
             )}
           </div>
@@ -123,7 +124,7 @@ const ReviewCard = ({
         {review.media.map((media) => (
           <div key={media.url} className="overflow-hidden rounded-2xl border border-border/50 bg-background">
             {media.type === 'image' ? (
-              <img src={media.url} alt="Ảnh đánh giá sản phẩm" className="h-28 w-full object-cover" loading="lazy" />
+              <img src={media.url} alt="áº¢nh Ä‘Ã¡nh giÃ¡ sáº£n pháº©m" className="h-28 w-full object-cover" loading="lazy" />
             ) : (
               <video src={media.url} className="h-28 w-full object-cover" controls preload="metadata" />
             )}
@@ -134,7 +135,7 @@ const ReviewCard = ({
 
     {review.sellerResponse && (
       <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
-        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Phản hồi từ cửa hàng</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Pháº£n há»“i tá»« cá»­a hÃ ng</p>
         <p className="mt-2 text-sm leading-relaxed text-foreground">{review.sellerResponse}</p>
       </div>
     )}
@@ -152,7 +153,7 @@ const ReviewCard = ({
         )}
       >
         <ThumbsUp className="h-3.5 w-3.5" />
-        Hữu ích ({review.helpfulCount})
+        Há»¯u Ã­ch ({review.helpfulCount})
       </button>
     </div>
   </article>
@@ -173,6 +174,7 @@ export const ProductDetailPage = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewContent, setReviewContent] = useState('');
   const [reviewMedia, setReviewMedia] = useState<CommunityReviewMedia[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   const addRecentlyViewed = useRecentlyViewedStore((state) => state.addProduct);
@@ -219,6 +221,27 @@ export const ProductDetailPage = () => {
   }, [product?.id]);
 
   useEffect(() => {
+    let active = true;
+    if (!product?.categoryId) {
+      setRelatedProducts([]);
+      return undefined;
+    }
+
+    productService.getRelatedProducts(product.categoryId)
+      .then((items) => {
+        if (!active) return;
+        setRelatedProducts(items.filter((entry) => entry.id !== product.id).slice(0, 6));
+      })
+      .catch(() => {
+        if (active) setRelatedProducts([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [product?.categoryId, product?.id]);
+
+  useEffect(() => {
     const handleScroll = () => {
       if (!galleryRef.current) return;
       setIsStickyVisible(galleryRef.current.getBoundingClientRect().bottom < 0);
@@ -229,12 +252,20 @@ export const ProductDetailPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const warrantyLabel = product ? getWarrantyLabel(product.tags) : null;
   const recentlyViewed = useMemo(() => recentlyViewedProducts.filter((entry) => entry.id !== product?.id), [product?.id, recentlyViewedProducts]);
+  const similarProducts = relatedProducts.filter((entry) => entry.id !== product?.id).slice(0, 4);
+  const frequentlyBoughtTogether = similarProducts.slice(0, 2);
 
-  const relatedProducts = useMemo(
-    () => Array.from({ length: 4 }).map((_, index) => ({ ...product, id: `rel-${index}` })).filter(Boolean) as Product[],
-    [product]
-  );
+  const comparisonRows = useMemo(() => {
+    if (!product) return [];
+    return [
+      { label: 'Giá bán', current: formatCurrency(activePrice), compare: similarProducts[0] ? formatCurrency(similarProducts[0].price) : 'Đang cập nhật' },
+      { label: 'Danh mục', current: getCategoryLabel(product), compare: similarProducts[0] ? getCategoryLabel(similarProducts[0]) : 'Đang cập nhật' },
+      { label: 'Bảo hành', current: warrantyLabel || 'Theo chính sách tiệm', compare: similarProducts[0] ? getWarrantyLabel(similarProducts[0].tags) || 'Theo chính sách tiệm' : 'Đang cập nhật' },
+      { label: 'Tồn kho', current: product.stock > 0 ? String(product.stock) : 'Tạm hết', compare: similarProducts[0] ? String(similarProducts[0].stock) : 'Đang cập nhật' },
+    ];
+  }, [activePrice, product, similarProducts, warrantyLabel]);
 
   const handleVariantSelect = (type: string, variant: ProductVariant) => {
     setSelectedVariants((prev) => ({ ...prev, [type]: variant.id }));
@@ -246,7 +277,7 @@ export const ProductDetailPage = () => {
   const handleAddToCart = () => {
     if (!product) return;
     addItem({ ...product, price: activePrice });
-    toast.success('Đã thêm sản phẩm vào giỏ hàng');
+    toast.success('ÄÃ£ thÃªm sáº£n pháº©m vÃ o giá» hÃ ng');
   };
 
   const handleBuyNow = () => {
@@ -259,31 +290,31 @@ export const ProductDetailPage = () => {
       const nextMedia = await normalizeMediaFiles(event.target.files);
       setReviewMedia(nextMedia);
     } catch {
-      toast.error('Không thể xử lý tệp đã chọn');
+      toast.error('KhÃ´ng thá»ƒ xá»­ lÃ½ tá»‡p Ä‘Ã£ chá»n');
     }
   };
 
   const handleHelpful = async (reviewId: string) => {
     if (!isAuthenticated) {
-      toast.error('Vui lòng đăng nhập để đánh dấu hữu ích');
+      toast.error('Vui lÃ²ng Ä‘Äƒng nháº­p Ä‘á»ƒ Ä‘Ã¡nh dáº¥u há»¯u Ã­ch');
       return;
     }
 
     try {
       await helpfulMutation.mutateAsync(reviewId);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật tương tác');
+      toast.error(error instanceof Error ? error.message : 'KhÃ´ng thá»ƒ cáº­p nháº­t tÆ°Æ¡ng tÃ¡c');
     }
   };
 
   const handleSubmitReview = async () => {
     if (!isAuthenticated) {
-      toast.error('Vui lòng đăng nhập để gửi đánh giá');
+      toast.error('Vui lÃ²ng Ä‘Äƒng nháº­p Ä‘á»ƒ gá»­i Ä‘Ã¡nh giÃ¡');
       return;
     }
 
     if (reviewContent.trim().length < 10) {
-      toast.error('Nội dung đánh giá cần từ 10 ký tự trở lên');
+      toast.error('Ná»™i dung Ä‘Ã¡nh giÃ¡ cáº§n tá»« 10 kÃ½ tá»± trá»Ÿ lÃªn');
       return;
     }
 
@@ -296,9 +327,9 @@ export const ProductDetailPage = () => {
       setReviewContent('');
       setReviewMedia([]);
       setReviewRating(5);
-      toast.success('Gửi đánh giá thành công');
+      toast.success('Gá»­i Ä‘Ã¡nh giÃ¡ thÃ nh cÃ´ng');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không thể gửi đánh giá');
+      toast.error(error instanceof Error ? error.message : 'KhÃ´ng thá»ƒ gá»­i Ä‘Ã¡nh giÃ¡');
     }
   };
 
@@ -313,18 +344,39 @@ export const ProductDetailPage = () => {
   if (!product) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-8 text-center">
-        <h2 className="mb-4 text-4xl font-black uppercase tracking-tight">Không tìm thấy sản phẩm</h2>
+        <h2 className="mb-4 text-4xl font-black uppercase tracking-tight">KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m</h2>
         <Button onClick={() => navigate('/')} className="rounded-2xl">
-          Quay lại cửa hàng
+          Quay láº¡i cá»­a hÃ ng
         </Button>
       </div>
     );
   }
 
-  const warrantyLabel = getWarrantyLabel(product.tags);
+  const productStructuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: product.images?.length ? product.images : [product.image],
+    description: product.description,
+    sku: product.sku || product.id,
+    brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'VND',
+      price: activePrice,
+      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: SITE_URL + '/product/' + encodeURIComponent(product.slug || product.id),
+    },
+    aggregateRating: product.reviewCount ? {
+      '@type': 'AggregateRating',
+      ratingValue: reviewsSummary?.average || product.rating || 4.7,
+      reviewCount: reviewsSummary?.total || product.reviewCount,
+    } : undefined,
+  };
 
   return (
     <div className="bg-background text-foreground">
+      <Seo title={product.name} description={product.description} image={product.image} path={'/product/' + encodeURIComponent(product.slug || product.id)} type="product" structuredData={[storeStructuredData, productStructuredData]} />
       <div className="container mx-auto max-w-7xl px-4 py-8 md:py-14">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
           <div ref={galleryRef} className="lg:col-span-7">
@@ -335,7 +387,7 @@ export const ProductDetailPage = () => {
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
-                  Chính hãng
+                  ChÃ­nh hÃ£ng
                 </span>
                 <span className="rounded-full bg-card px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   {getCategoryLabel(product)}
@@ -343,28 +395,28 @@ export const ProductDetailPage = () => {
                 {warrantyLabel && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
                     <ShieldCheck className="h-3.5 w-3.5" />
-                    Bảo hành {warrantyLabel}
+                    Báº£o hÃ nh {warrantyLabel}
                   </span>
                 )}
                 {product.isNew && <BadgeCheck className="h-5 w-5 text-primary" />}
               </div>
 
               <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Chuyên hàng chính hãng</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">ChuyÃªn hÃ ng chÃ­nh hÃ£ng</p>
                 <h1 className="text-4xl font-black uppercase leading-[0.95] tracking-tight md:text-5xl">{product.name}</h1>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
                 <div className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
                   <Star className="h-3 w-3 fill-current" />
-                  {reviewsSummary?.average || product.rating || 0} ({reviewsSummary?.total || product.reviewCount || 0} đánh giá)
+                  {reviewsSummary?.average || product.rating || 0} ({reviewsSummary?.total || product.reviewCount || 0} Ä‘Ã¡nh giÃ¡)
                 </div>
                 <div className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   <Eye className="h-3 w-3" />
-                  {socialProofQuery.data?.viewersNow || 0} người đang xem
+                  {socialProofQuery.data?.viewersNow || 0} ngÆ°á»i Ä‘ang xem
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Đã bán {product.soldCount >= 1000 ? `${(product.soldCount / 1000).toFixed(1)}k` : product.soldCount}
+                  ÄÃ£ bÃ¡n {product.soldCount >= 1000 ? `${(product.soldCount / 1000).toFixed(1)}k` : product.soldCount}
                 </span>
               </div>
             </div>
@@ -382,12 +434,12 @@ export const ProductDetailPage = () => {
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <p className="inline-flex items-center gap-2">
                   <Package className="h-4 w-4 text-primary" />
-                  Miễn phí vận chuyển cho đơn từ 500.000đ
+                  Miá»…n phÃ­ váº­n chuyá»ƒn cho Ä‘Æ¡n tá»« 500.000Ä‘
                 </p>
                 {product.stock <= 10 && (
                   <p className="inline-flex items-center gap-2 font-black text-destructive">
                     <Flame className="h-4 w-4" />
-                    Chỉ còn {product.stock} sản phẩm
+                    Chá»‰ cÃ²n {product.stock} sáº£n pháº©m
                   </p>
                 )}
               </div>
@@ -398,9 +450,9 @@ export const ProductDetailPage = () => {
                 <div className="flex items-start gap-3">
                   <Timer className="mt-1 h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Tốc độ đơn hàng</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Tá»‘c Ä‘á»™ Ä‘Æ¡n hÃ ng</p>
                     <p className="mt-2 text-sm font-bold">
-                      {socialProofQuery.data?.soldLastHour || 0} sản phẩm bán trong giờ qua
+                      {socialProofQuery.data?.soldLastHour || 0} sáº£n pháº©m bÃ¡n trong giá» qua
                     </p>
                   </div>
                 </div>
@@ -409,11 +461,11 @@ export const ProductDetailPage = () => {
                 <div className="flex items-start gap-3">
                   <Truck className="mt-1 h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Tín hiệu gần đây</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">TÃ­n hiá»‡u gáº§n Ä‘Ã¢y</p>
                     <p className="mt-2 text-sm font-bold">
                       {socialProofQuery.data?.latestPurchaseCity
-                        ? `Vừa có đơn từ ${socialProofQuery.data.latestPurchaseCity}`
-                        : 'Đang cập nhật tín hiệu mua hàng gần đây'}
+                        ? `Vá»«a cÃ³ Ä‘Æ¡n tá»« ${socialProofQuery.data.latestPurchaseCity}`
+                        : 'Äang cáº­p nháº­t tÃ­n hiá»‡u mua hÃ ng gáº§n Ä‘Ã¢y'}
                     </p>
                   </div>
                 </div>
@@ -456,7 +508,7 @@ export const ProductDetailPage = () => {
                   onClick={handleAddToCart}
                   className="h-14 rounded-[28px] bg-foreground text-sm font-black uppercase tracking-widest text-background hover:bg-foreground/90"
                 >
-                  Thêm giỏ hàng
+                  ThÃªm giá» hÃ ng
                 </Button>
                 <Button
                   onClick={handleBuyNow}
@@ -468,11 +520,11 @@ export const ProductDetailPage = () => {
               <div className="flex items-center justify-between px-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 <button type="button" className="inline-flex items-center gap-2 transition-colors hover:text-primary">
                   <Heart className="h-4 w-4" />
-                  Yêu thích
+                  YÃªu thÃ­ch
                 </button>
                 <button type="button" className="inline-flex items-center gap-2 transition-colors hover:text-primary">
                   <Share2 className="h-4 w-4" />
-                  Chia sẻ
+                  Chia sáº»
                 </button>
               </div>
             </div>
@@ -482,9 +534,9 @@ export const ProductDetailPage = () => {
                 <div className="flex items-start gap-3">
                   <Truck className="mt-1 h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Giao hàng dự kiến</p>
-                    <p className="mt-2 text-sm font-bold">Giao trong 2-3 ngày làm việc</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Miễn phí cho đơn từ 500.000đ</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Giao hÃ ng dá»± kiáº¿n</p>
+                    <p className="mt-2 text-sm font-bold">Giao trong 2-3 ngÃ y lÃ m viá»‡c</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Miá»…n phÃ­ cho Ä‘Æ¡n tá»« 500.000Ä‘</p>
                   </div>
                 </div>
               </div>
@@ -492,9 +544,9 @@ export const ProductDetailPage = () => {
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="mt-1 h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Đổi trả & bảo đảm</p>
-                    <p className="mt-2 text-sm font-bold">7 ngày đổi trả nếu lỗi từ nhà sản xuất</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Hỗ trợ tận tâm từ cửa hàng</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Äá»•i tráº£ & báº£o Ä‘áº£m</p>
+                    <p className="mt-2 text-sm font-bold">7 ngÃ y Ä‘á»•i tráº£ náº¿u lá»—i tá»« nhÃ  sáº£n xuáº¥t</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Há»— trá»£ táº­n tÃ¢m tá»« cá»­a hÃ ng</p>
                   </div>
                 </div>
               </div>
@@ -504,7 +556,7 @@ export const ProductDetailPage = () => {
             <div className="rounded-[32px] border border-primary/15 bg-primary/5 p-6">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <h3 className="text-sm font-black uppercase tracking-widest text-primary">Mua cùng để nhận ưu đãi</h3>
+                <h3 className="text-sm font-black uppercase tracking-widest text-primary">Mua cÃ¹ng Ä‘á»ƒ nháº­n Æ°u Ä‘Ã£i</h3>
               </div>
               <div className="mt-5 flex items-center gap-4">
                 <div className="overflow-hidden rounded-2xl border border-border/60 bg-background">
@@ -514,18 +566,18 @@ export const ProductDetailPage = () => {
                 <div className="overflow-hidden rounded-2xl border border-border/60 bg-background">
                   <img
                     src={product.images[1] || product.image}
-                    alt={`${product.name} gợi ý mua cùng`}
+                    alt={`${product.name} gá»£i Ã½ mua cÃ¹ng`}
                     className="h-20 w-20 object-cover"
                   />
                 </div>
                 <div className="ml-auto text-right">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Combo gợi ý</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Combo gá»£i Ã½</p>
                   <p className="mt-1 text-2xl font-black text-primary">{formatCurrency(activePrice + 120000)}</p>
-                  <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">Tiết kiệm 25.000đ</p>
+                  <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">Tiáº¿t kiá»‡m 25.000Ä‘</p>
                 </div>
               </div>
               <Button className="mt-5 h-12 w-full rounded-2xl text-xs font-black uppercase tracking-widest">
-                Mua cả combo
+                Mua cáº£ combo
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -536,9 +588,9 @@ export const ProductDetailPage = () => {
         <div className="mt-20 space-y-10">
           <div className="flex gap-8 overflow-x-auto border-b border-border/50 pb-px">
             {[
-              { id: 'desc', label: 'Chi tiết sản phẩm' },
-              { id: 'specs', label: 'Thông số kỹ thuật' },
-              { id: 'reviews', label: `Đánh giá (${reviewsSummary?.total || product.reviewCount || 0})` },
+              { id: 'desc', label: 'Chi tiáº¿t sáº£n pháº©m' },
+              { id: 'specs', label: 'ThÃ´ng sá»‘ ká»¹ thuáº­t' },
+              { id: 'reviews', label: `ÄÃ¡nh giÃ¡ (${reviewsSummary?.total || product.reviewCount || 0})` },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -565,7 +617,7 @@ export const ProductDetailPage = () => {
                   <p className="text-lg leading-relaxed text-foreground">{product.longDescription || product.description}</p>
                 </div>
                 <div className="rounded-[32px] border border-border/60 bg-card p-8 shadow-soft">
-                  <h3 className="text-2xl font-black uppercase tracking-tight">Điểm nổi bật</h3>
+                  <h3 className="text-2xl font-black uppercase tracking-tight">Äiá»ƒm ná»•i báº­t</h3>
                   <ul className="mt-6 space-y-4">
                     {(product.features || []).map((feature) => (
                       <li key={feature} className="flex items-start gap-3 text-sm text-foreground">
@@ -626,7 +678,7 @@ export const ProductDetailPage = () => {
                     ))}
                   </div>
                   <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    {reviewsSummary?.total || 0} đánh giá thực tế
+                    {reviewsSummary?.total || 0} Ä‘Ã¡nh giÃ¡ thá»±c táº¿
                   </p>
 
                   <div className="mt-6 space-y-3">
@@ -651,25 +703,25 @@ export const ProductDetailPage = () => {
                 <div className="rounded-[32px] border border-border/60 bg-card p-8 shadow-soft">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Đánh giá từ khách hàng</p>
-                      <h3 className="mt-2 text-2xl font-black tracking-tight">Chia sẻ trải nghiệm thật</h3>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">ÄÃ¡nh giÃ¡ tá»« khÃ¡ch hÃ ng</p>
+                      <h3 className="mt-2 text-2xl font-black tracking-tight">Chia sáº» tráº£i nghiá»‡m tháº­t</h3>
                     </div>
                     <Link
-                      to="/community"
+                      to="/blog/huong-dan-kiem-tra-san-pham-khi-nhan-hang"
                       className="inline-flex h-10 items-center justify-center rounded-2xl border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
                     >
-                      Vào cộng đồng
+                      Hướng dẫn kiểm hàng
                       <ChevronRight className="ml-1 h-4 w-4" />
                     </Link>
                   </div>
 
                   <div className="mt-6 grid gap-4 md:grid-cols-2">
                     <div className="rounded-2xl bg-background p-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Có media</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">CÃ³ media</p>
                       <p className="mt-2 text-2xl font-black text-primary">{reviewsSummary?.mediaCount || 0}</p>
                     </div>
                     <div className="rounded-2xl bg-background p-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sentiment tích cực</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sentiment tÃ­ch cá»±c</p>
                       <p className="mt-2 text-2xl font-black text-primary">{reviewsSummary?.sentiment?.positive || 0}</p>
                     </div>
                   </div>
@@ -705,7 +757,7 @@ export const ProductDetailPage = () => {
                         : 'border-border/60 bg-background text-muted-foreground hover:bg-muted'
                     )}
                   >
-                    Chỉ xem có ảnh/video
+                    Chá»‰ xem cÃ³ áº£nh/video
                   </button>
                 </div>
               </div>
@@ -714,9 +766,9 @@ export const ProductDetailPage = () => {
                 <div className="flex items-start gap-3">
                   <MessageCircle className="mt-1 h-5 w-5 text-primary" />
                   <div className="flex-1">
-                    <h3 className="text-lg font-black">Viết đánh giá của bạn</h3>
+                    <h3 className="text-lg font-black">Viáº¿t Ä‘Ã¡nh giÃ¡ cá»§a báº¡n</h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Bạn có thể chỉ cập nhật đúng phần muốn chia sẻ. Ảnh và video chỉ hiển thị sau khi gửi đánh giá thành công.
+                      Báº¡n cÃ³ thá»ƒ chá»‰ cáº­p nháº­t Ä‘Ãºng pháº§n muá»‘n chia sáº». áº¢nh vÃ  video chá»‰ hiá»ƒn thá»‹ sau khi gá»­i Ä‘Ã¡nh giÃ¡ thÃ nh cÃ´ng.
                     </p>
                   </div>
                 </div>
@@ -750,19 +802,19 @@ export const ProductDetailPage = () => {
                     value={reviewContent}
                     onChange={(event) => setReviewContent(event.target.value)}
                     rows={5}
-                    placeholder="Chia sẻ cảm nhận thực tế về sản phẩm, đóng gói, giao hàng hoặc hiệu quả sử dụng..."
+                    placeholder="Chia sáº» cáº£m nháº­n thá»±c táº¿ vá» sáº£n pháº©m, Ä‘Ã³ng gÃ³i, giao hÃ ng hoáº·c hiá»‡u quáº£ sá»­ dá»¥ng..."
                     className="w-full rounded-[24px] border border-border/60 bg-background px-5 py-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/40"
                   />
 
                   <div className="grid gap-3 md:grid-cols-2">
                     <label className="flex cursor-pointer items-center justify-center gap-3 rounded-[24px] border border-dashed border-border/60 bg-background px-5 py-4 text-sm font-bold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary">
                       <ImagePlus className="h-4 w-4" />
-                      Tải ảnh đánh giá
+                      Táº£i áº£nh Ä‘Ã¡nh giÃ¡
                       <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleUploadMedia} />
                     </label>
                     <div className="flex items-center gap-2 rounded-[24px] border border-border/60 bg-background px-5 py-4 text-sm text-muted-foreground">
                       <Video className="h-4 w-4 text-primary" />
-                      Tối đa 4 ảnh/video, thân thiện cho di động
+                      Tá»‘i Ä‘a 4 áº£nh/video, thÃ¢n thiá»‡n cho di Ä‘á»™ng
                     </div>
                   </div>
 
@@ -771,7 +823,7 @@ export const ProductDetailPage = () => {
                       {reviewMedia.map((media) => (
                         <div key={media.url} className="overflow-hidden rounded-2xl border border-border/60 bg-background">
                           {media.type === 'image' ? (
-                            <img src={media.url} alt="Xem trước media đánh giá" className="h-24 w-full object-cover" />
+                            <img src={media.url} alt="Xem trÆ°á»›c media Ä‘Ã¡nh giÃ¡" className="h-24 w-full object-cover" />
                           ) : (
                             <video src={media.url} className="h-24 w-full object-cover" controls preload="metadata" />
                           )}
@@ -783,14 +835,14 @@ export const ProductDetailPage = () => {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
                       <AlertCircle className="h-4 w-4 text-primary" />
-                      Nội dung tối thiểu 10 ký tự để hệ thống xử lý cảm xúc đánh giá chính xác hơn.
+                      Ná»™i dung tá»‘i thiá»ƒu 10 kÃ½ tá»± Ä‘á»ƒ há»‡ thá»‘ng xá»­ lÃ½ cáº£m xÃºc Ä‘Ã¡nh giÃ¡ chÃ­nh xÃ¡c hÆ¡n.
                     </p>
                     <Button
                       onClick={handleSubmitReview}
                       disabled={createReviewMutation.isPending}
                       className="rounded-2xl text-xs font-black uppercase tracking-widest"
                     >
-                      {createReviewMutation.isPending ? 'Đang gửi...' : 'Gửi đánh giá'}
+                      {createReviewMutation.isPending ? 'Äang gá»­i...' : 'Gá»­i Ä‘Ã¡nh giÃ¡'}
                     </Button>
                   </div>
                 </div>
@@ -812,8 +864,8 @@ export const ProductDetailPage = () => {
                   ))
                 ) : (
                   <div className="rounded-[32px] border border-dashed border-border/60 bg-card px-6 py-14 text-center">
-                    <p className="text-lg font-black">Chưa có đánh giá phù hợp với bộ lọc hiện tại.</p>
-                    <p className="mt-2 text-sm text-muted-foreground">Hãy thử đổi bộ lọc hoặc trở thành người đánh giá đầu tiên.</p>
+                    <p className="text-lg font-black">ChÆ°a cÃ³ Ä‘Ã¡nh giÃ¡ phÃ¹ há»£p vá»›i bá»™ lá»c hiá»‡n táº¡i.</p>
+                    <p className="mt-2 text-sm text-muted-foreground">HÃ£y thá»­ Ä‘á»•i bá»™ lá»c hoáº·c trá»Ÿ thÃ nh ngÆ°á»i Ä‘Ã¡nh giÃ¡ Ä‘áº§u tiÃªn.</p>
                   </div>
                 )}
               </div>
@@ -821,32 +873,81 @@ export const ProductDetailPage = () => {
           )}
         </div>
 
+        {frequentlyBoughtTogether.length > 0 && (
+          <section className="mt-24 space-y-8 rounded-[2rem] border border-border/60 bg-card p-6 shadow-soft md:p-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Frequently bought together</p>
+                <h2 className="mt-2 text-3xl font-black uppercase tracking-tight">Thường được mua cùng</h2>
+              </div>
+              <Button onClick={() => frequentlyBoughtTogether.forEach((entry) => addItem(entry))} className="rounded-2xl text-xs font-black uppercase tracking-widest">
+                Thêm combo
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2">
+              {frequentlyBoughtTogether.map((entry) => <ProductCard key={entry.id} product={entry} />)}
+            </div>
+          </section>
+        )}
+
+        {comparisonRows.length > 0 && (
+          <section className="mt-24 overflow-hidden rounded-[2rem] border border-border/60 bg-card shadow-soft">
+            <div className="border-b border-border/60 p-6 md:p-8">
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Comparison table</p>
+              <h2 className="mt-2 text-3xl font-black uppercase tracking-tight">So sánh nhanh</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="bg-background text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  <tr>
+                    <th className="px-6 py-4">Tiêu chí</th>
+                    <th className="px-6 py-4">Sản phẩm đang xem</th>
+                    <th className="px-6 py-4">Gợi ý tương tự</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {comparisonRows.map((row) => (
+                    <tr key={row.label}>
+                      <td className="px-6 py-4 font-black uppercase tracking-tight text-muted-foreground">{row.label}</td>
+                      <td className="px-6 py-4 font-bold text-foreground">{row.current}</td>
+                      <td className="px-6 py-4 font-bold text-foreground">{row.compare}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {similarProducts.length > 0 && (
         <section className="mt-24 space-y-10">
           <div className="flex items-end justify-between gap-4">
             <h2 className="text-4xl font-black uppercase leading-[0.9] tracking-tight md:text-5xl">
-              Có thể bạn <span className="text-primary italic">cũng thích</span>
+              CÃ³ thá»ƒ báº¡n <span className="text-primary italic">cÅ©ng thÃ­ch</span>
             </h2>
             <Link
               to="/products"
               className="hidden h-10 items-center justify-center rounded-2xl px-4 text-sm font-medium transition-colors hover:bg-muted md:inline-flex"
             >
-              Xem tất cả
+              Xem táº¥t cáº£
               <ChevronRight className="ml-2 h-4 w-4" />
             </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-            {relatedProducts.map((entry) => (
+            {similarProducts.map((entry) => (
               <ProductCard key={entry.id} product={entry} />
             ))}
           </div>
         </section>
+        )}
 
         {recentlyViewed.length > 0 && (
           <section className="mt-24 space-y-10 pb-20">
             <div className="flex items-end justify-between gap-4">
               <h2 className="text-4xl font-black uppercase leading-[0.9] tracking-tight md:text-5xl">
-                Sản phẩm <span className="text-primary italic">vừa xem</span>
+                Sáº£n pháº©m <span className="text-primary italic">vá»«a xem</span>
               </h2>
             </div>
 
@@ -882,8 +983,8 @@ export const ProductDetailPage = () => {
                 <Package className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Mua gần đây</p>
-                <p className="text-xs font-bold">Vừa có đơn từ {socialProofQuery.data.latestPurchaseCity}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Mua gáº§n Ä‘Ã¢y</p>
+                <p className="text-xs font-bold">Vá»«a cÃ³ Ä‘Æ¡n tá»« {socialProofQuery.data.latestPurchaseCity}</p>
               </div>
             </div>
           </motion.div>
@@ -892,3 +993,5 @@ export const ProductDetailPage = () => {
     </div>
   );
 };
+
+

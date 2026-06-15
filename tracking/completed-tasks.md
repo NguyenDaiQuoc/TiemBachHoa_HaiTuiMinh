@@ -1,4 +1,4 @@
-﻿# Completed Tasks
+# Completed Tasks
 
 ## Phase 1 - Foundation Setup
 - [x] Project scaffolding
@@ -77,3 +77,12 @@
 - [x] Realtime notification streaming via SSE with dedicated full notification pages and classified dropdown visuals
 - [x] Shared scroll-to-top floating action for storefront and admin pages
 - [x] Realtime support chat between storefront users and admin staff with conversation status stages and a dedicated admin inbox UI
+
+## Phase 9X - Store Stabilization & Content Platform
+- [x] Deferred community/social/creator/affiliate features into a future backlog without deleting architecture
+- [x] Disabled `/community` storefront entry points and redirected the route
+- [x] Added content platform routes for `/blog` and `/blog/:slug`
+- [x] Added trust/conversion pages for store introduction, why buy, and authentic product guarantee
+- [x] Added SEO foundation with metadata, Open Graph, JSON-LD, robots, and sitemap files
+- [x] Replaced fake PDP related-product clones with real API-backed related products
+- [x] Added PDP frequently bought together and comparison table surfaces

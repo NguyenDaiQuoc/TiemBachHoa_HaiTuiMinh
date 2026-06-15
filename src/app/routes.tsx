@@ -20,8 +20,10 @@ const LoginPage = lazy(() => import('@/src/pages/auth/login').then((m) => ({ def
 const AdminLoginPage = lazy(() => import('@/src/pages/auth/admin-login').then((m) => ({ default: m.AdminLoginPage })));
 const RegisterPage = lazy(() => import('@/src/pages/auth/register').then((m) => ({ default: m.RegisterPage })));
 const ProfilePage = lazy(() => import('@/src/pages/profile').then((m) => ({ default: m.ProfilePage })));
-const CommunityPage = lazy(() => import('@/src/pages/community').then((m) => ({ default: m.CommunityPage })));
 const CollectionsPage = lazy(() => import('@/src/pages/collections').then((m) => ({ default: m.CollectionsPage })));
+const BlogIndexPage = lazy(() => import('@/src/pages/blog').then((m) => ({ default: m.BlogIndexPage })));
+const BlogDetailPage = lazy(() => import('@/src/pages/blog').then((m) => ({ default: m.BlogDetailPage })));
+const TrustPage = lazy(() => import('@/src/pages/info/ui/trust-page').then((m) => ({ default: m.TrustPage })));
 const AboutPage = lazy(() => import('@/src/pages/info/ui/about-page').then((m) => ({ default: m.AboutPage })));
 const FAQPage = lazy(() => import('@/src/pages/info/ui/faq-page').then((m) => ({ default: m.FAQPage })));
 const PolicyPage = lazy(() => import('@/src/pages/info/ui/policy-page').then((m) => ({ default: m.PolicyPage })));
@@ -48,7 +50,7 @@ const PageLoader = () => (
   </div>
 );
 
-const APP_NAME = 'Tiệm bách hoá Hai Tụi Mình';
+const APP_NAME = 'Tiệm Bách Hoá Hai Tụi Mình';
 
 const resolveTitle = (pathname: string) => {
   if (pathname === '/') return 'Trang chủ';
@@ -57,7 +59,10 @@ const resolveTitle = (pathname: string) => {
   if (pathname.startsWith('/new-arrivals')) return 'Hàng mới cập bến';
   if (pathname.startsWith('/product/')) return 'Chi tiết sản phẩm';
   if (pathname.startsWith('/collections')) return 'Bộ sưu tập';
-  if (pathname.startsWith('/community')) return 'Cộng đồng mua sắm';
+  if (pathname.startsWith('/blog')) return 'Cẩm nang mua sắm';
+  if (pathname.startsWith('/store')) return 'Giới thiệu cửa hàng';
+  if (pathname.startsWith('/why-buy')) return 'Vì sao chọn Hai Tụi Mình';
+  if (pathname.startsWith('/authentic-guarantee')) return 'Cam kết chính hãng';
   if (pathname.startsWith('/tracking')) return 'Theo dõi đơn hàng';
   if (pathname.startsWith('/checkout')) return 'Thanh toán';
   if (pathname === '/login') return 'Đăng nhập';
@@ -94,7 +99,6 @@ const resolveTitle = (pathname: string) => {
   if (/^\/[^/]+$/.test(pathname)) return 'Chiến dịch';
   return APP_NAME;
 };
-
 const RouteTitleManager = () => {
   const location = useLocation();
   const userUnreadCount = useSupportUnreadStore((state) => state.userUnreadCount);
@@ -180,7 +184,7 @@ export const AppRoutes = () => {
             <Route path="/flash-sale" element={<SearchPage />} />
             <Route path="/new-arrivals" element={<SearchPage />} />
             <Route path="/search" element={<Navigate to="/products" replace />} />
-            <Route path="/community" element={<CommunityPage />} />
+            <Route path="/community" element={<Navigate to="/products" replace />} />
             <Route
               path="/profile/*"
               element={
@@ -191,7 +195,12 @@ export const AppRoutes = () => {
             />
             <Route path="/account/*" element={<Navigate to="/profile" replace />} />
             <Route path="/collections" element={<CollectionsPage />} />
+            <Route path="/blog" element={<BlogIndexPage />} />
+            <Route path="/blog/:slug" element={<BlogDetailPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/store" element={<TrustPage type="store" />} />
+            <Route path="/why-buy" element={<TrustPage type="why-buy" />} />
+            <Route path="/authentic-guarantee" element={<TrustPage type="guarantee" />} />
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/shipping-policy" element={<PolicyPage type="shipping" />} />
@@ -231,3 +240,4 @@ export const AppRoutes = () => {
     </ErrorBoundary>
   );
 };
+

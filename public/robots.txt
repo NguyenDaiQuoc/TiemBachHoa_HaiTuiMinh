@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://haituiminh.vercel.app/sitemap.xml

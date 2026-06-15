@@ -1,0 +1,41 @@
+PHASE 9X COMMUNITY BACKLOG
+
+All community-related initiatives are deferred while the product focuses on becoming a stable, premium ecommerce platform.
+
+STATUS: DEFERRED
+TARGET PHASE: FUTURE
+
+- Community Feed
+  STATUS: DEFERRED
+  TARGET PHASE: FUTURE
+
+- Community Hub
+  STATUS: DEFERRED
+  TARGET PHASE: FUTURE
+
+- User Showcase
+  STATUS: DEFERRED
+  TARGET PHASE: FUTURE
+
+- Follow System
+  STATUS: DEFERRED
+  TARGET PHASE: FUTURE
+
+- Creator Program
+  STATUS: DEFERRED
+  TARGET PHASE: FUTURE
+
+- Affiliate Platform
+  STATUS: DEFERRED
+  TARGET PHASE: FUTURE
+
+- Social Commerce Features
+  STATUS: DEFERRED
+  TARGET PHASE: FUTURE
+
+- Community Preview Homepage Section
+  STATUS: DEFERRED
+  TARGET PHASE: FUTURE
+
+Architecture note:
+Existing community modules, API routers, data models, and product review infrastructure are intentionally preserved. Phase 9X disables public routing and visible UI entry points only.

@@ -1,0 +1,42 @@
+# Phase 9X Progress - Store Stabilization & Content Platform
+
+## Status
+In Progress
+
+## Goal
+Stabilize the ecommerce platform, improve trust/conversion content, enrich PDP, and establish SEO foundations before returning to community/social systems.
+
+## Community Deferred
+- [x] Created `docs/future-phases/community-backlog.txt`
+- [x] Marked Community Feed, Community Hub, User Showcase, Follow System, Creator Program, Affiliate Platform, Social Commerce Features, and Community Preview Homepage Section as deferred
+- [x] Preserved architecture/API/models while disabling public routing and UI entry points
+
+## Content Platform
+- [x] Added `/blog`
+- [x] Added `/blog/:slug`
+- [x] Added buying guide, comparison, tips, and how-to article data
+- [x] Added related articles, related products, and FAQ blocks
+
+## Trust & Conversion
+- [x] Added `/store`
+- [x] Added `/why-buy`
+- [x] Added `/authentic-guarantee`
+- [x] Existing policy/contact routes remain active: `/shipping-policy`, `/return-policy`, `/contact`
+
+## Product Enrichment
+- [x] Added product JSON-LD metadata
+- [x] Replaced fake related-product clones with real API related products
+- [x] Added frequently bought together block when related products exist
+- [x] Added comparison table
+- [x] Preserved recently viewed products
+
+## SEO Foundation
+- [x] Added `Seo` helper for title, description, Open Graph, Twitter card, canonical, and JSON-LD
+- [x] Added `public/robots.txt`
+- [x] Added `public/sitemap.xml`
+
+## Stability Notes
+- [x] `/community` now redirects to `/products`
+- [x] Header/account community entry points now point to `/blog`
+- [ ] Legacy mojibake remains in some older files and should be cleaned in a dedicated encoding pass
+- [ ] Full browser QA still required after build

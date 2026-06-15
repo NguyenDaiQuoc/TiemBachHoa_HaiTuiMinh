@@ -1,36 +1,30 @@
-﻿# Current Phase: Phase 9 - Social Commerce & Community Engine
+# Current Phase: Phase 9X - Store Stabilization & Content Platform
 
 ## Status: In Progress
 
-## Overview
-Transforming the storefront into a community-driven shopping ecosystem with real review data, social proof, gamification, and private AI-assisted support.
+## Objective
+Transform Hai Tụi Mình into a stable, trustworthy, production-ready ecommerce platform before introducing social/community systems.
 
-## Completed (Phase 8I)
-- [x] Global App Shell inheritance for `/profile`
-- [x] Theme hydration hardening
-- [x] Dark mode restoration for account surfaces
-- [x] Layout persistence regression coverage
+## Community Scope
+- STATUS: DEFERRED
+- TARGET PHASE: FUTURE
+- Architecture, routers, models, and PDP review infrastructure are preserved.
+- Public `/community` routing and visible header/account entry points are disabled.
+- Deferred backlog lives at `docs/future-phases/community-backlog.txt`.
 
-## Key Goals
-- [x] Dedicated `/community` route inside the shared storefront shell
-- [x] Review and rating data foundation with persistence
-- [x] Social proof wiring for product detail pages
-- [x] Floating support actions with AI chat, Zalo, Messenger, and back-to-top
-- [ ] Extended automated QA, accessibility sweeps, and social flow coverage
+## Completed In Phase 9X
+- [x] Deferred community/social/creator/affiliate features into future backlog
+- [x] Redirected `/community` away from storefront navigation
+- [x] Replaced header/account community entry points with content platform entry points
+- [x] Added `/blog` and `/blog/:slug` content platform routes
+- [x] Added buying guides, comparisons, tips, how-to content, FAQ blocks, related articles, and related products
+- [x] Added trust/conversion pages: `/store`, `/why-buy`, `/authentic-guarantee`
+- [x] Added metadata, Open Graph, canonical, JSON-LD helpers, robots.txt, and sitemap.xml
+- [x] Replaced fake PDP related products with real category-based API results
+- [x] Added PDP enrichment sections for frequently bought together, comparison table, similar products, and recently viewed products
 
-## Recent Updates
-- Mounted `community-router.ts` at `/api/community`
-- Added community data hooks for reviews, social proof, feed, check-in, referral, missions, and support chat
-- Added `/community` as a separate branch without changing the main storefront information architecture
-- Added one dedicated community header entry and shared floating actions in `AppShell`
-- Replaced mocked PDP review/social proof behavior with real community-backed review summaries, filters, media submission, and helpful interactions
-- Hardened admin navigation so only the active sidebar item is highlighted
-- Added persisted admin locale switching (`VI/EN`) and refreshed admin shell copy
-- Reworked admin inventory and product flow with receiving history, low-stock alerts, Excel export, and richer SKU fields
-- Added persisted notification center APIs and dropdown UX for both storefront users and admins
-- Upgraded notifications to realtime SSE delivery, richer icon and status treatments, and dedicated full notification pages
-- Added scroll-aware back-to-top support for floating actions and the admin shell
-- Synced Prisma schema, regenerated client, reseeded test accounts, and verified `npm.cmd run lint` plus `npm.cmd run build`
-- Added realtime SSE inbox updates for both storefront support chat and `/admin/support`
-- Added support workflow states for `Dang cho`, `Da nhan`, `Dang xu ly`, and `Da doc`
-- Refined the user support drawer into a more commerce-style support center with clearer channel switching and conversation context
+## Remaining Audit Areas
+- [ ] Full encoding cleanup across legacy pages still showing mojibake
+- [ ] Header/footer/search/profile/wishlist/dark-mode browser QA sweep
+- [ ] Checkout/tracking real-payment and real-shipping audit follow-up
+- [ ] Loading and empty-state pass for older admin/storefront surfaces

@@ -1,7 +1,7 @@
-﻿# Project Master Progress
+# Project Master Progress
 
-## Overall Progress: 89%
-**Current Phase: Phase 9 - Social Commerce & Community Engine**
+## Overall Progress: 92%
+**Current Phase: Phase 9X - Store Stabilization & Content Platform**
 
 ---
 
@@ -15,7 +15,7 @@
 ### Phase 6: Navigation and Identity UX (Completed)
 ### Phase 7: Admin and Operations Platform (Completed)
 ### Phase 8: Productionization and Backend (Completed)
-### Phase 9: Social Commerce and Community Engine (In Progress)
+### Phase 9: Social Commerce and Community Engine (Deferred)
 - [x] Phase 9A: Review and rating system foundation
 - [x] Phase 9B: Social proof engine foundation
 - [x] Phase 9C: Follow shop, community feed, referral, daily check-in
@@ -35,3 +35,14 @@
 - [x] Notification center rollout for both storefront users and admins with unread badges and read-state APIs
 - [x] Realtime notification delivery with SSE, dedicated full-page notification centers, and richer dropdown state design
 - [x] Realtime customer-support inbox flow between storefront users and admin staff with SSE-backed status transitions
+
+### Phase 9X: Store Stabilization and Content Platform (In Progress)
+- [x] Community features deferred into `docs/future-phases/community-backlog.txt`
+- [x] Public community routing and visible UI entry points disabled while preserving architecture
+- [x] `/blog` and `/blog/:slug` content platform added
+- [x] Store trust pages added for introduction, why buy, and authentic guarantee
+- [x] PDP enriched with real related products, comparison table, frequently bought together, and structured data
+- [x] SEO foundation added with metadata helper, Open Graph, structured data, sitemap, and robots
+- [ ] Full production stability QA and legacy encoding cleanup
+
+
