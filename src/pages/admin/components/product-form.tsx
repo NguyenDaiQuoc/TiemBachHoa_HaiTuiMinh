@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Image as ImageIcon, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCategories } from '@/src/entities/category/api/category-api';
+import { getWarrantyLabel, setWarrantyTag, WARRANTY_OPTIONS } from '@/src/entities/product/lib/warranty';
 import { Product, ProductVariant } from '@/src/entities/product/model/types';
 import { Button } from '@/src/shared/ui/button';
 import { Input } from '@/src/shared/ui/input';
@@ -76,8 +77,8 @@ const normalizeNullableNumber = (value?: number | null) => {
 
 const SELLABLE_CATEGORY_SLUGS = new Set(['cong-nghe', 'gia-dung', 'my-pham']);
 const BRAND_OPTIONS = ['Baseus', 'Sony', 'Apple', 'Samsung', 'Logitech', 'Xiaomi', 'Philips', 'LocknLock', "L'Oreal", 'La Roche-Posay'];
-const SUBCATEGORY_OPTIONS = ['Dien thoai', 'Laptop', 'Chuot', 'Ban phim', 'Man hinh', 'Tai nghe', 'Sac/cap', 'Noi chien', 'May hut bui', 'Cham soc da'];
-const TAG_OPTIONS = ['Chinh hang', 'Ban chay', 'Hang moi', 'Bao hanh', 'Gia tot', 'Phu hop van phong', 'Nho gon', 'Pin lau'];
+const SUBCATEGORY_OPTIONS = ['Điện thoại', 'Laptop', 'Chuột', 'Bàn phím', 'Màn hình', 'Tai nghe', 'Sạc/cáp', 'Nồi chiên', 'Máy hút bụi', 'Chăm sóc da'];
+const TAG_OPTIONS = ['Chính hãng', 'Bán chạy', 'Hàng mới', 'Giá tốt', 'Phù hợp văn phòng', 'Nhỏ gọn', 'Pin lâu'];
 
 export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: ProductFormProps) => {
   const { data: categories } = useCategories();
@@ -207,6 +208,12 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
   };
 
   const images = form.watch('images');
+  const selectedTags = form.watch('tags') || [];
+  const selectedWarranty = getWarrantyLabel(selectedTags) || '';
+
+  const updateWarranty = (value: string) => {
+    form.setValue('tags', setWarrantyTag(form.getValues('tags') || [], value || null), { shouldDirty: true, shouldValidate: true });
+  };
 
   return (
     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
@@ -297,8 +304,8 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
               </datalist>
             </div>
             <div className="space-y-1.5">
-              <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Loai con</label>
-              <input {...form.register('subcategory')} list="subcategory-options" className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-bold outline-none" placeholder="Dien thoai, laptop..." />
+              <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Loại con</label>
+              <input {...form.register('subcategory')} list="subcategory-options" className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-bold outline-none" placeholder="Điện thoại, laptop..." />
               <datalist id="subcategory-options">
                 {SUBCATEGORY_OPTIONS.map((subcategory) => (
                   <option key={subcategory} value={subcategory} />
@@ -308,7 +315,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
           </div>
 
           <div className="space-y-2">
-            <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nhan / tag</label>
+            <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nhãn / tag</label>
             <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-background p-3">
               {TAG_OPTIONS.map((tag) => (
                 <label key={tag} className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border/70 px-3 py-2 text-[10px] font-black uppercase tracking-widest">
@@ -317,6 +324,19 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
                 </label>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Bảo hành</label>
+            <select value={selectedWarranty} onChange={(event) => updateWarranty(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-bold outline-none focus:border-primary">
+              <option value="">Không gắn bảo hành</option>
+              {WARRANTY_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <p className="ml-1 text-xs text-muted-foreground">Sẽ hiển thị cho khách dưới dạng tag bảo hành trên sản phẩm.</p>
           </div>
 
           {Object.values(form.formState.errors).length > 0 && (

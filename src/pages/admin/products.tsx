@@ -72,9 +72,9 @@ const copy = {
     quickView: 'Xem nhanh',
     receivingTitle: 'Phiếu nhập hàng',
     receivingHint: 'Mỗi phiếu nhập đại diện cho một hóa đơn theo ngày và nhà cung cấp. Có thể thêm nhiều mặt hàng trong cùng một phiếu.',
-    receiptModeLabel: 'Kieu nhap',
+    receiptModeLabel: 'Kiểu nhập',
     receiptModeRestock: 'Nhập kho',
-    receiptModeOnDemand: 'Nguon cung thu 3',
+    receiptModeOnDemand: 'Nguồn cung thứ 3',
     receiptModeHelp: 'Chọn nhập kho nếu muốn cộng tồn; chọn nguồn cung thứ 3 nếu chỉ ghi nhận đầu vào theo đơn.',
     createReceipt: 'Tạo phiếu nhập',
     editReceipt: 'Sửa phiếu nhập',
@@ -1067,8 +1067,8 @@ export const AdminProducts = () => {
       </AnimatePresence>
 
       <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
-        <DialogContent className="max-h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-y-auto overflow-x-hidden rounded-[24px] border-none bg-surface-default p-4 shadow-2xl sm:w-full sm:rounded-[32px] sm:p-6 lg:p-8 xl:max-w-6xl">
-          <DialogHeader className="-mx-1 rounded-[22px] bg-surface-default px-1 pb-4 sm:-mx-2 sm:rounded-[28px] sm:px-2">
+        <DialogContent className="max-h-[96vh] w-[calc(100vw-0.75rem)] max-w-[calc(100vw-0.75rem)] overflow-y-auto overflow-x-hidden rounded-[24px] border border-primary/10 bg-secondary p-4 shadow-2xl sm:w-full sm:rounded-[32px] sm:p-6 lg:p-8 xl:max-w-[92rem] 2xl:max-w-[104rem]">
+          <DialogHeader className="sticky top-0 z-20 -mx-4 rounded-b-[24px] border-b border-primary/10 bg-secondary/95 px-4 pb-4 pt-1 shadow-sm backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
             <DialogTitle className="pr-10 text-xl font-black uppercase italic tracking-tight sm:text-2xl">{editingReceipt ? t.editReceipt : t.createReceipt}</DialogTitle>
             <div className="flex flex-wrap gap-2 pt-3">
               <Button
@@ -1173,13 +1173,13 @@ export const AdminProducts = () => {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-border/50 bg-background p-4 sm:rounded-[28px]">
+            <div className="rounded-[24px] border border-primary/15 bg-background/80 p-4 shadow-sm sm:rounded-[28px]">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t.receiptModeLabel}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{t.receiptModeHelp}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2 rounded-[20px] bg-muted/30 p-1">
+                <div className="grid grid-cols-2 gap-2 rounded-[20px] bg-primary/10 p-1">
                   <button
                     type="button"
                     onClick={() => setReceiptMode('RESTOCK')}
@@ -1204,7 +1204,7 @@ export const AdminProducts = () => {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-border/50 bg-muted/20 p-3 sm:rounded-[28px] sm:p-4">
+            <div className="rounded-[24px] border border-primary/15 bg-background/80 p-3 shadow-sm sm:rounded-[28px] sm:p-4">
               <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-widest">{t.receiptItems}</h3>
@@ -1218,8 +1218,8 @@ export const AdminProducts = () => {
                 </Button>
               </div>
 
-              <div className="mt-4 rounded-[24px] border border-border/50 bg-background/50 sm:rounded-[28px]">
-                <div className="hidden 2xl:grid 2xl:grid-cols-[72px_110px_minmax(0,1.15fr)_minmax(0,0.85fr)_132px_112px_148px_148px_160px] 2xl:gap-5 2xl:rounded-t-[28px] 2xl:border-b 2xl:border-border/50 2xl:bg-background/95 2xl:px-4 2xl:py-3 2xl:backdrop-blur">
+              <div className="mt-4 rounded-[24px] border border-primary/10 bg-secondary/35 sm:rounded-[28px]">
+                <div className="hidden 2xl:grid 2xl:grid-cols-[72px_110px_minmax(0,1.15fr)_minmax(0,0.85fr)_132px_112px_148px_148px_160px] 2xl:gap-5 2xl:rounded-t-[28px] 2xl:border-b 2xl:border-primary/10 2xl:bg-primary/5 2xl:px-4 2xl:py-3 2xl:backdrop-blur">
                   <p className="text-center text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">STT</p>
                   <p className="text-center text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{locale === 'vi' ? 'Ảnh' : 'Image'}</p>
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">{t.lineProduct}</p>
@@ -1239,7 +1239,7 @@ export const AdminProducts = () => {
                   const lineImages = line.imageUrls.length ? line.imageUrls : [line.imageUrl || (selectedLineProduct ? getPrimaryImage(selectedLineProduct) : '')].filter(Boolean);
 
                   return (
-                    <div key={line.id} className="rounded-[22px] border border-border/50 bg-background p-3 sm:rounded-[28px] sm:p-4">
+                    <div key={line.id} className="rounded-[22px] border border-primary/10 bg-background p-3 shadow-sm sm:rounded-[28px] sm:p-4">
                       <div className="mb-4 flex items-center justify-between gap-3">
                         <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                           {t.lineProduct} #{index + 1}
@@ -1266,7 +1266,7 @@ export const AdminProducts = () => {
                         </div>
 
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">{locale === 'vi' ? 'Anh SKU' : 'SKU image'}</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground 2xl:hidden">{locale === 'vi' ? 'Ảnh SKU' : 'SKU image'}</label>
                           <div className="relative h-20 w-24 overflow-hidden rounded-2xl border border-border bg-muted/20">
                             {lineImages[0] ? (
                               <img src={lineImages[0]} alt="" className="h-full w-full object-cover" />
@@ -1403,7 +1403,7 @@ export const AdminProducts = () => {
                   })}
                 </div>
 
-                <div className="sticky bottom-0 z-10 border-t border-border/50 bg-background/95 px-4 py-4 backdrop-blur">
+                <div className="border-t border-primary/10 bg-secondary/35 px-4 py-4">
                   <div className="grid gap-3 md:grid-cols-3">
                     <div className="rounded-2xl border border-border/50 bg-muted/20 px-4 py-3">
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t.selectedItems}</p>

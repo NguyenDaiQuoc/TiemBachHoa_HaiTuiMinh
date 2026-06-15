@@ -1,30 +1,28 @@
-import type { PrismaClient } from '@prisma/client';
-
 const SELLABLE_CATEGORY_SLUGS = ['cong-nghe', 'gia-dung', 'my-pham'] as const;
 const RECEIPT_CATEGORY_SLUG = 'san-pham-nhap-kho';
 
 const CORE_CATEGORIES = [
   {
-    name: '?? c?ng ngh?',
+    name: 'Đồ công nghệ',
     slug: 'cong-nghe',
-    description: 'Thi?t b? v? ph? ki?n c?ng ngh? ch?nh h?ng.',
+    description: 'Thiết bị và phụ kiện công nghệ chính hãng.',
     image: 'https://images.unsplash.com/photo-1549463512-2051282a77bb?q=80&w=800&auto=format&fit=crop',
   },
   {
-    name: '?? gia d?ng',
+    name: 'Đồ gia dụng',
     slug: 'gia-dung',
-    description: 'S?n ph?m gia d?ng ti?n ?ch cho cu?c s?ng hi?n ??i.',
+    description: 'Sản phẩm gia dụng tiện ích cho cuộc sống hiện đại.',
     image: 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?q=80&w=800&auto=format&fit=crop',
   },
   {
-    name: 'M? ph?m',
+    name: 'Mỹ phẩm',
     slug: 'my-pham',
-    description: 'M? ph?m ch?nh h?ng, ch?m s?c da v? l?m ??p m?i ng?y.',
+    description: 'Mỹ phẩm chính hãng, chăm sóc da và làm đẹp mỗi ngày.',
     image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=800&auto=format&fit=crop',
   },
 ];
 
-type PrismaLike = Pick<PrismaClient, 'category'>;
+type PrismaLike = { category: any };
 
 export const ensureCoreCategories = async (prisma: PrismaLike) => {
   const categories = await Promise.all(

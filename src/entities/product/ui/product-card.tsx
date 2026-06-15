@@ -4,12 +4,13 @@ import { Product } from '../model/types';
 import { Card, CardContent, CardFooter } from '@/src/shared/ui/card';
 import { Badge } from '@/src/shared/ui/badge';
 import { AspectRatio } from '@/src/shared/ui/aspect-ratio';
-import { ShoppingBag, Heart, Check } from 'lucide-react';
+import { ShoppingBag, Heart, Check, ShieldCheck } from 'lucide-react';
 import { Button } from '@/src/shared/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCartStore } from '@/src/entities/cart/model/store';
 import { useWishlistStore } from '../model/wishlist-store';
 import { getProductUrl } from '../lib/product-url';
+import { getWarrantyLabel } from '../lib/warranty';
 import { toast } from 'sonner';
 import { cn } from "@shared/lib/utils";
 
@@ -25,6 +26,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const categoryLabel = typeof product.category === 'object' ? product.category?.name || 'Danh mục' : product.category || 'Danh mục';
+  const warrantyLabel = getWarrantyLabel(product.tags);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -167,6 +169,12 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
                </div>
                {product.stock && product.stock <= 5 && (
                   <span className="text-[8px] font-black text-rose-500 uppercase italic">Sắp hết!</span>
+               )}
+               {warrantyLabel && (
+                 <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/15">
+                   <ShieldCheck className="h-2.5 w-2.5 text-primary" />
+                   <span className="text-[8px] font-black text-primary uppercase tracking-tighter">BH {warrantyLabel}</span>
+                 </div>
                )}
             </div>
             {product.reviewCount && product.reviewCount > 0 && (

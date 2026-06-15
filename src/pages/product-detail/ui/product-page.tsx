@@ -30,6 +30,7 @@ import { ProductGallery } from '@/src/entities/product/ui/product-gallery';
 import { ProductVariantSelector } from '@/src/entities/product/ui/product-variant-selector';
 import { ProductStickyCTA } from '@/src/entities/product/ui/product-sticky-cta';
 import { ProductCard } from '@/src/entities/product/ui/product-card';
+import { getWarrantyLabel } from '@/src/entities/product/lib/warranty';
 import { useCartStore } from '@/src/entities/cart/model/store';
 import {
   CommunityReview,
@@ -320,6 +321,8 @@ export const ProductDetailPage = () => {
     );
   }
 
+  const warrantyLabel = getWarrantyLabel(product.tags);
+
   return (
     <div className="bg-background text-foreground">
       <div className="container mx-auto max-w-7xl px-4 py-8 md:py-14">
@@ -337,6 +340,12 @@ export const ProductDetailPage = () => {
                 <span className="rounded-full bg-card px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   {getCategoryLabel(product)}
                 </span>
+                {warrantyLabel && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Bảo hành {warrantyLabel}
+                  </span>
+                )}
                 {product.isNew && <BadgeCheck className="h-5 w-5 text-primary" />}
               </div>
 

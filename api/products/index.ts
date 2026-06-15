@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { Prisma } from '@prisma/client';
 import { sendJson } from '../_shared/auth.js';
+import { ensureCoreCategories } from '../_shared/catalog.js';
 import { hasDatabase, prisma } from '../_shared/prisma.js';
 
 const CATEGORY_RATING_MAP: Record<string, number> = {
@@ -35,6 +35,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   try {
+    await ensureCoreCategories(prisma);
+
     const url = new URL(req.url || '/', 'https://haituiminh.vercel.app');
     const query = url.searchParams.get('query');
     const category = url.searchParams.get('category');
@@ -46,7 +48,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const limit = Math.min(48, Math.max(1, Number(url.searchParams.get('limit')) || 12));
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ProductWhereInput = {
+    const where: any = {
       isActive: true,
       deletedAt: null,
       AND: [
@@ -65,7 +67,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       ],
     };
 
-    const orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] =
+    const orderBy: any =
       sortBy === 'price-asc'
         ? { price: 'asc' }
         : sortBy === 'price-desc'

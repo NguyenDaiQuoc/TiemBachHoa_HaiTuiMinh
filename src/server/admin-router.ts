@@ -1219,7 +1219,7 @@ router.get('/stats', async (_req, res, next) => {
         .filter((log) => ['ADMIN_LOGIN', 'ADMIN_LOGOUT'].includes(log.action))
         .map((log) => ({
           id: log.id,
-          user: 'Qu?n tr? vi?n',
+          user: 'Quản trị viên',
           action: formatAdminAction(log.action),
           timeLabel: new Date(log.createdAt).toLocaleString('vi-VN'),
         })),
@@ -1227,7 +1227,7 @@ router.get('/stats', async (_req, res, next) => {
         .filter((log) => !['ADMIN_LOGIN', 'ADMIN_LOGOUT'].includes(log.action))
         .map((log) => ({
           id: log.id,
-          user: 'Qu?n tr? vi?n',
+          user: 'Quản trị viên',
           action: formatAdminAction(log.action),
           timeLabel: new Date(log.createdAt).toLocaleString('vi-VN'),
         })),

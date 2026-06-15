@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sendJson } from '../_shared/auth.js';
+import { ensureCoreCategories } from '../_shared/catalog.js';
 import { hasDatabase, prisma } from '../_shared/prisma.js';
 
 const serializeProduct = (product: any) => {
@@ -34,6 +35,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   try {
+    await ensureCoreCategories(prisma);
+
     const url = new URL(req.url || '/', 'https://haituiminh.vercel.app');
     const id = decodeURIComponent(url.pathname.split('/').pop() || '');
     const product = await prisma.product.findFirst({
