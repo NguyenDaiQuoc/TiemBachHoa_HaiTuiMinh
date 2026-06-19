@@ -1,4 +1,4 @@
-import { Product } from '@/src/entities/product/model/types';
+﻿import { Product } from '@/src/entities/product/model/types';
 
 export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'PARTIAL' | 'FAILED' | 'REFUNDED';
@@ -266,6 +266,21 @@ export interface MarketingCampaignFormPayload {
   isActive: boolean;
 }
 
+export interface RefinedMarketingPromptPayload {
+  prompt: string;
+  provider: string;
+  model?: string | null;
+}
+
+export interface RefineMarketingPromptPayload {
+  prompt: string;
+  provider?: 'LOCAL' | 'CLAUDE';
+  campaignType: 'FLASH_SALE' | 'DEAL' | 'PROMOTION';
+  campaignName?: string | null;
+  description?: string | null;
+  productIds?: string[] | null;
+}
+
 export interface GeneratedMarketingImagePayload {
   id: string;
   userId?: string | null;
@@ -336,3 +351,4 @@ export interface SupportInboxMessage {
 export interface SupportInboxConversation extends SupportInboxItem {
   messages: SupportInboxMessage[];
 }
+

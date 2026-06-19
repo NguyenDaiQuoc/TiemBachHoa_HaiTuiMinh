@@ -1,3 +1,4 @@
+﻿import { Link } from 'react-router-dom';
 import { ProductCard } from '@/src/entities/product/ui/product-card';
 import { Product } from '@/src/entities/product/model/types';
 
@@ -12,7 +13,7 @@ export const ProductGrid = ({ products, title }: ProductGridProps) => {
       {title && (
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-heading font-bold">{title}</h2>
-          <a href="#" className="text-sm font-medium text-primary hover:underline">Xem tất cả</a>
+          <Link to="/products" className="text-sm font-medium text-primary hover:underline">Xem tất cả</Link>
         </div>
       )}
       
@@ -24,3 +25,4 @@ export const ProductGrid = ({ products, title }: ProductGridProps) => {
     </section>
   );
 };
+

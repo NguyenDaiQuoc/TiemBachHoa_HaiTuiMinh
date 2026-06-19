@@ -130,7 +130,7 @@ export const FAQPage = () => {
           <h2 className="text-3xl font-black uppercase italic tracking-tighter">Vẫn còn thắc mắc?</h2>
           <p className="font-medium opacity-70">Chúng mình luôn sẵn sàng lắng nghe và giải đáp mọi câu hỏi của bạn qua các kênh hỗ trợ.</p>
           <div className="flex flex-wrap justify-center gap-4">
-            <a href="#" className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 transition-colors">
+            <a href="https://zalo.me/0931454176" target="_blank" rel="noreferrer" className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 transition-colors">
               <MessageCircle className="w-5 h-5" />
               <span className="font-black uppercase text-xs">CSKH Online</span>
             </a>
@@ -143,3 +143,4 @@ export const FAQPage = () => {
     </div>
   );
 };
+

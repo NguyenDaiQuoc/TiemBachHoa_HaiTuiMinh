@@ -12,6 +12,8 @@ import {
   InventoryReceiptUpsertPayload,
   MarketingCampaignFormPayload,
   MarketingCampaignPayload,
+  RefinedMarketingPromptPayload,
+  RefineMarketingPromptPayload,
   SupportInboxConversation,
   SupportInboxItem,
   SupplierFormPayload,
@@ -178,6 +180,16 @@ export const adminService = {
     return payload;
   },
 
+  refineMarketingPrompt: async (data: RefineMarketingPromptPayload): Promise<RefinedMarketingPromptPayload> => {
+    const response = await fetch('/api/admin/marketing/prompts/refine', {
+      method: 'POST',
+      headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(data),
+    });
+    const payload = await parsePayload<RefinedMarketingPromptPayload>(response);
+    return payload;
+  },
+
   generateMarketingImage: async (data: GenerateMarketingImagePayload): Promise<GeneratedMarketingImagePayload> => {
     const response = await fetch('/api/admin/marketing/images/generate', {
       method: 'POST',
@@ -265,3 +277,6 @@ export const adminService = {
     return parsePayload<{ id: string }>(response);
   },
 };
+
+
+

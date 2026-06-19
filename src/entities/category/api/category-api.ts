@@ -47,3 +47,28 @@ export const useCategories = () => {
     queryFn: fetchCategories,
   });
 };
+
+const PUBLIC_BASE_URL = "/api/categories";
+
+export interface PublicCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  image?: string | null;
+  isActive: boolean;
+}
+
+export const fetchPublicCategories = async (): Promise<PublicCategory[]> => {
+  const response = await fetch(PUBLIC_BASE_URL);
+  if (!response.ok) throw new Error("Không thể tải danh mục");
+  const result = await response.json().catch(() => null);
+  const list = Array.isArray(result?.data) ? result.data : [];
+  return list.map(normalizeCategory) as PublicCategory[];
+};
+
+export const usePublicCategories = () =>
+  useQuery({
+    queryKey: [...categoryKeys.all, "public"] as const,
+    queryFn: fetchPublicCategories,
+  });

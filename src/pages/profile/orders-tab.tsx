@@ -140,7 +140,7 @@ export const OrdersTab: React.FC = () => {
                           <div className="flex items-center gap-4">
                              <div className="flex items-center gap-1.5">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase opacity-50 tracking-widest">Tổng:</span>
-                                <span className="text-primary font-black italic tracking-tighter text-lg">{order.totalAmount.toLocaleString()}đ</span>
+                                <span className="text-primary font-black italic tracking-tighter text-lg">{order.totalAmount.toLocaleString()}Ä'</span>
                              </div>
                           </div>
                         </div>
@@ -170,7 +170,7 @@ export const OrdersTab: React.FC = () => {
               <Package className="w-16 h-16 text-muted-foreground/20 mx-auto mb-6" />
               <h3 className="text-xl font-black uppercase italic tracking-tight mb-2">KHÔNG TÌM THẤY ĐƠN HÀNG</h3>
               <p className="text-xs text-muted-foreground font-medium mb-8">Bạn chưa có đơn hàng nào phù hợp với bộ lọc này.</p>
-              <Link to="/search">
+              <Link to="/products">
                 <Button className="h-14 px-10 rounded-2xl font-black uppercase tracking-widest italic text-[11px] shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">MUA SẮM NGAY</Button>
               </Link>
             </motion.div>
@@ -180,3 +180,4 @@ export const OrdersTab: React.FC = () => {
     </div>
   );
 };
+

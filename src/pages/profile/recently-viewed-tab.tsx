@@ -65,7 +65,7 @@ export const RecentlyViewedTab: React.FC = () => {
                     </div>
 
                     <div className="mt-auto flex items-center justify-between pt-2">
-                      <p className="text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString('vi-VN')}đ</p>
+                      <p className="text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString('vi-VN')}Ä'</p>
                       <div className="flex gap-2">
                         <Button
                           onClick={() => handleAddToCart(item)}
@@ -101,7 +101,7 @@ export const RecentlyViewedTab: React.FC = () => {
               </div>
               <h3 className="mb-2 text-xl font-black uppercase italic tracking-tight">LỊCH SỬ TRỐNG</h3>
               <p className="mx-auto mb-8 max-w-[280px] text-xs font-medium text-muted-foreground">Bạn chưa xem bất kỳ sản phẩm nào. Hãy khám phá và tìm sản phẩm ưng ý nhé!</p>
-              <Link to="/search">
+              <Link to="/products">
                 <Button className="h-14 rounded-2xl px-10 text-[11px] font-black uppercase italic tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
                   Bắt đầu mua sắm
                 </Button>
@@ -113,3 +113,4 @@ export const RecentlyViewedTab: React.FC = () => {
     </div>
   );
 };
+

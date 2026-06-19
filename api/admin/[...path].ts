@@ -2,9 +2,10 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { JWT_SECRET, hasJwtSecret, readJsonBody, sendJson } from '../_shared/auth.js';
-import { ensureCoreCategories, getSellableCategories } from '../_shared/catalog.js';
+import { ensureCoreCategories } from '../_shared/catalog.js';
 import { hasDatabase, prisma } from '../_shared/prisma.js';
 import { generateMarketingImage } from '../../src/server/services/codex-imagen-service.js';
+import { refineMarketingPrompt } from '../../src/server/services/claude-marketing-service.js';
 
 const ADMIN_ROLES = new Set(['ADMIN', 'SUPERADMIN', 'STAFF']);
 const MAIN_SHOP_ID = 'main-shop';
@@ -64,10 +65,10 @@ const slugify = (value: string) =>
   value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
+    .replace(/Ä'/g, 'd')
     .replace(/Đ/g, 'D')
     .toLowerCase()
-    .replace(/đ/g, 'd')
+    .replace(/Ä'/g, 'd')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || `item-${Date.now()}`;
 
@@ -545,6 +546,37 @@ const handleReceipts = async (req: IncomingMessage, res: ServerResponse, user: A
   }
 };
 
+const handleMarketingPromptRefine = async (req: IncomingMessage, res: ServerResponse) => {
+  if (req.method !== 'POST') return fail(res, 'Phương thức không được hỗ trợ', 405);
+
+  const body = await readJsonBody<any>(req);
+  const prompt = String(body.prompt || '').trim();
+  if (prompt.length < 4) return fail(res, 'Nhập yêu cầu ít nhất 4 ký tự để tạo prompt');
+
+  const campaignType = ['FLASH_SALE', 'DEAL', 'PROMOTION'].includes(String(body.campaignType)) ? String(body.campaignType) : 'PROMOTION';
+  const provider = body.provider === 'CLAUDE' ? 'CLAUDE' : 'LOCAL';
+  const productIds = Array.isArray(body.productIds) ? body.productIds.map(String).filter(Boolean) : [];
+  const products = productIds.length
+    ? await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { name: true },
+        take: 12,
+      })
+    : [];
+
+  const refined = await refineMarketingPrompt(
+    {
+      basicPrompt: prompt,
+      campaignType: campaignType as 'FLASH_SALE' | 'DEAL' | 'PROMOTION',
+      campaignName: textOrNull(body.campaignName),
+      description: textOrNull(body.description),
+      productNames: products.map((product) => product.name),
+    },
+    provider
+  );
+
+  return ok(res, refined, 'Đã tạo prompt marketing');
+};
 const handleMarketingImageGenerate = async (req: IncomingMessage, res: ServerResponse, user: AdminUser) => {
   if (req.method !== 'POST') return fail(res, 'Phương thức không được hỗ trợ', 405);
 
@@ -608,14 +640,36 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (path.endsWith('/status') && path.startsWith('orders/') && req.method === 'PATCH') {
       const body = await readJsonBody<any>(req);
       const id = path.split('/')[1];
-      const order = await prisma.order.update({ where: { id }, data: { status: String(body.status) } });
+      const status = String(body.status);
+      const existing = await prisma.order.findUnique({ where: { id }, include: { items: true } });
+      if (!existing) return fail(res, 'Không tìm thấy đơn hàng', 404);
+      const order = await prisma.$transaction(async (tx) => {
+        if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
+          for (const item of existing.items) {
+            await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } } });
+          }
+        }
+        return tx.order.update({ where: { id }, data: { status } });
+      });
       await createAuditLog(user, 'ADMIN_UPDATE_ORDER_STATUS', 'Order', order.id);
       return ok(res, order, 'Đã cập nhật trạng thái đơn hàng');
     }
     if (path === 'orders/batch-status' && req.method === 'POST') {
       const body = await readJsonBody<any>(req);
       const ids = Array.isArray(body.ids) ? body.ids.map(String) : [];
-      await prisma.order.updateMany({ where: { id: { in: ids } }, data: { status: String(body.status) } });
+      const status = String(body.status);
+      const orders = await prisma.order.findMany({ where: { id: { in: ids } }, select: { id: true, status: true, items: { select: { productId: true, quantity: true } } } });
+      await prisma.$transaction(async (tx) => {
+        if (status === 'CANCELLED') {
+          for (const order of orders) {
+            if (order.status === 'CANCELLED') continue;
+            for (const item of order.items) {
+              await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } } });
+            }
+          }
+        }
+        await tx.order.updateMany({ where: { id: { in: ids } }, data: { status } });
+      });
       await createAuditLog(user, 'ADMIN_BATCH_UPDATE_ORDERS', 'Order');
       return ok(res, { updated: ids.length }, 'Đã cập nhật đơn hàng');
     }
@@ -640,10 +694,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       await createAuditLog(user, 'ADMIN_UPDATE_SETTINGS', 'ShopProfile', MAIN_SHOP_ID);
       return ok(res, { storeName: shop.name, contactEmail: body.contactEmail, hotline: body.hotline, address: body.address, description: shop.description }, 'Đã cập nhật cài đặt');
     }
-    if (path === 'categories' && req.method === 'GET') return ok(res, await getSellableCategories(prisma));
+    if (path === 'categories' && req.method === 'GET') {
+      await ensureCoreCategories(prisma);
+      const categories = await prisma.category.findMany({ where: { deletedAt: null, slug: { not: 'san-pham-nhap-kho' } }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] });
+      return ok(res, categories);
+    }
     if (path === 'categories' || path.startsWith('categories/')) return handleCrud(req, res, path, 'category', { entity: 'Category', user, list: { deletedAt: null, slug: { in: ['cong-nghe', 'gia-dung', 'my-pham'] } }, create: (body) => ({ name: String(body.name), slug: String(body.slug || slugify(String(body.name))), description: textOrNull(body.description), image: textOrNull(body.image), isActive: body.isActive !== false }), update: (body) => ({ ...body, description: textOrNull(body.description), image: textOrNull(body.image) }) });
     if (path === 'suppliers' || path.startsWith('suppliers/')) return handleCrud(req, res, path, 'supplier', { entity: 'Supplier', user, create: (body) => ({ name: String(body.name), code: textOrNull(body.code), phone: textOrNull(body.phone), email: textOrNull(body.email), address: textOrNull(body.address), note: textOrNull(body.note), isActive: body.isActive !== false }), update: (body) => ({ ...body, code: textOrNull(body.code), phone: textOrNull(body.phone), email: textOrNull(body.email), address: textOrNull(body.address), note: textOrNull(body.note) }) });
     if (path === 'vouchers' || path.startsWith('vouchers/')) return handleCrud(req, res, path, 'voucher', { entity: 'Voucher', user, create: (body) => ({ code: String(body.code).toUpperCase(), title: String(body.title), description: textOrNull(body.description), type: String(body.type || 'FIXED'), value: numberOr(body.value), minOrderValue: numberOr(body.minOrderValue), maxDiscount: body.maxDiscount == null ? null : numberOr(body.maxDiscount), usageLimit: body.usageLimit == null ? null : intOr(body.usageLimit), startsAt: parseDate(body.startsAt), endsAt: parseDate(body.endsAt), isActive: body.isActive !== false, shopId: MAIN_SHOP_ID }), update: (body) => ({ ...body, startsAt: body.startsAt === undefined ? undefined : parseDate(body.startsAt), endsAt: body.endsAt === undefined ? undefined : parseDate(body.endsAt) }) });
+    if (path === 'marketing/prompts/refine') return handleMarketingPromptRefine(req, res);
     if (path === 'marketing/images/generate') return handleMarketingImageGenerate(req, res, user);
     if (path === 'marketing/campaigns' || path.startsWith('marketing/campaigns/')) return handleCrud(req, res, path, 'marketingCampaign', { entity: 'MarketingCampaign', user, create: async (body) => ({ name: String(body.name), slug: await createUniqueMarketingCampaignSlug(String(body.slug || body.name || 'chien-dich')), type: String(body.type || 'PROMOTION'), description: textOrNull(body.description), bannerImage: textOrNull(body.bannerImage), productIds: body.productIds || [], startsAt: parseDate(body.startsAt), endsAt: parseDate(body.endsAt), isActive: body.isActive !== false }), update: (body) => ({ ...body, startsAt: body.startsAt === undefined ? undefined : parseDate(body.startsAt), endsAt: body.endsAt === undefined ? undefined : parseDate(body.endsAt) }) });
     if (path === 'inventory/receipts' || path.startsWith('inventory/receipts/')) return handleReceipts(req, res, user, path);
@@ -690,4 +749,5 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return fail(res, 'Không thể xử lý yêu cầu quản trị', 500);
   }
 }
+
 

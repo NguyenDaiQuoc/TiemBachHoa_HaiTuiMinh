@@ -203,7 +203,7 @@ export const HomePage = () => {
             Chúng mình mang đến những sản phẩm chất lượng nhất với giá thành cạnh tranh nhất thị trường.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 pt-8">
-            <Link to="/search">
+            <Link to="/products">
               <button className="w-full sm:w-auto bg-primary text-primary-foreground px-10 py-4 rounded-full font-black uppercase tracking-widest italic hover:opacity-90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20">
                 MUA SẮM NGAY
               </button>
@@ -316,8 +316,8 @@ export const HomePage = () => {
                     <div className="space-y-1 text-background">
                       <h3 className="text-xs font-black uppercase tracking-tight line-clamp-1 group-hover/item:text-primary transition-colors">{product.name}</h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-primary italic">{(product.promotionalPrice || product.price / 2).toLocaleString('vi-VN')} đ</span>
-                        <span className="text-[10px] line-through opacity-40 font-bold">{product.price.toLocaleString('vi-VN')} đ</span>
+                        <span className="text-sm font-black text-primary italic">{(product.promotionalPrice || product.price / 2).toLocaleString('vi-VN')} Ä'</span>
+                        <span className="text-[10px] line-through opacity-40 font-bold">{product.price.toLocaleString('vi-VN')} Ä'</span>
                       </div>
                     </div>
                   </div>
@@ -484,7 +484,7 @@ export const HomePage = () => {
             <p className="text-white/60 max-w-md font-medium text-lg leading-relaxed">
               Dành riêng cho những đóa hồng rạng rỡ nhất. Miễn phí vận chuyển và quà tặng kèm mọi đơn hàng mỹ phẩm.
             </p>
-            <Link to="/search?category=MỸ%20PHẨM" className="inline-block pt-4">
+            <Link to="/products?category=my-pham" className="inline-block pt-4">
               <button className="bg-white text-black px-10 py-5 rounded-full font-black uppercase tracking-widest italic hover:bg-primary hover:text-white transition-all transform hover:scale-105">
                 SĂN DEAL NGAY
               </button>
@@ -494,3 +494,4 @@ export const HomePage = () => {
       </div>
   );
 };
+

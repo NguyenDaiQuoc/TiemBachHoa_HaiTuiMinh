@@ -7,6 +7,7 @@ import { createAdminNotifications, createUserNotification, serializeNotification
 import { emitNotificationStream, registerNotificationStream, unregisterNotificationStream } from './services/notification-stream-service.js';
 import { emitSupportStreamToAdmins, emitSupportStreamToUser, registerSupportStream, unregisterSupportStream } from './services/support-stream-service.js';
 import { generateMarketingImage } from './services/codex-imagen-service.js';
+import { refineMarketingPrompt } from './services/claude-marketing-service.js';
 
 const router = express.Router();
 const prismaAny = prisma as any;
@@ -134,6 +135,15 @@ const marketingCampaignSchema = z.object({
   isActive: z.boolean(),
 });
 
+const marketingPromptRefineSchema = z.object({
+  prompt: z.string().min(4).max(1200),
+  provider: z.enum(['LOCAL', 'CLAUDE']).default('LOCAL'),
+  campaignType: z.enum(['FLASH_SALE', 'DEAL', 'PROMOTION']).default('PROMOTION'),
+  campaignName: z.string().max(160).optional().nullable(),
+  description: z.string().max(500).optional().nullable(),
+  productIds: z.array(z.string().uuid()).optional().nullable(),
+});
+
 const marketingImagePromptSchema = z.object({
   prompt: z.string().min(8).max(1200),
   campaignType: z.enum(['FLASH_SALE', 'DEAL', 'PROMOTION']).default('PROMOTION'),
@@ -143,7 +153,6 @@ const marketingImagePromptSchema = z.object({
 });
 
 const MAIN_SHOP_ID = 'main-shop';
-const SELLABLE_CATEGORY_SLUGS = ['cong-nghe', 'gia-dung', 'my-pham'];
 const CORE_CATEGORIES = [
   { name: 'Đồ công nghệ', slug: 'cong-nghe', description: 'Thiết bị và phụ kiện công nghệ chính hãng.' },
   { name: 'Đồ gia dụng', slug: 'gia-dung', description: 'Sản phẩm gia dụng tiện ích cho cuộc sống hiện đại.' },
@@ -228,10 +237,10 @@ const slugify = (value: string) =>
   value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
+    .replace(/Ä'/g, 'd')
     .replace(/Đ/g, 'D')
     .toLowerCase()
-    .replace(/đ/g, 'd')
+    .replace(/Ä'/g, 'd')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || `item-${Date.now()}`;
 
@@ -836,7 +845,7 @@ router.get('/categories', async (_req, res, next) => {
   try {
     await ensureCoreCategories();
     const categories = await prisma.category.findMany({
-      where: { deletedAt: null, slug: { in: SELLABLE_CATEGORY_SLUGS } },
+      where: { deletedAt: null, slug: { not: 'san-pham-nhap-kho' } },
       orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
     });
     return sendSuccess(res, categories);
@@ -987,6 +996,34 @@ router.get('/marketing/campaigns', async (_req, res, next) => {
   }
 });
 
+router.post('/marketing/prompts/refine', async (req: any, res, next) => {
+  try {
+    const data = marketingPromptRefineSchema.parse(req.body);
+    const products = data.productIds?.length
+      ? await prisma.product.findMany({
+          where: { id: { in: data.productIds } },
+          select: { name: true },
+          take: 12,
+        })
+      : [];
+
+    const refined = await refineMarketingPrompt(
+      {
+        basicPrompt: data.prompt,
+        campaignType: data.campaignType,
+        campaignName: data.campaignName,
+        description: data.description,
+        productNames: products.map((product) => product.name),
+      },
+      data.provider
+    );
+
+    return sendSuccess(res, refined, 'Đã tạo prompt marketing');
+  } catch (error) {
+    if (error instanceof z.ZodError) return sendError(res, error.issues[0].message);
+    next(error);
+  }
+});
 router.post('/marketing/images/generate', async (req: any, res, next) => {
   try {
     const data = marketingImagePromptSchema.parse(req.body);
@@ -1827,10 +1864,23 @@ router.post('/orders/batch-status', async (req, res, next) => {
 
     const orders = await prisma.order.findMany({
       where: { id: { in: ids } },
-      select: { id: true, userId: true, orderNumber: true },
+      select: { id: true, userId: true, orderNumber: true, status: true, items: { select: { productId: true, quantity: true } } },
     });
 
-    await prisma.order.updateMany({ where: { id: { in: ids } }, data: { status } });
+    await prisma.$transaction(async (tx) => {
+      if (status === 'CANCELLED') {
+        for (const order of orders) {
+          if (order.status === 'CANCELLED') continue;
+          for (const item of order.items) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
+            });
+          }
+        }
+      }
+      await tx.order.updateMany({ where: { id: { in: ids } }, data: { status } });
+    });
     await prisma.auditLog.create({ data: { userId: (req as any).user?.id, action: 'ADMIN_BATCH_UPDATE_ORDERS', entity: 'Order' } });
 
     await createAdminNotifications({
@@ -1864,7 +1914,21 @@ router.post('/orders/batch-status', async (req, res, next) => {
 router.patch('/orders/:id/status', async (req, res, next) => {
   try {
     const { status } = z.object({ status: z.enum(['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']) }).parse(req.body);
-    const order = await prisma.order.update({ where: { id: req.params.id }, data: { status } });
+
+    const existing = await prisma.order.findUnique({ where: { id: req.params.id }, include: { items: true } });
+    if (!existing) return sendError(res, 'Không tìm thấy đơn hàng', 404);
+
+    const order = await prisma.$transaction(async (tx) => {
+      if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
+        for (const item of existing.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
+          });
+        }
+      }
+      return tx.order.update({ where: { id: existing.id }, data: { status } });
+    });
     await prisma.auditLog.create({ data: { userId: (req as any).user?.id, action: 'ADMIN_UPDATE_ORDER_STATUS', entity: 'Order', entityId: order.id } });
 
     await createAdminNotifications({
@@ -1889,3 +1953,4 @@ router.patch('/orders/:id/status', async (req, res, next) => {
 });
 
 export default router;
+

@@ -8,9 +8,9 @@ const FOOTER_SECTIONS = [
     title: 'MUA SẮM',
     links: [
       { label: 'Bộ sưu tập', href: '/collections' },
-      { label: 'Sản phẩm mới', href: '/search?sort=newest' },
-      { label: 'Bán chạy nhất', href: '/search?sort=popular' },
-      { label: 'Flash Sale', href: '/#flash-sale' },
+      { label: 'Sản phẩm mới', href: '/new-arrivals' },
+      { label: 'Bán chạy nhất', href: '/products?sortBy=popular' },
+      { label: 'Flash Sale', href: '/flash-sale' },
     ],
   },
   {
@@ -27,7 +27,7 @@ const FOOTER_SECTIONS = [
     links: [
       { label: 'Câu chuyện thương hiệu', href: '/about' },
       { label: 'Liên hệ', href: '/contact' },
-      { label: 'Tuyển dụng', href: '/about#careers' },
+      { label: 'Vì sao chọn Hai Tụi Mình', href: '/why-buy' },
       { label: 'Chính sách bảo mật', href: '/privacy-policy' },
     ],
   },
@@ -56,9 +56,9 @@ export const Footer = () => {
             </p>
             <div className="flex gap-4">
               {[
-                { icon: Instagram, href: '#' },
-                { icon: Facebook, href: '#' },
-                { icon: MessageCircle, href: '#' },
+                { icon: Instagram, href: 'https://www.instagram.com/' },
+                { icon: Facebook, href: 'https://www.facebook.com/' },
+                { icon: MessageCircle, href: 'https://zalo.me/0931454176' },
               ].map((social, idx) => (
                 <a
                   key={idx}
@@ -152,3 +152,4 @@ export const Footer = () => {
     </footer>
   );
 };
+

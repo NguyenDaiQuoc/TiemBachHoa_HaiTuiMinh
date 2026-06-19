@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProfileLayout } from './ui/profile-layout';
 
@@ -26,10 +26,11 @@ export const ProfilePage: React.FC = () => {
         <Route path="membership" element={<MembershipTab />} />
         <Route path="notifications" element={<NotificationsTab />} />
         <Route path="settings" element={<SettingsTab />} />
-        <Route path="*" element={<Navigate to="" replace />} />
+        <Route path="*" element={<Navigate to="." replace />} />
       </Route>
     </Routes>
   );
 };
 
 export default ProfilePage;
+

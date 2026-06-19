@@ -61,6 +61,16 @@ router.get('/', async (req, res, next) => {
               OR: [{ category: { slug: String(category) } }, { category: { name: String(category) } }],
             }
           : {},
+        req.query.brand
+          ? {
+              brand: {
+                in: String(req.query.brand)
+                  .split(",")
+                  .map((value) => value.trim())
+                  .filter(Boolean),
+              },
+            }
+          : {},
         minPrice ? { price: { gte: Number(minPrice) } } : {},
         maxPrice ? { price: { lte: Number(maxPrice) } } : {},
       ],
@@ -100,6 +110,36 @@ router.get('/', async (req, res, next) => {
       },
       message: 'Tải danh sách sản phẩm thành công',
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/brands', async (req, res, next) => {
+  try {
+    const { category } = req.query;
+
+    const where = {
+      isActive: true,
+      deletedAt: null,
+      brand: { not: null },
+      ...(category
+        ? { category: { OR: [{ slug: String(category) }, { name: String(category) }] } }
+        : {}),
+    } as Prisma.ProductWhereInput;
+
+    const grouped = await prisma.product.groupBy({
+      by: ['brand'],
+      where,
+      _count: { _all: true },
+      orderBy: { brand: 'asc' },
+    });
+
+    const brands = grouped
+      .filter((item) => item.brand && item.brand.trim())
+      .map((item) => ({ name: item.brand as string, count: item._count._all }));
+
+    return res.status(200).json({ success: true, data: brands, message: 'Tải danh sách thương hiệu thành công' });
   } catch (error) {
     next(error);
   }

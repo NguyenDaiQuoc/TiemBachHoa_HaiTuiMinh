@@ -98,7 +98,7 @@ export const WishlistTab: React.FC = () => {
                         </div>
                       </div>
                       <h4 className="line-clamp-1 text-sm font-black uppercase italic tracking-tight leading-snug transition-colors group-hover:text-primary">{item.name}</h4>
-                      <p className="mt-2 text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString('vi-VN')}đ</p>
+                      <p className="mt-2 text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString('vi-VN')}Ä'</p>
                     </div>
 
                     <div className="flex gap-2">
@@ -130,7 +130,7 @@ export const WishlistTab: React.FC = () => {
               </div>
               <h3 className="mb-2 text-xl font-black uppercase italic tracking-tight">DANH SÁCH TRỐNG</h3>
               <p className="mx-auto mb-8 max-w-[280px] text-xs font-medium text-muted-foreground">Bạn chưa lưu sản phẩm nào. Hãy khám phá bộ sưu tập của chúng tôi để tìm món đồ yêu thích.</p>
-              <Link to="/search">
+              <Link to="/products">
                 <Button className="h-14 rounded-2xl px-10 text-[11px] font-black uppercase italic tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
                   Khám phá ngay
                 </Button>
@@ -142,3 +142,4 @@ export const WishlistTab: React.FC = () => {
     </div>
   );
 };
+

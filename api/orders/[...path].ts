@@ -98,7 +98,7 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
   if (req.method !== 'POST') return fail(res, 'Phương thức không được hỗ trợ', 405);
 
   const body = await readJsonBody<any>(req);
-  const items = Array.isArray(body.items) ? body.items : [];
+  const items: any[] = Array.isArray(body.items) ? body.items : [];
   const shippingInfo = body.shippingInfo || {};
   const shippingMethod = String(body.shippingMethodId || body.shippingMethod || 'STANDARD').toUpperCase();
   const paymentMethod = String(body.paymentMethod || 'BANK_TRANSFER').toUpperCase();
@@ -110,7 +110,7 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
 
   const ids = items.map((item: any) => String(item.id || item.productId || '')).filter(Boolean);
   const products = await prisma.product.findMany({ where: { id: { in: ids }, isActive: true, deletedAt: null }, include: { category: true } });
-  const productMap = new Map(products.map((product) => [product.id, product]));
+  const productMap = new Map(products.map((product) => [product.id, product] as const));
 
   const normalizedItems = items.map((item: any) => {
     const productId = String(item.id || item.productId || '');

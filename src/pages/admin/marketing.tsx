@@ -21,6 +21,7 @@ const DEFAULT_FORM: MarketingCampaignFormPayload = {
 };
 
 type BannerAiMode = 'PROMPT' | 'IMAGE';
+type BannerPromptProvider = 'LOCAL' | 'CLAUDE';
 
 const toLocalDateTimeValue = (value?: string | null) => {
   if (!value) return '';
@@ -36,7 +37,7 @@ const slugify = (value: string) =>
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
+    .replace(/Ä'/g, 'd')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
@@ -90,6 +91,7 @@ export const AdminMarketing = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [bannerAiMode, setBannerAiMode] = useState<BannerAiMode>('PROMPT');
+  const [bannerPromptProvider, setBannerPromptProvider] = useState<BannerPromptProvider>('LOCAL');
   const [imagePrompt, setImagePrompt] = useState('');
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [editingItem, setEditingItem] = useState<MarketingCampaignPayload | null>(null);
@@ -142,6 +144,7 @@ export const AdminMarketing = () => {
     setImagePrompt('');
     setGeneratedPrompt('');
     setBannerAiMode('PROMPT');
+    setBannerPromptProvider('LOCAL');
   };
 
   const openCreate = () => {
@@ -206,18 +209,36 @@ export const AdminMarketing = () => {
     }
   };
 
+  const createRefinedPrompt = async () => {
+    if (bannerPromptProvider === 'LOCAL') return buildBannerPrompt({ basicPrompt: imagePrompt, form, productNames: selectedProductNames });
+
+    const refined = await adminService.refineMarketingPrompt({
+      prompt: imagePrompt,
+      provider: bannerPromptProvider,
+      campaignType: form.type,
+      campaignName: form.name || null,
+      description: form.description || null,
+      productIds: form.productIds || [],
+    });
+    return refined.prompt;
+  };
+
   const handleCreatePrompt = async () => {
     if (!imagePrompt.trim()) {
       toast.error('Nhập vài dòng yêu cầu cơ bản để tạo prompt');
       return;
     }
 
-    const prompt = buildBannerPrompt({ basicPrompt: imagePrompt, form, productNames: selectedProductNames });
-    setGeneratedPrompt(prompt);
-    await navigator.clipboard?.writeText(prompt).then(
-      () => toast.success('Đã tạo và copy prompt hoàn chỉnh'),
-      () => toast.success('Đã tạo prompt hoàn chỉnh')
-    );
+    try {
+      const prompt = await createRefinedPrompt();
+      setGeneratedPrompt(prompt);
+      await navigator.clipboard?.writeText(prompt).then(
+        () => toast.success(bannerPromptProvider === 'CLAUDE' ? 'Claude đã tối ưu và copy prompt' : 'Đã tạo và copy prompt hoàn chỉnh'),
+        () => toast.success('Đã tạo prompt hoàn chỉnh')
+      );
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể tạo prompt marketing');
+    }
   };
 
   const handleCopyPrompt = async () => {
@@ -236,7 +257,7 @@ export const AdminMarketing = () => {
 
     setIsGeneratingImage(true);
     try {
-      const prompt = buildBannerPrompt({ basicPrompt: imagePrompt, form, productNames: selectedProductNames });
+      const prompt = await createRefinedPrompt();
       setGeneratedPrompt(prompt);
       const generated = await adminService.generateMarketingImage({
         prompt,
@@ -432,7 +453,7 @@ export const AdminMarketing = () => {
 
             <div className="grid gap-4 rounded-2xl border border-dashed border-primary/40 bg-background p-4 md:grid-cols-[1fr_240px]">
               <div className="space-y-4">
-                <div className="grid gap-2 sm:grid-cols-[180px_1fr] sm:items-end">
+                <div className="grid gap-2 sm:grid-cols-[180px_190px_1fr] sm:items-end">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Chế độ AI banner</label>
                     <select value={bannerAiMode} onChange={(event) => setBannerAiMode(event.target.value as BannerAiMode)} className="h-11 w-full rounded-xl border border-border bg-surface-default px-3 text-sm font-bold outline-none">
@@ -440,10 +461,17 @@ export const AdminMarketing = () => {
                       <option value="IMAGE">Tạo ảnh</option>
                     </select>
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Bộ tạo prompt</label>
+                    <select value={bannerPromptProvider} onChange={(event) => setBannerPromptProvider(event.target.value as BannerPromptProvider)} className="h-11 w-full rounded-xl border border-border bg-surface-default px-3 text-sm font-bold outline-none">
+                      <option value="LOCAL">Local template</option>
+                      <option value="CLAUDE">Claude API</option>
+                    </select>
+                  </div>
                   <p className="text-xs font-medium leading-5 text-muted-foreground">
                     {bannerAiMode === 'PROMPT'
-                      ? 'Nhập ý ngắn, hệ thống bọc thành prompt hoàn chỉnh để paste sang ChatGPT, Gemini, Ideogram hoặc công cụ AI khác.'
-                      : 'Chế độ này cần production cấu hình API key/billing của OpenAI, Gemini hoặc provider ảnh thật.'}
+                      ? (bannerPromptProvider === 'CLAUDE' ? 'Claude dùng để tối ưu prompt chữ. Claude API không tạo ảnh bitmap trực tiếp; sau đó bạn paste prompt sang công cụ tạo ảnh hoặc dùng nút tạo ảnh qua provider ảnh.' : 'Nhập ý ngắn, hệ thống bọc thành prompt hoàn chỉnh để paste sang ChatGPT, Gemini, Ideogram hoặc công cụ AI khác.')
+                      : (bannerPromptProvider === 'CLAUDE' ? 'Claude sẽ tối ưu prompt trước, còn ảnh thật vẫn được tạo qua OpenAI/codex-imagen hoặc provider ảnh đã cấu hình.' : 'Chế độ này cần production cấu hình API key/billing của OpenAI, Gemini hoặc provider ảnh thật.')}
                   </p>
                 </div>
 
@@ -598,3 +626,6 @@ export const AdminMarketing = () => {
     </div>
   );
 };
+
+
+

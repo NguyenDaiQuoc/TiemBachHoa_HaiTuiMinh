@@ -1,18 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { Filter, LayoutGrid, List, Loader2, Search as SearchIcon, Star, X } from 'lucide-react';
-import { useProducts } from '@/src/entities/product/api/product-api';
+import { ChevronRight, Filter, LayoutGrid, List, ListFilter, Loader2, Star, Store, Tag, X } from 'lucide-react';
+import { useProducts, useProductBrands } from '@/src/entities/product/api/product-api';
+import { usePublicCategories } from '@/src/entities/category/api/category-api';
 import { Product } from '@/src/entities/product/model/types';
 import { ProductCard } from '@/src/entities/product/ui/product-card';
 import { cn } from '@/src/shared/lib/utils';
 import { Button } from '@/src/shared/ui/button';
-
-const CATEGORY_OPTIONS = [
-  { label: 'Mỹ phẩm chính hãng', value: 'my-pham' },
-  { label: 'Đồ gia dụng', value: 'gia-dung' },
-  { label: 'Đồ công nghệ', value: 'cong-nghe' },
-];
 
 const RATING_OPTIONS = [
   { label: 'Từ 5 sao', value: 5 },
@@ -35,6 +30,8 @@ export const SearchPage = () => {
 
   const query = searchParams.get('q') || '';
   const category = searchParams.get('category');
+  const brandParam = searchParams.get('brand') || '';
+  const selectedBrands = brandParam ? brandParam.split(',').map((b) => b.trim()).filter(Boolean) : [];
   const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : null;
   const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : null;
   const minRating = searchParams.get('minRating') ? Number(searchParams.get('minRating')) : null;
@@ -44,9 +41,13 @@ export const SearchPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  const { data: categories = [] } = usePublicCategories();
+  const { data: brands = [] } = useProductBrands(category || undefined);
+
   const { data, isLoading, isFetching } = useProducts({
     query,
     category: category || undefined,
+    brand: selectedBrands.length ? selectedBrands.join(',') : undefined,
     minPrice: minPrice || undefined,
     maxPrice: maxPrice || undefined,
     minRating: minRating || undefined,
@@ -62,9 +63,9 @@ export const SearchPage = () => {
     if (isFlashSale) {
       return {
         eyebrow: 'ƯU ĐÃI GIỚI HẠN',
-        title: 'DEAL CHÁY GIỜ VÀNG',
+        title: 'DEAL CHÁY GIÁ VÀNG',
         accent: 'SĂN DEAL CẠNH TRANH',
-        description: 'Tổng hợp những sản phẩm chính hãng đang có mức giá tốt nhất hôm nay tại Tiệm bách hoá Hai Tụi Mình.',
+        description: 'Tổng hợp những sản phẩm chính hãng đang có mức giá tốt nhất hôm nay tại Tiệm bách hoá Hai Tỷ Mạnh.',
       };
     }
 
@@ -79,8 +80,8 @@ export const SearchPage = () => {
 
     return {
       eyebrow: query ? 'KẾT QUẢ TÌM KIẾM' : 'KHÁM PHÁ CỬA HÀNG',
-      title: query ? `"${query}"` : 'SẢN PHẨM CHÍNH HÃNG',
-      accent: query ? `${products.length} KẾT QUẢ` : 'GIÁ TỐT MỖI NGÀY',
+      title: query ? '"' + query + '"' : 'SẢN PHẨM CHÍNH HÃNG',
+      accent: query ? products.length + ' KẾT QUẢ' : 'GIÁ TỐT MỖI NGÀY',
       description:
         'Chuyên mỹ phẩm chính hãng, đồ gia dụng tiện ích và đồ công nghệ chất lượng cao. Hiện tại Tiệm chưa kinh doanh thực phẩm.',
     };
@@ -104,6 +105,27 @@ export const SearchPage = () => {
     setSearchParams(nextParams);
   };
 
+  const toggleBrand = (brandName: string) => {
+    const next = selectedBrands.includes(brandName)
+      ? selectedBrands.filter((b) => b !== brandName)
+      : [...selectedBrands, brandName];
+    updateFilters({ brand: next.length ? next.join(',') : null });
+  };
+
+  const selectCategory = (slug: string) => {
+    const isSame = category === slug;
+    const nextParams = new URLSearchParams(searchParams);
+    if (isSame) {
+      nextParams.delete('category');
+    } else {
+      nextParams.set('category', slug);
+    }
+    // Reset brand selection when switching category since brand list changes.
+    nextParams.delete('brand');
+    nextParams.set('page', '1');
+    setSearchParams(nextParams);
+  };
+
   const clearAllFilters = () => {
     const nextParams = new URLSearchParams();
     if (query) nextParams.set('q', query);
@@ -112,7 +134,151 @@ export const SearchPage = () => {
   };
 
   const totalPages = meta?.totalPages || 1;
-  const currentCategoryLabel = CATEGORY_OPTIONS.find((option) => option.value === category)?.label;
+  const currentCategoryLabel = categories.find((option: any) => option.slug === category)?.name;
+  const hasActiveFilters = Boolean(category || selectedBrands.length || minPrice || maxPrice || minRating);
+
+  const FilterSections = ({ inDrawer = false }: { inDrawer?: boolean }) => (
+    <>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 border-b border-border/50 pb-3">
+          <Store className="h-4 w-4 text-primary" />
+          <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground">Thương hiệu</h3>
+        </div>
+        {brands.length === 0 ? (
+          <p className="text-[11px] font-medium text-muted-foreground/60">Chưa có thương hiệu phù hợp.</p>
+        ) : (
+          <div className={cn('space-y-1', inDrawer ? '' : 'max-h-64 overflow-y-auto pr-1 no-scrollbar')}>
+            {brands.map((brand: any) => {
+              const active = selectedBrands.includes(brand.name);
+              return (
+                <button
+                  key={brand.name}
+                  onClick={() => toggleBrand(brand.name)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all',
+                    active ? 'bg-primary/10' : 'hover:bg-muted'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-all',
+                      active ? 'border-primary bg-primary' : 'border-border/60'
+                    )}
+                  >
+                    {active && <div className="h-1.5 w-1.5 rounded-sm bg-primary-foreground" />}
+                  </span>
+                  <span className={cn('flex-1 truncate text-xs font-bold', active ? 'text-primary' : 'text-foreground/80')}>
+                    {brand.name}
+                  </span>
+                  <span className="text-[10px] font-black text-muted-foreground/50">{brand.count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 border-b border-border/50 pb-3">
+          <Tag className="h-4 w-4 text-primary" />
+          <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground">Khoảng giá</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="number"
+            placeholder="Từ"
+            defaultValue={minPrice || ''}
+            key={'min-' + (minPrice || '')}
+            onBlur={(event) => updateFilters({ minPrice: event.target.value })}
+            className="h-11 w-full rounded-xl border border-border/50 bg-background px-3 text-xs font-black outline-none transition-all focus:border-primary/50"
+          />
+          <input
+            type="number"
+            placeholder="Đến"
+            defaultValue={maxPrice || ''}
+            key={'max-' + (maxPrice || '')}
+            onBlur={(event) => updateFilters({ maxPrice: event.target.value })}
+            className="h-11 w-full rounded-xl border border-border/50 bg-background px-3 text-xs font-black outline-none transition-all focus:border-primary/50"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 border-b border-border/50 pb-3">
+          <Star className="h-4 w-4 text-primary" />
+          <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground">Đánh giá</h3>
+        </div>
+        <div className="space-y-2">
+          {RATING_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => updateFilters({ minRating: minRating === option.value ? null : option.value })}
+              className={cn(
+                'flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-all',
+                minRating === option.value
+                  ? 'border-amber-500/40 bg-amber-500/10 text-amber-600'
+                  : 'border-border/50 bg-background hover:border-amber-500/30 hover:bg-muted'
+              )}
+            >
+              <span className="text-xs font-black uppercase tracking-wider">{option.label}</span>
+              <span className="flex items-center gap-1 text-[10px] font-black">
+                {Array.from({ length: option.value }).map((_, index) => (
+                  <Star key={index} className="h-3 w-3 fill-current" />
+                ))}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Button
+        variant="ghost"
+        onClick={clearAllFilters}
+        disabled={!hasActiveFilters}
+        className="h-12 w-full rounded-2xl border-2 border-border/50 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all hover:border-destructive/20 hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"
+      >
+        Xóa tất cả bộ lọc
+      </Button>
+    </>
+  );
+
+  const CategoryList = ({ onSelect }: { onSelect?: () => void }) => (
+    <div className="space-y-1">
+      <button
+        onClick={() => {
+          selectCategory(category || '');
+          if (!category) onSelect?.();
+        }}
+        className={cn(
+          'flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-black uppercase tracking-wider transition-all',
+          !category ? 'bg-primary text-primary-foreground' : 'text-foreground/80 hover:bg-muted'
+        )}
+      >
+        <ListFilter className="h-4 w-4" />
+        <span className="flex-1">Tất cả sản phẩm</span>
+        {!category && <ChevronRight className="h-4 w-4" />}
+      </button>
+      {categories.map((option: any) => {
+        const active = category === option.slug;
+        return (
+          <button
+            key={option.id || option.slug}
+            onClick={() => {
+              selectCategory(option.slug);
+              onSelect?.();
+            }}
+            className={cn(
+              'flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-black uppercase tracking-wider transition-all',
+              active ? 'bg-primary text-primary-foreground' : 'text-foreground/80 hover:bg-muted'
+            )}
+          >
+            <span className="flex-1 truncate">{option.name}</span>
+            {active && <ChevronRight className="h-4 w-4" />}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="bg-background font-sans">
@@ -135,6 +301,14 @@ export const SearchPage = () => {
                     {currentCategoryLabel}
                   </span>
                 )}
+                {selectedBrands.map((brand) => (
+                  <span key={brand} className="flex items-center gap-1 rounded-full bg-foreground/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-foreground/70">
+                    {brand}
+                    <button onClick={() => toggleBrand(brand)} aria-label={'Bỏ ' + brand}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
                 {minRating && (
                   <span className="rounded-full bg-amber-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-amber-600">
                     Từ {minRating} sao
@@ -178,103 +352,26 @@ export const SearchPage = () => {
           </div>
         </div>
 
-        <div className="grid gap-12 lg:grid-cols-12">
+        <div className="grid gap-8 lg:grid-cols-12">
           <aside className="hidden lg:col-span-3 lg:block">
-            <div className="sticky top-24 space-y-10 rounded-[32px] border border-border/50 bg-card p-6 shadow-soft">
-              <div className="space-y-6">
-                <h3 className="border-b border-border/50 pb-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  Danh mục
-                </h3>
-                <div className="space-y-3">
-                  {CATEGORY_OPTIONS.map((option) => (
-                    <label key={option.value} className="group flex cursor-pointer items-center gap-3">
-                      <div
-                        role="checkbox"
-                        aria-checked={category === option.value}
-                        tabIndex={0}
-                        onClick={() => updateFilters({ category: category === option.value ? null : option.value })}
-                        className={cn(
-                          'flex h-5 w-5 items-center justify-center rounded-md border-2 transition-all',
-                          category === option.value ? 'border-primary bg-primary' : 'border-border/50 group-hover:border-primary/50'
-                        )}
-                      >
-                        {category === option.value && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
-                      </div>
-                      <span
-                        className={cn(
-                          'text-xs font-black uppercase tracking-wider transition-colors',
-                          category === option.value ? 'text-primary' : 'text-muted-foreground/80'
-                        )}
-                      >
-                        {option.label}
-                      </span>
-                    </label>
-                  ))}
+            <div className="sticky top-24 space-y-6">
+              <div className="overflow-hidden rounded-[28px] border border-border/50 bg-card shadow-soft">
+                <div className="flex items-center gap-2 border-b border-border/50 bg-muted/40 px-5 py-4">
+                  <LayoutGrid className="h-4 w-4 text-primary" />
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground">Tất cả danh mục</h3>
+                </div>
+                <div className="p-3">
+                  <CategoryList />
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <h3 className="border-b border-border/50 pb-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  Khoảng giá
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <span className="text-[8px] font-black text-muted-foreground/60">Từ</span>
-                    <input
-                      type="number"
-                      placeholder="100000"
-                      defaultValue={minPrice || ''}
-                      className="h-10 w-full rounded-xl border border-border/50 bg-background px-3 text-xs font-black outline-none transition-all focus:border-primary/50"
-                      onBlur={(event) => updateFilters({ minPrice: event.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <span className="text-[8px] font-black text-muted-foreground/60">Đến</span>
-                    <input
-                      type="number"
-                      placeholder="5000000"
-                      defaultValue={maxPrice || ''}
-                      className="h-10 w-full rounded-xl border border-border/50 bg-background px-3 text-xs font-black outline-none transition-all focus:border-primary/50"
-                      onBlur={(event) => updateFilters({ maxPrice: event.target.value })}
-                    />
-                  </div>
+              <div className="space-y-8 rounded-[28px] border border-border/50 bg-card p-5 shadow-soft">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-primary" />
+                  <h3 className="text-xs font-black uppercase tracking-widest text-foreground">Bộ lọc tìm kiếm</h3>
                 </div>
+                <FilterSections />
               </div>
-
-              <div className="space-y-6">
-                <h3 className="border-b border-border/50 pb-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  Đánh giá
-                </h3>
-                <div className="space-y-3">
-                  {RATING_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => updateFilters({ minRating: minRating === option.value ? null : option.value })}
-                      className={cn(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all',
-                        minRating === option.value
-                          ? 'border-amber-500/40 bg-amber-500/10 text-amber-600'
-                          : 'border-border/50 bg-background hover:border-amber-500/30 hover:bg-muted'
-                      )}
-                    >
-                      <span className="text-xs font-black uppercase tracking-wider">{option.label}</span>
-                      <span className="flex items-center gap-1 text-[10px] font-black">
-                        {Array.from({ length: option.value }).map((_, index) => (
-                          <Star key={index} className="h-3 w-3 fill-current" />
-                        ))}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                onClick={clearAllFilters}
-                className="h-12 w-full rounded-2xl border-2 border-border/50 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all hover:border-destructive/20 hover:bg-destructive/10 hover:text-destructive"
-              >
-                Xóa các bộ lọc
-              </Button>
             </div>
           </aside>
 
@@ -334,28 +431,27 @@ export const SearchPage = () => {
               ) : (
                 <motion.div
                   key="empty"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="space-y-6 rounded-[40px] border border-dashed border-border/50 bg-card py-20 text-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center justify-center rounded-[40px] border border-dashed border-border/50 bg-card py-24 text-center"
                 >
-                  <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-muted/20">
-                    <SearchIcon className="h-8 w-8 text-muted-foreground" />
+                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                    <Filter className="h-8 w-8 text-muted-foreground/50" />
                   </div>
-                  <h3 className="text-2xl font-black uppercase tracking-tighter text-foreground">
-                    Không tìm thấy sản phẩm phù hợp
-                  </h3>
-                  <p className="mx-auto max-w-md text-muted-foreground/80">
-                    Hãy thử thay đổi bộ lọc hoặc dùng từ khóa rộng hơn để tìm mỹ phẩm, đồ gia dụng hay sản phẩm công nghệ phù hợp hơn.
+                  <h3 className="mb-2 text-xl font-black uppercase tracking-tight text-foreground">Không tìm thấy sản phẩm</h3>
+                  <p className="mb-6 max-w-md text-sm font-medium text-muted-foreground">
+                    Thử điều chỉnh bộ lọc hoặc xóa bớt điều kiện để xem thêm sản phẩm.
                   </p>
-                  <Button onClick={clearAllFilters} className="h-12 rounded-2xl bg-foreground px-8 text-xs font-black uppercase tracking-widest text-background">
-                    Đặt lại bộ lọc
+                  <Button onClick={clearAllFilters} className="h-12 rounded-2xl px-8 text-xs font-black uppercase tracking-widest">
+                    Xóa bộ lọc
                   </Button>
                 </motion.div>
               )}
             </AnimatePresence>
 
             {totalPages > 1 && (
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-4">
+              <div className="flex items-center justify-center gap-3 pt-4">
                 <Button
                   variant="outline"
                   disabled={page <= 1}
@@ -364,23 +460,9 @@ export const SearchPage = () => {
                 >
                   Trang trước
                 </Button>
-                {Array.from({ length: totalPages }).slice(0, 6).map((_, index) => {
-                  const pageNumber = index + 1;
-                  return (
-                    <button
-                      key={pageNumber}
-                      onClick={() => updateFilters({ page: pageNumber })}
-                      className={cn(
-                        'h-11 min-w-11 rounded-2xl border px-4 text-sm font-black transition-all',
-                        page === pageNumber
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border/50 bg-card text-foreground hover:border-primary/30 hover:bg-muted'
-                      )}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
-                })}
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
                 <Button
                   variant="outline"
                   disabled={page >= totalPages}
@@ -409,7 +491,7 @@ export const SearchPage = () => {
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="fixed bottom-0 left-0 right-0 z-[101] max-h-[85vh] overflow-y-auto rounded-t-[40px] border-t border-border/50 bg-card p-8 shadow-[0_-20px_40px_rgba(0,0,0,0.1)]"
+              className="fixed bottom-0 left-0 right-0 z-[101] max-h-[85vh] overflow-y-auto rounded-t-[40px] border-t border-border/50 bg-card p-8 shadow-[0_-20px_40px_rgba(0,0,0,0.1)] lg:hidden"
             >
               <div className="mb-8 flex items-center justify-between">
                 <h3 className="text-2xl font-black uppercase text-foreground">Bộ lọc sản phẩm</h3>
@@ -418,69 +500,13 @@ export const SearchPage = () => {
                 </button>
               </div>
 
-              <div className="space-y-10">
+              <div className="space-y-8">
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Theo danh mục</h4>
-                  <div className="flex flex-wrap gap-3">
-                    {CATEGORY_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => updateFilters({ category: category === option.value ? null : option.value })}
-                        className={cn(
-                          'rounded-2xl border-2 px-6 py-3 text-[10px] font-black tracking-widest transition-all',
-                          category === option.value
-                            ? 'border-primary bg-primary text-white'
-                            : 'border-border/50 bg-background text-muted-foreground/80'
-                        )}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Danh mục</h4>
+                  <CategoryList onSelect={() => undefined} />
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Đánh giá</h4>
-                  <div className="space-y-3">
-                    {RATING_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => updateFilters({ minRating: minRating === option.value ? null : option.value })}
-                        className={cn(
-                          'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition-all',
-                          minRating === option.value ? 'border-amber-500/40 bg-amber-500/10 text-amber-600' : 'border-border/50 bg-background'
-                        )}
-                      >
-                        <span className="text-xs font-black uppercase tracking-widest">{option.label}</span>
-                        <span className="flex items-center gap-1">
-                          {Array.from({ length: option.value }).map((_, index) => (
-                            <Star key={index} className="h-3 w-3 fill-current" />
-                          ))}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Khoảng giá</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <input
-                      type="number"
-                      placeholder="Từ"
-                      defaultValue={minPrice || ''}
-                      onBlur={(event) => updateFilters({ minPrice: event.target.value })}
-                      className="h-14 rounded-2xl border border-border/50 bg-background px-6 text-sm font-black outline-none"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Đến"
-                      defaultValue={maxPrice || ''}
-                      onBlur={(event) => updateFilters({ maxPrice: event.target.value })}
-                      className="h-14 rounded-2xl border border-border/50 bg-background px-6 text-sm font-black outline-none"
-                    />
-                  </div>
-                </div>
+                <FilterSections inDrawer />
 
                 <Button onClick={() => setIsFilterOpen(false)} className="h-16 w-full rounded-3xl bg-foreground text-xs font-black uppercase tracking-widest text-background">
                   Áp dụng bộ lọc

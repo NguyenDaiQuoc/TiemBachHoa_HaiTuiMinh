@@ -9,11 +9,13 @@ import { getWarrantyLabel, setWarrantyTag, WARRANTY_OPTIONS } from '@/src/entiti
 import { Product, ProductVariant } from '@/src/entities/product/model/types';
 import { Button } from '@/src/shared/ui/button';
 import { Input } from '@/src/shared/ui/input';
+import { cn } from '@/src/shared/lib/utils';
 
 const variantSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'Thiếu tên biến thể'),
   value: z.string().min(1, 'Thiếu giá trị biến thể'),
+  attributes: z.record(z.string(), z.string()).optional().default({}),
   sku: z.string().min(1, 'Thiếu SKU'),
   costPrice: z.coerce.number().min(0),
   price: z.coerce.number().positive(),
@@ -75,14 +77,15 @@ const normalizeNullableNumber = (value?: number | null) => {
   return value;
 };
 
-const SELLABLE_CATEGORY_SLUGS = new Set(['cong-nghe', 'gia-dung', 'my-pham']);
-const BRAND_OPTIONS = ['Baseus', 'Sony', 'Apple', 'Samsung', 'Logitech', 'Xiaomi', 'Philips', 'LocknLock', "L'Oreal", 'La Roche-Posay'];
-const SUBCATEGORY_OPTIONS = ['Điện thoại', 'Laptop', 'Chuột', 'Bàn phím', 'Màn hình', 'Tai nghe', 'Sạc/cáp', 'Nồi chiên', 'Máy hút bụi', 'Chăm sóc da'];
-const TAG_OPTIONS = ['Chính hãng', 'Bán chạy', 'Hàng mới', 'Giá tốt', 'Phù hợp văn phòng', 'Nhỏ gọn', 'Pin lâu'];
+const BRAND_OPTIONS = ['Baseus', 'Anker', 'Ugreen', 'Sony', 'JBL', 'Apple', 'Samsung', 'Logitech', 'Razer', 'Asus', 'Dell', 'HP', 'Lenovo', 'Xiaomi', 'Philips', 'Electrolux', 'Panasonic', 'Sunhouse', 'LocknLock', 'Bear', 'Comet', "L'Oreal", 'La Roche-Posay', 'The Ordinary', 'CeraVe', 'Cocoon', 'Maybelline', 'Innisfree', 'Some By Mi', 'Simple'];
+const SUBCATEGORY_OPTIONS = ['Điện thoại', 'Laptop', 'Máy tính bảng', 'Chuột', 'Bàn phím', 'Màn hình', 'Tai nghe', 'Loa', 'Sạc/cáp', 'Pin dự phòng', 'Webcam', 'Camera an ninh', 'Đồng hồ thông minh', 'Nồi chiên', 'Nồi cơm điện', 'Máy xay sinh tố', 'Ấm siêu tốc', 'Bếp điện', 'Máy hút bụi', 'Robot hút bụi', 'Quạt điện', 'Máy lọc không khí', 'Đèn LED', 'Đồ dùng nhà bếp', 'Chăm sóc da', 'Trang điểm', 'Chăm sóc tóc', 'Nước hoa', 'Chống nắng', 'Sữa rửa mặt', 'Mặt nạ', 'Son môi'];
+const SKU_ATTRIBUTE_OPTIONS = ['Màu', 'Size', 'Mùi', 'Dung lượng', 'Phiên bản', 'Chất liệu', 'Model'];
+
+const TAG_OPTIONS = ['Chính hãng', 'Bán chạy', 'Hàng mới', 'Giá tốt', 'Cao cấp', 'Giá rẻ', 'Phù hợp văn phòng', 'Nhỏ gọn', 'Pin lâu', 'Tiết kiệm điện', 'Dễ sử dụng', 'Quà tặng', 'Bảo hành dài', 'Freeship', 'Limited'];
 
 export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: ProductFormProps) => {
   const { data: categories } = useCategories();
-  const sellableCategories = (categories || []).filter((category: any) => SELLABLE_CATEGORY_SLUGS.has(category.slug));
+  const sellableCategories = (categories || []).filter((category: any) => category.isActive !== false && category.slug !== 'san-pham-nhap-kho');
   const initialVariants: VariantDraft[] =
     initialData?.variants?.flatMap((group) =>
       group.options.map((variant: ProductVariant) => ({
@@ -90,6 +93,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
         name: variant.name,
         value: variant.value,
         sku: variant.sku || '',
+        attributes: variant.attributes || {},
         costPrice: variant.costPrice || 0,
         price: variant.price || initialData.price,
         promotionalPrice: variant.promotionalPrice || null,
@@ -100,6 +104,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
     ) || [];
 
   const [variantDrafts, setVariantDrafts] = useState<VariantDraft[]>(initialVariants);
+  const [skuFilters, setSkuFilters] = useState<Record<string, string>>({});
 
   const form = useForm<ProductFormInput, unknown, ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -155,6 +160,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
         name: '',
         value: '',
         sku: '',
+        attributes: {},
         costPrice: 0,
         price: 0,
         promotionalPrice: null,
@@ -173,6 +179,53 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
 
   const removeVariant = (index: number) => {
     syncVariants(variantDrafts.filter((_, itemIndex) => itemIndex !== index));
+  };
+  const updateVariantAttribute = (index: number, key: string, value: string) => {
+    const nextAttributes = { ...(variantDrafts[index].attributes || {}) };
+    if (value.trim()) nextAttributes[key] = value.trim();
+    else delete nextAttributes[key];
+    updateVariant(index, 'attributes', nextAttributes as VariantDraft['attributes']);
+
+    const label = Object.entries(nextAttributes)
+      .filter(([, attributeValue]) => attributeValue)
+      .map(([attributeKey, attributeValue]) => `${attributeKey}: ${attributeValue}`)
+      .join(' / ');
+    if (label) {
+      updateVariant(index, 'name', label);
+      updateVariant(index, 'value', Object.values(nextAttributes).filter(Boolean).join(' / '));
+    }
+  };
+
+  const buildSkuFromAttributes = (index: number) => {
+    const baseSku = form.getValues('sku')?.trim() || form.getValues('slug')?.trim() || 'HTM';
+    const attributeCode = Object.values(variantDrafts[index].attributes || {})
+      .filter(Boolean)
+      .map((value) =>
+        value
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/đ/g, 'd')
+          .replace(/Đ/g, 'D')
+          .replace(/[^a-zA-Z0-9]+/g, '')
+          .slice(0, 8)
+          .toUpperCase()
+      )
+      .filter(Boolean)
+      .join('-');
+    updateVariant(index, 'sku', [baseSku, attributeCode || String(index + 1).padStart(2, '0')].join('-').toUpperCase());
+  };
+
+  const attributeChoices = SKU_ATTRIBUTE_OPTIONS.map((attribute) => ({
+    attribute,
+    values: Array.from(new Set(variantDrafts.map((variant) => variant.attributes?.[attribute]).filter((value): value is string => Boolean(value)))).sort(),
+  })).filter((item) => item.values.length > 0);
+
+  const filteredVariantDrafts = variantDrafts.filter((variant) =>
+    Object.entries(skuFilters).every(([attribute, value]) => !value || variant.attributes?.[attribute] === value)
+  );
+
+  const toggleSkuFilter = (attribute: string, value: string) => {
+    setSkuFilters((prev) => ({ ...prev, [attribute]: prev[attribute] === value ? '' : value }));
   };
 
   const uploadProductImages = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -230,7 +283,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
                     .toLowerCase()
                     .normalize('NFD')
                     .replace(/[\u0300-\u036f]/g, '')
-                    .replace(/đ/g, 'd')
+                    .replace(/Ä'/g, 'd')
                     .replace(/[^a-z0-9]+/g, '-')
                     .replace(/-+/g, '-')
                     .replace(/^-|-$/g, '');
@@ -295,7 +348,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Hang / thuong hieu</label>
+              <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Hãng / thương hiệu</label>
               <input {...form.register('brand')} list="brand-options" className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-bold outline-none" placeholder="Baseus, Sony..." />
               <datalist id="brand-options">
                 {BRAND_OPTIONS.map((brand) => (
@@ -388,61 +441,136 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
         </div>
       </div>
 
-      <div className="space-y-4 rounded-[28px] border border-border/50 bg-surface-sunken p-5">
-        <div className="flex items-center justify-between">
+      <div className="space-y-5 rounded-[28px] border border-border/50 bg-surface-sunken p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h3 className="text-sm font-black uppercase tracking-widest">Biến thể / SKU</h3>
-            <p className="text-xs text-muted-foreground">Mỗi mã có thể có giá nhập, giá bán, tồn kho và hình ảnh riêng.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Quản lý SKU theo nhiều thuộc tính như Màu, Size, Mùi, Dung lượng. Click bộ lọc để xem nhanh SKU nào còn hàng.</p>
           </div>
-          <Button type="button" onClick={addVariant} className="h-10 rounded-xl px-4 text-[10px] font-black uppercase tracking-widest">
-            <Plus className="mr-2 h-4 w-4" />
-            Thêm SKU
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              {filteredVariantDrafts.length}/{variantDrafts.length} SKU hiển thị
+            </span>
+            <span className="inline-flex items-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+              {variantDrafts.filter((variant) => Number(variant.stock || 0) > 0).length} còn hàng
+            </span>
+            <Button type="button" onClick={addVariant} className="h-10 rounded-xl px-4 text-[10px] font-black uppercase tracking-widest">
+              <Plus className="mr-2 h-4 w-4" />
+              Thêm SKU
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          {variantDrafts.map((variant, index) => (
-            <div key={variant.id || index} className="rounded-2xl border border-border bg-background p-4">
-              <div className="mb-4 flex items-center justify-between">
-                <h4 className="text-xs font-black uppercase tracking-widest">SKU #{index + 1}</h4>
-                <Button type="button" variant="ghost" onClick={() => removeVariant(index)} className="h-8 rounded-lg px-3 text-[10px] font-black uppercase tracking-widest text-rose-500">
-                  Xóa
-                </Button>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <Input value={variant.name} onChange={(event) => updateVariant(index, 'name', event.target.value)} placeholder="Tên biến thể" />
-                <Input value={variant.value} onChange={(event) => updateVariant(index, 'value', event.target.value)} placeholder="Màu / dung lượng / phiên bản" />
-                <Input value={variant.sku || ''} onChange={(event) => updateVariant(index, 'sku', event.target.value)} placeholder="SKU" />
-                <Input type="number" value={variant.costPrice || 0} onChange={(event) => updateVariant(index, 'costPrice', Number(event.target.value))} placeholder="Giá nhập" />
-                <Input type="number" value={variant.price || 0} onChange={(event) => updateVariant(index, 'price', Number(event.target.value))} placeholder="Giá bán" />
-                <Input
-                  type="number"
-                  value={variant.promotionalPrice ?? ''}
-                  onChange={(event) => updateVariant(index, 'promotionalPrice', event.target.value ? Number(event.target.value) : null)}
-                  placeholder="Giá khuyến mãi"
-                />
-                <Input type="number" value={variant.stock || 0} onChange={(event) => updateVariant(index, 'stock', Number(event.target.value))} placeholder="Tồn kho" />
-                <Input type="number" value={variant.initialStock || 0} onChange={(event) => updateVariant(index, 'initialStock', Number(event.target.value))} placeholder="Tồn ban đầu" />
-                <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border px-3 text-[10px] font-black uppercase tracking-widest">
-                  <Upload className="h-4 w-4" />
-                  Ảnh SKU
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={(event) => void uploadVariantImages(index, event)} />
-                </label>
-              </div>
-
-              {!!variant.images?.length && (
-                <div className="mt-4 grid grid-cols-4 gap-3">
-                  {variant.images.map((image, imageIndex) => (
-                    <img key={imageIndex} src={image} alt="" className="aspect-square rounded-2xl border border-border object-cover" />
-                  ))}
-                </div>
+        {attributeChoices.length > 0 && (
+          <div className="space-y-3 rounded-2xl border border-border bg-background p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Lọc nhanh phân loại</p>
+              {Object.values(skuFilters).some(Boolean) && (
+                <button type="button" onClick={() => setSkuFilters({})} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">
+                  Xóa lọc
+                </button>
               )}
             </div>
-          ))}
+            <div className="space-y-3">
+              {attributeChoices.map(({ attribute, values }) => (
+                <div key={attribute} className="flex flex-wrap items-center gap-2">
+                  <span className="min-w-20 text-[10px] font-black uppercase tracking-widest text-muted-foreground">{attribute}</span>
+                  {values.map((value) => {
+                    const matching = variantDrafts.filter((variant) => variant.attributes?.[attribute] === value);
+                    const inStock = matching.reduce((sum, variant) => sum + Number(variant.stock || 0), 0);
+                    const active = skuFilters[attribute] === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => toggleSkuFilter(attribute, value)}
+                        className={cn(
+                          'rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors',
+                          active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-surface-default text-foreground hover:border-primary/40'
+                        )}
+                      >
+                        {value} <span className={active ? 'text-primary-foreground/70' : 'text-muted-foreground'}>({inStock})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {variantDrafts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-8 text-center text-sm font-medium text-muted-foreground">
+              Chưa có SKU riêng. Thêm SKU nếu sản phẩm có nhiều màu, size, mùi hoặc phiên bản.
+            </div>
+          ) : filteredVariantDrafts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-8 text-center text-sm font-medium text-muted-foreground">
+              Không có SKU khớp bộ lọc hiện tại.
+            </div>
+          ) : (
+            filteredVariantDrafts.map((variant) => {
+              const index = variantDrafts.findIndex((item) => item.id === variant.id);
+              return (
+                <div key={variant.id || index} className={cn('rounded-2xl border bg-background p-4', Number(variant.stock || 0) > 0 ? 'border-border' : 'border-rose-500/30 bg-rose-500/5')}>
+                  <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest">SKU #{index + 1}</h4>
+                      <p className="mt-1 text-xs text-muted-foreground">{variant.sku || 'Chưa có mã SKU'} · {Number(variant.stock || 0) > 0 ? `${variant.stock} còn hàng` : 'Hết hàng'}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" onClick={() => buildSkuFromAttributes(index)} className="h-8 rounded-lg px-3 text-[10px] font-black uppercase tracking-widest">
+                        Tự tạo SKU
+                      </Button>
+                      <Button type="button" variant="ghost" onClick={() => removeVariant(index)} className="h-8 rounded-lg px-3 text-[10px] font-black uppercase tracking-widest text-rose-500">
+                        Xóa
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 rounded-2xl border border-border/60 bg-surface-default p-3 md:grid-cols-4">
+                    {SKU_ATTRIBUTE_OPTIONS.map((attribute) => (
+                      <div key={attribute} className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{attribute}</label>
+                        <Input value={variant.attributes?.[attribute] || ''} onChange={(event) => updateVariantAttribute(index, attribute, event.target.value)} placeholder={attribute} />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 grid gap-4 md:grid-cols-3">
+                    <Input value={variant.name} onChange={(event) => updateVariant(index, 'name', event.target.value)} placeholder="Tên hiển thị biến thể" />
+                    <Input value={variant.value} onChange={(event) => updateVariant(index, 'value', event.target.value)} placeholder="Giá trị gộp" />
+                    <Input value={variant.sku || ''} onChange={(event) => updateVariant(index, 'sku', event.target.value)} placeholder="SKU" />
+                    <Input type="number" value={variant.costPrice || 0} onChange={(event) => updateVariant(index, 'costPrice', Number(event.target.value))} placeholder="Giá nhập" />
+                    <Input type="number" value={variant.price || 0} onChange={(event) => updateVariant(index, 'price', Number(event.target.value))} placeholder="Giá bán" />
+                    <Input
+                      type="number"
+                      value={variant.promotionalPrice ?? ''}
+                      onChange={(event) => updateVariant(index, 'promotionalPrice', event.target.value ? Number(event.target.value) : null)}
+                      placeholder="Giá khuyến mãi"
+                    />
+                    <Input type="number" value={variant.stock || 0} onChange={(event) => updateVariant(index, 'stock', Number(event.target.value))} placeholder="Tồn kho" />
+                    <Input type="number" value={variant.initialStock || 0} onChange={(event) => updateVariant(index, 'initialStock', Number(event.target.value))} placeholder="Tồn ban đầu" />
+                    <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border px-3 text-[10px] font-black uppercase tracking-widest">
+                      <Upload className="h-4 w-4" />
+                      Ảnh SKU
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={(event) => void uploadVariantImages(index, event)} />
+                    </label>
+                  </div>
+
+                  {!!variant.images?.length && (
+                    <div className="mt-4 grid grid-cols-4 gap-3 md:grid-cols-6">
+                      {variant.images.map((image, imageIndex) => (
+                        <img key={imageIndex} src={image} alt="" className="aspect-square rounded-2xl border border-border object-cover" />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
-
       <div className="flex justify-end gap-3 border-t border-border pt-6">
         <Button type="button" variant="ghost" onClick={onCancel} className="h-11 rounded-xl px-6 text-[10px] font-black uppercase tracking-widest">
           Hủy
@@ -455,3 +583,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
     </form>
   );
 };
+
+
+
+

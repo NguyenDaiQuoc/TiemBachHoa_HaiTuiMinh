@@ -183,7 +183,7 @@ export const AppRoutes = () => {
             <Route path="/products" element={<SearchPage />} />
             <Route path="/flash-sale" element={<SearchPage />} />
             <Route path="/new-arrivals" element={<SearchPage />} />
-            <Route path="/search" element={<Navigate to="/products" replace />} />
+            <Route path="/search" element={<SearchPage />} />
             <Route path="/community" element={<Navigate to="/products" replace />} />
             <Route
               path="/profile/*"
@@ -240,4 +240,5 @@ export const AppRoutes = () => {
     </ErrorBoundary>
   );
 };
+
 

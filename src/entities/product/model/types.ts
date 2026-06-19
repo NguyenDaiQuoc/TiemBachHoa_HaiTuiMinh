@@ -1,7 +1,8 @@
-export interface ProductVariant {
+﻿export interface ProductVariant {
   id: string;
   name: string;
   value: string;
+  attributes?: Record<string, string>;
   sku?: string;
   costPrice?: number;
   price?: number;
@@ -70,3 +71,5 @@ export interface Product {
   reviews?: ProductReview[];
   features?: string[];
 }
+
+

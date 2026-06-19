@@ -8,6 +8,7 @@ const BASE_URL = '/api/products';
 export interface ProductListFilters {
   query?: string;
   category?: string;
+  brand?: string;
   minPrice?: number;
   maxPrice?: number;
   minRating?: number;
@@ -157,4 +158,29 @@ export const useDeleteProduct = () =>
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
     },
+  });
+
+export interface ProductBrand {
+  name: string;
+  count: number;
+}
+
+export const fetchBrands = async (category?: string): Promise<ProductBrand[]> => {
+  const params = new URLSearchParams();
+  if (category) params.set('category', category);
+
+  const response = await fetch(`${BASE_URL}/brands?${params.toString()}`);
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(payload?.error || payload?.message || 'Không thể tải danh sách thương hiệu');
+  }
+
+  return (payload.data || []) as ProductBrand[];
+};
+
+export const useProductBrands = (category?: string) =>
+  useQuery({
+    queryKey: [...productKeys.all, 'brands', category || 'all'] as const,
+    queryFn: () => fetchBrands(category),
   });

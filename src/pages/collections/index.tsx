@@ -146,7 +146,7 @@ export const CollectionsPage = () => {
                     </p>
 
                     <Link 
-                      to="/search" 
+                      to="/products" 
                       className="inline-flex items-center gap-3 h-14 px-8 rounded-2xl bg-foreground text-background font-black text-[10px] uppercase tracking-widest hover:bg-primary transition-all group/btn"
                     >
                       XEM BỘ SƯU TẬP 
@@ -206,3 +206,4 @@ export const CollectionsPage = () => {
     </div>
   );
 };
+
