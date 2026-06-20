@@ -51,12 +51,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return sendJson(res, 400, { success: false, error: 'Thiếu slug chiến dịch' });
     }
 
+    const now = new Date();
     const campaign = await prisma.marketingCampaign.findFirst({
-      where: { slug, isActive: true },
+      where: {
+        slug,
+        isActive: true,
+        OR: [{ startsAt: null }, { startsAt: { lte: now } }],
+        AND: [{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }],
+      },
     });
 
     if (!campaign) {
-      return sendJson(res, 404, { success: false, error: 'Chiến dịch không tồn tại hoặc chưa được bật' });
+      return sendJson(res, 404, { success: false, error: 'Chiến dịch không tồn tại, chưa bắt đầu hoặc đã kết thúc' });
     }
 
     const productIds = normalizeProductIds(campaign.productIds);

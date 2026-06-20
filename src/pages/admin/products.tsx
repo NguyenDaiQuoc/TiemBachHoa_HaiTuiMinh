@@ -26,7 +26,7 @@ import { useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, productKeys } from '@/src/entities/product/api/product-api';
 import { useCategories } from '@/src/entities/category/api/category-api';
-import { Product } from '@/src/entities/product/model/types';
+import { Product, ProductVariant } from '@/src/entities/product/model/types';
 import { adminService } from '@/src/entities/admin/api/admin-service';
 import { InventoryReceiptPayload, InventoryReceiptUpsertPayload } from '@/src/entities/admin/model/types';
 import { useAdminUiStore } from '@/src/shared/store/admin-ui-store';
@@ -48,6 +48,8 @@ type ReceiptLineDraft = {
   productId: string;
   categoryId: string;
   sku: string;
+  variantId: string;
+  variantAttributes: Record<string, string>;
   search: string;
   imageUrl: string;
   imageUrls: string[];
@@ -55,6 +57,8 @@ type ReceiptLineDraft = {
   costPrice: number;
   salePrice: number;
 };
+
+const SKU_ATTRIBUTE_OPTIONS = ['Màu', 'Size', 'Mùi', 'Dung lượng', 'Phiên bản', 'Chất liệu', 'Model'];
 
 const copy = {
   vi: {
@@ -206,6 +210,8 @@ const createEmptyLine = (): ReceiptLineDraft => ({
   productId: '',
   categoryId: '',
   sku: '',
+  variantId: '',
+  variantAttributes: {},
   search: '',
   imageUrl: '',
   imageUrls: [],
@@ -231,6 +237,33 @@ const slugifyProductName = (value: string) =>
     .replace(/đ/g, 'd')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || `combo-${Date.now()}`;
+
+const normalizeSkuPart = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9]+/g, '')
+    .slice(0, 8)
+    .toUpperCase();
+
+const buildSkuFromAttributes = (baseSku: string, attributes: Record<string, string>) => {
+  const suffix = Object.values(attributes).map((value) => normalizeSkuPart(value)).filter(Boolean).join('-');
+  return [baseSku || 'HTM', suffix].filter(Boolean).join('-').toUpperCase();
+};
+
+const flattenProductVariants = (product?: Product | null): ProductVariant[] => product?.variants?.flatMap((group) => group.options) || [];
+
+const formatVariantAttributes = (variant?: ProductVariant | null) => {
+  if (!variant) return '';
+  const attributes = variant.attributes || {};
+  const text = Object.entries(attributes)
+    .filter(([, value]) => Boolean(value))
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(' / ');
+  return text || [variant.name, variant.value].filter(Boolean).join(': ');
+};
 
 const readFileAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -398,7 +431,7 @@ export const AdminProducts = () => {
       quantity: Math.max(1, Number(line.quantity) || 1),
       costPrice: Math.max(0, Number(line.costPrice) || 0),
       salePrice: Math.max(1, Number(line.salePrice) || 0),
-      product: { name: productName, sku: product?.sku },
+      product: { name: productName, sku: line.sku || product?.sku },
     })),
   };
 
@@ -423,6 +456,8 @@ export const AdminProducts = () => {
         productId: item.productId,
         categoryId: '',
         sku: item.product?.sku || '',
+        variantId: '',
+        variantAttributes: {},
         search: item.product?.name || item.product?.sku || '',
         imageUrl: item.product?.images?.[0] || '',
         imageUrls: item.product?.images || [],
@@ -525,6 +560,23 @@ export const AdminProducts = () => {
     setReceiptLines((current) => current.map((line) => (line.id === lineId ? { ...line, ...patch } : line)));
   };
 
+  const updateReceiptLineAttribute = (lineId: string, key: string, value: string) => {
+    setReceiptLines((current) =>
+      current.map((line) => {
+        if (line.id !== lineId) return line;
+        const attributes = { ...(line.variantAttributes || {}) };
+        if (value.trim()) attributes[key] = value.trim();
+        else delete attributes[key];
+        return {
+          ...line,
+          variantAttributes: attributes,
+          variantId: '',
+          sku: buildSkuFromAttributes(line.sku.split('-')[0] || line.sku || 'HTM', attributes),
+        };
+      })
+    );
+  };
+
   const handleReceiptSearchChange = (lineId: string, search: string) => {
     updateReceiptLine(lineId, { search, productId: '' });
 
@@ -539,11 +591,40 @@ export const AdminProducts = () => {
       productId: product.id,
       categoryId: product.categoryId || '',
       sku: product.sku || '',
+      variantId: '',
+      variantAttributes: {},
       search: product.name,
       imageUrl: getPrimaryImage(product),
       imageUrls: product.images?.length ? product.images : [getPrimaryImage(product)],
       costPrice: product.costPrice || 0,
       salePrice: product.price,
+    });
+  };
+
+  const handleVariantSelect = (lineId: string, product: Product, variantId: string) => {
+    const variant = flattenProductVariants(product).find((item) => item.id === variantId);
+    if (!variant) {
+      updateReceiptLine(lineId, {
+        variantId: '',
+        variantAttributes: {},
+        sku: product.sku || '',
+        imageUrl: getPrimaryImage(product),
+        imageUrls: product.images?.length ? product.images : [getPrimaryImage(product)],
+        costPrice: product.costPrice || 0,
+        salePrice: product.price,
+      });
+      return;
+    }
+
+    const images = variant.images?.length ? variant.images : product.images?.length ? product.images : [getPrimaryImage(product)];
+    updateReceiptLine(lineId, {
+      variantId: variant.id,
+      variantAttributes: variant.attributes || {},
+      sku: variant.sku || buildSkuFromAttributes(product.sku || product.slug || 'HTM', variant.attributes || {}),
+      imageUrl: images[0] || '',
+      imageUrls: images,
+      costPrice: variant.costPrice ?? product.costPrice ?? 0,
+      salePrice: variant.price ?? product.price,
     });
   };
 
@@ -580,6 +661,8 @@ export const AdminProducts = () => {
       productName: product ? undefined : productName,
       categoryId: product ? undefined : line.categoryId || undefined,
       sku: line.sku.trim() || product?.sku || undefined,
+      variantId: line.variantId || undefined,
+      variantAttributes: Object.keys(line.variantAttributes || {}).length ? line.variantAttributes : undefined,
       imageUrl: imageUrl || undefined,
       imageUrls: imageUrls.length ? imageUrls : undefined,
       quantity: Math.max(1, Number(line.quantity) || 1),
@@ -1235,6 +1318,8 @@ export const AdminProducts = () => {
                   {receiptLines.map((line, index) => {
                   const matches = receiptLineMatches(line);
                   const selectedLineProduct = findProductForLine(line);
+                  const selectedLineVariants = flattenProductVariants(selectedLineProduct);
+                  const selectedVariant = selectedLineVariants.find((variant) => variant.id === line.variantId) || null;
                   const lineTotal = line.quantity * line.costPrice;
                   const lineImages = line.imageUrls.length ? line.imageUrls : [line.imageUrl || (selectedLineProduct ? getPrimaryImage(selectedLineProduct) : '')].filter(Boolean);
 
@@ -1328,6 +1413,11 @@ export const AdminProducts = () => {
                               <p className="mt-1 text-xs text-muted-foreground">
                                 {selectedLineProduct.sku || 'SKU'} • {t.stock}: {selectedLineProduct.stock}
                               </p>
+                              {selectedVariant && (
+                                <p className="mt-1 text-xs font-bold text-primary">
+                                  {formatVariantAttributes(selectedVariant)} • SKU: {selectedVariant.sku || line.sku} • {t.stock}: {selectedVariant.stock}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1360,6 +1450,37 @@ export const AdminProducts = () => {
                             placeholder="SKU-001"
                             className="h-12 w-full rounded-2xl border-border bg-background px-4 text-sm font-medium text-foreground"
                           />
+                          {selectedLineVariants.length > 0 && selectedLineProduct && (
+                            <div className="relative">
+                              <select
+                                value={line.variantId}
+                                onChange={(event) => handleVariantSelect(line.id, selectedLineProduct, event.target.value)}
+                                className="h-11 w-full appearance-none rounded-2xl border border-primary/20 bg-primary/5 px-4 pr-10 text-xs font-black text-foreground outline-none transition-colors focus:border-primary"
+                              >
+                                <option value="">SKU chính / tự nhập</option>
+                                {selectedLineVariants.map((variant) => (
+                                  <option key={variant.id} value={variant.id}>
+                                    {(variant.sku || 'SKU phụ') + ' - ' + (formatVariantAttributes(variant) || variant.value) + ` - còn ${variant.stock}`}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="rounded-2xl border border-border/50 bg-muted/20 p-2">
+                            <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Thuộc tính SKU</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {SKU_ATTRIBUTE_OPTIONS.map((attribute) => (
+                                <Input
+                                  key={attribute}
+                                  value={line.variantAttributes?.[attribute] || ''}
+                                  onChange={(event) => updateReceiptLineAttribute(line.id, attribute, event.target.value)}
+                                  placeholder={attribute}
+                                  className="h-9 rounded-xl bg-background px-3 text-xs font-medium"
+                                />
+                              ))}
+                            </div>
+                          </div>
                         </div>
 
                         <div className="space-y-3">

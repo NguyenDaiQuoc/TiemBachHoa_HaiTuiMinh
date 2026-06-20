@@ -49,6 +49,8 @@ const receiptLineSchema = z.object({
   productName: z.string().min(2).max(180).optional().nullable(),
   categoryId: z.string().uuid().optional().nullable(),
   sku: z.string().max(80).optional().nullable(),
+  variantId: z.string().max(120).optional().nullable(),
+  variantAttributes: z.record(z.string(), z.string()).optional().nullable(),
   imageUrl: z.string().optional().nullable(),
   imageUrls: z.array(z.string()).optional().default([]),
   quantity: z.number().int().positive(),
@@ -237,10 +239,10 @@ const slugify = (value: string) =>
   value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/Ä'/g, 'd')
+    .replaceAll('đ', 'd')
     .replace(/Đ/g, 'D')
     .toLowerCase()
-    .replace(/Ä'/g, 'd')
+    .replaceAll('đ', 'd')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || `item-${Date.now()}`;
 
@@ -271,7 +273,7 @@ const createUniqueProductSlug = async (tx: any, name: string) => {
 
 const resolveReceiptProduct = async (
   tx: any,
-  line: { productId?: string | null; productName?: string | null; categoryId?: string | null; sku?: string | null; imageUrl?: string | null; imageUrls?: string[]; quantity: number; costPrice: number; salePrice: number },
+  line: { productId?: string | null; productName?: string | null; categoryId?: string | null; sku?: string | null; variantId?: string | null; variantAttributes?: Record<string, string> | null; imageUrl?: string | null; imageUrls?: string[]; quantity: number; costPrice: number; salePrice: number },
   categoryId: string,
   options: { affectsStock: boolean; supplier?: string | null }
 ) => {
@@ -285,12 +287,38 @@ const resolveReceiptProduct = async (
   if (line.productId) {
     const product = await tx.product.findUnique({
       where: { id: line.productId },
-      select: { id: true, stock: true, initialStock: true, images: true, tags: true },
+      select: { id: true, stock: true, initialStock: true, images: true, tags: true, variantsJson: true, sku: true },
     });
     if (!product) throw new Error('Có sản phẩm trong phiếu nhập không hợp lệ.');
 
     const nextImages = Array.from(new Set([...imageUrls, ...product.images]));
     const nextTags = Array.from(new Set([...(product.tags || []), ...sourceTags]));
+    const variantAttributes = line.variantAttributes || {};
+    const hasVariantAttributes = Object.values(variantAttributes).some(Boolean);
+    const existingVariants = Array.isArray(product.variantsJson) ? product.variantsJson : [];
+    const variantSku = sku || undefined;
+    const variantKey = String(line.variantId || variantSku || '');
+    const previousVariant = existingVariants.find((variant: any) => String(variant.id || variant.sku || '') === variantKey);
+    const nextVariantStock = options.affectsStock ? Math.max(0, Number(previousVariant?.stock || 0)) + line.quantity : Math.max(0, Number(previousVariant?.stock || 0));
+    const nextVariants = hasVariantAttributes || variantSku
+      ? [
+          ...existingVariants.filter((variant: any) => String(variant.id || variant.sku || '') !== variantKey),
+          {
+            id: line.variantId || variantSku || `receipt-${Date.now()}`,
+            name: Object.entries(variantAttributes).map(([key, value]) => `${key}: ${value}`).join(' / ') || 'SKU nhập hàng',
+            value: Object.values(variantAttributes).filter(Boolean).join(' / ') || variantSku || 'SKU nhập hàng',
+            attributes: variantAttributes,
+            sku: variantSku,
+            costPrice: line.costPrice,
+            price: line.salePrice,
+            promotionalPrice: previousVariant?.promotionalPrice ?? null,
+            stock: nextVariantStock,
+            initialStock: Math.max(Number(previousVariant?.initialStock || 0), nextVariantStock),
+            images: imageUrls,
+          },
+        ]
+      : existingVariants;
+
     await tx.product.update({
       where: { id: product.id },
       data: {
@@ -304,6 +332,7 @@ const resolveReceiptProduct = async (
         price: line.salePrice,
         images: nextImages.length ? nextImages : [DEFAULT_PRODUCT_IMAGE],
         ...(sku ? { sku } : {}),
+        variantsJson: nextVariants,
         tags: nextTags,
         isActive: true,
         deletedAt: null,
@@ -330,7 +359,23 @@ const resolveReceiptProduct = async (
       initialStock: options.affectsStock ? line.quantity : 0,
       reorderLevel: 0,
       tags: sourceTags,
-      variantsJson: [],
+      variantsJson:
+        line.variantAttributes && Object.values(line.variantAttributes).some(Boolean)
+          ? [
+              {
+                id: line.variantId || sku || `receipt-${Date.now()}`,
+                name: Object.entries(line.variantAttributes).map(([key, value]) => `${key}: ${value}`).join(' / '),
+                value: Object.values(line.variantAttributes).filter(Boolean).join(' / '),
+                attributes: line.variantAttributes,
+                sku,
+                costPrice: line.costPrice,
+                price: line.salePrice,
+                stock: options.affectsStock ? line.quantity : 0,
+                initialStock: options.affectsStock ? line.quantity : 0,
+                images: imageUrls,
+              },
+            ]
+          : [],
       isActive: true,
     },
     select: { id: true },
@@ -1624,7 +1669,7 @@ router.get('/inventory/receipts', async (_req, res, next) => {
   try {
     const receipts = await prismaAny.stockReceipt.findMany({
       include: {
-        items: { include: { product: { select: { id: true, name: true, sku: true, images: true } } } },
+        items: { include: { product: { select: { id: true, name: true, sku: true, images: true, variantsJson: true } } } },
       },
       orderBy: { createdAt: 'desc' },
       take: 30,
@@ -1652,7 +1697,7 @@ router.post('/inventory/receipts', async (req: any, res, next) => {
           items: { create: receiptItems },
         },
         include: {
-          items: { include: { product: { select: { id: true, name: true, sku: true, images: true } } } },
+          items: { include: { product: { select: { id: true, name: true, sku: true, images: true, variantsJson: true } } } },
         },
       });
     });
@@ -1697,7 +1742,7 @@ router.patch('/inventory/receipts/:id', async (req: any, res, next) => {
           items: { create: receiptItems },
         },
         include: {
-          items: { include: { product: { select: { id: true, name: true, sku: true, images: true } } } },
+          items: { include: { product: { select: { id: true, name: true, sku: true, images: true, variantsJson: true } } } },
         },
       });
     });
@@ -1953,4 +1998,3 @@ router.patch('/orders/:id/status', async (req, res, next) => {
 });
 
 export default router;
-

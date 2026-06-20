@@ -32,12 +32,24 @@ const toLocalDateTimeValue = (value?: string | null) => {
 
 const toIsoOrNull = (value: string) => (value ? new Date(value).toISOString() : null);
 
+const getCampaignRuntimeStatus = (item: Pick<MarketingCampaignPayload, 'isActive' | 'startsAt' | 'endsAt'>) => {
+  if (!item.isActive) return { label: 'Tạm dừng', className: 'bg-muted text-muted-foreground' };
+  const now = Date.now();
+  const startsAt = item.startsAt ? new Date(item.startsAt).getTime() : null;
+  const endsAt = item.endsAt ? new Date(item.endsAt).getTime() : null;
+  if (startsAt && startsAt > now) return { label: 'Sắp chạy', className: 'bg-sky-500/10 text-sky-600' };
+  if (endsAt && endsAt <= now) return { label: 'Đã kết thúc', className: 'bg-zinc-500/10 text-zinc-600' };
+  return { label: 'Đang chạy', className: 'bg-emerald-500/10 text-emerald-600' };
+};
+
+const isCampaignRunning = (item: MarketingCampaignPayload) => getCampaignRuntimeStatus(item).label === 'Đang chạy';
+
 const slugify = (value: string) =>
   value
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/Ä'/g, 'd')
+    .replaceAll('đ', 'd')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
@@ -94,6 +106,7 @@ export const AdminMarketing = () => {
   const [bannerPromptProvider, setBannerPromptProvider] = useState<BannerPromptProvider>('LOCAL');
   const [imagePrompt, setImagePrompt] = useState('');
   const [generatedPrompt, setGeneratedPrompt] = useState('');
+  const [, setRuntimeTick] = useState(0);
   const [editingItem, setEditingItem] = useState<MarketingCampaignPayload | null>(null);
   const [form, setForm] = useState<MarketingCampaignFormPayload>(DEFAULT_FORM);
   const [productPickerValue, setProductPickerValue] = useState('');
@@ -133,6 +146,11 @@ export const AdminMarketing = () => {
 
   useEffect(() => {
     void loadData();
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setRuntimeTick((tick) => tick + 1), 30000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const filtered = useMemo(
@@ -339,9 +357,9 @@ export const AdminMarketing = () => {
 
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          { label: 'Flash Sale', count: items.filter((item) => item.type === 'FLASH_SALE' && item.isActive).length },
-          { label: 'Deal', count: items.filter((item) => item.type === 'DEAL' && item.isActive).length },
-          { label: 'Khuyến mãi', count: items.filter((item) => item.type === 'PROMOTION' && item.isActive).length },
+          { label: 'Flash Sale', count: items.filter((item) => item.type === 'FLASH_SALE' && isCampaignRunning(item)).length },
+          { label: 'Deal', count: items.filter((item) => item.type === 'DEAL' && isCampaignRunning(item)).length },
+          { label: 'Khuyến mãi', count: items.filter((item) => item.type === 'PROMOTION' && isCampaignRunning(item)).length },
         ].map((item) => (
           <div key={item.label} className="rounded-[28px] border border-border/50 bg-surface-default p-6">
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.label}</p>
@@ -366,6 +384,7 @@ export const AdminMarketing = () => {
           {filtered.map((item) => {
             const badge = getTypeBadge(item.type);
             const Icon = badge.icon;
+            const runtimeStatus = getCampaignRuntimeStatus(item);
             return (
               <div key={item.id} className="rounded-[28px] border border-border/50 bg-surface-default p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -375,8 +394,8 @@ export const AdminMarketing = () => {
                         <Icon className="h-3.5 w-3.5" />
                         {badge.label}
                       </span>
-                      <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.isActive ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
-                        {item.isActive ? 'Đang chạy' : 'Tạm dừng'}
+                      <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${runtimeStatus.className}`}>
+                        {runtimeStatus.label}
                       </span>
                     </div>
                     <div>
@@ -626,6 +645,4 @@ export const AdminMarketing = () => {
     </div>
   );
 };
-
-
 

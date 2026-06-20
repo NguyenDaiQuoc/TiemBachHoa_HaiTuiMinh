@@ -65,10 +65,10 @@ const slugify = (value: string) =>
   value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/Ä'/g, 'd')
+    .replaceAll('đ', 'd')
     .replace(/Đ/g, 'D')
     .toLowerCase()
-    .replace(/Ä'/g, 'd')
+    .replaceAll('đ', 'd')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || `item-${Date.now()}`;
 
@@ -81,7 +81,7 @@ const serializeProduct = (product: any) => ({
   variants: Array.isArray(product.variantsJson) && product.variantsJson.length ? [{ type: 'capacity', options: product.variantsJson }] : [],
 });
 
-const receiptProductSelect = { id: true, name: true, sku: true, images: true };
+const receiptProductSelect = { id: true, name: true, sku: true, images: true, variantsJson: true };
 
 const ensureReceiptCategory = async (tx: Prisma.TransactionClient) =>
   tx.category.upsert({
@@ -102,11 +102,15 @@ const buildReceiptLine = (item: any) => {
   const imageUrl = textOrNull(item.imageUrl);
   const imageUrls = Array.from(new Set([...(Array.isArray(item.imageUrls) ? item.imageUrls : []), imageUrl].map(textOrNull).filter((value): value is string => Boolean(value))));
   const sku = textOrNull(item.sku);
+  const variantId = textOrNull(item.variantId);
+  const variantAttributes = item.variantAttributes && typeof item.variantAttributes === 'object' && !Array.isArray(item.variantAttributes)
+    ? Object.fromEntries(Object.entries(item.variantAttributes).map(([key, value]) => [String(key), String(value || '').trim()]).filter(([, value]) => Boolean(value)))
+    : null;
   const productName = textOrNull(item.productName || item.name || item.search);
   const productId = textOrNull(item.productId);
   const categoryId = textOrNull(item.categoryId);
 
-  return { productId, productName, categoryId, sku, imageUrl, imageUrls, quantity, costPrice, salePrice };
+  return { productId, productName, categoryId, sku, variantId, variantAttributes, imageUrl, imageUrls, quantity, costPrice, salePrice };
 };
 
 const createUniqueProductSlug = async (tx: Prisma.TransactionClient, name: string) => {
@@ -143,11 +147,36 @@ const resolveReceiptProduct = async (
 ) => {
   const sourceTags = options.affectsStock ? [] : ['on-demand', 'external-supply', ...(options.supplier ? [`supplier:${options.supplier}`] : [])];
   if (line.productId) {
-    const product = await tx.product.findUnique({ where: { id: line.productId }, select: { id: true, stock: true, initialStock: true, images: true, tags: true } });
+    const product = await tx.product.findUnique({ where: { id: line.productId }, select: { id: true, stock: true, initialStock: true, images: true, tags: true, variantsJson: true, sku: true } });
     if (!product) throw new Error('Có sản phẩm trong phiếu nhập không hợp lệ');
 
     const nextImages = Array.from(new Set([...(line.imageUrls || []), ...product.images]));
     const nextTags = Array.from(new Set([...(product.tags || []), ...sourceTags]));
+    const variantAttributes = line.variantAttributes || {};
+    const hasVariantAttributes = Object.values(variantAttributes).some(Boolean);
+    const existingVariants = Array.isArray(product.variantsJson) ? product.variantsJson : [];
+    const variantSku = line.sku || undefined;
+    const variantKey = String(line.variantId || variantSku || '');
+    const previousVariant = existingVariants.find((variant: any) => String(variant.id || variant.sku || '') === variantKey) as any;
+    const nextVariantStock = options.affectsStock ? Math.max(0, Number(previousVariant?.stock || 0)) + line.quantity : Math.max(0, Number(previousVariant?.stock || 0));
+    const nextVariants = hasVariantAttributes || variantSku
+      ? [
+          ...existingVariants.filter((variant: any) => String(variant.id || variant.sku || '') !== variantKey),
+          {
+            id: line.variantId || variantSku || `receipt-${Date.now()}`,
+            name: Object.entries(variantAttributes).map(([key, value]) => `${key}: ${value}`).join(' / ') || 'SKU nhập hàng',
+            value: Object.values(variantAttributes).filter(Boolean).join(' / ') || variantSku || 'SKU nhập hàng',
+            attributes: variantAttributes,
+            sku: variantSku,
+            costPrice: line.costPrice,
+            price: line.salePrice,
+            promotionalPrice: previousVariant?.promotionalPrice ?? null,
+            stock: nextVariantStock,
+            initialStock: Math.max(Number(previousVariant?.initialStock || 0), nextVariantStock),
+            images: line.imageUrls || [],
+          },
+        ]
+      : existingVariants;
     await tx.product.update({
       where: { id: product.id },
       data: {
@@ -161,6 +190,7 @@ const resolveReceiptProduct = async (
         price: line.salePrice,
         images: nextImages.length ? nextImages : [DEFAULT_PRODUCT_IMAGE],
         ...(line.sku ? { sku: line.sku } : {}),
+        variantsJson: nextVariants,
         tags: nextTags,
         isActive: true,
         deletedAt: null,
@@ -187,7 +217,23 @@ const resolveReceiptProduct = async (
       initialStock: options.affectsStock ? line.quantity : 0,
       reorderLevel: 0,
       tags: sourceTags,
-      variantsJson: [],
+      variantsJson:
+        line.variantAttributes && Object.values(line.variantAttributes).some(Boolean)
+          ? [
+              {
+                id: line.variantId || line.sku || `receipt-${Date.now()}`,
+                name: Object.entries(line.variantAttributes).map(([key, value]) => `${key}: ${value}`).join(' / '),
+                value: Object.values(line.variantAttributes).filter(Boolean).join(' / '),
+                attributes: line.variantAttributes,
+                sku: line.sku,
+                costPrice: line.costPrice,
+                price: line.salePrice,
+                stock: options.affectsStock ? line.quantity : 0,
+                initialStock: options.affectsStock ? line.quantity : 0,
+                images: line.imageUrls,
+              },
+            ]
+          : [],
       isActive: true,
     },
     select: { id: true },
@@ -749,5 +795,3 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return fail(res, 'Không thể xử lý yêu cầu quản trị', 500);
   }
 }
-
-

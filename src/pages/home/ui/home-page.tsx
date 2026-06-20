@@ -107,6 +107,8 @@ type ActiveCampaignResponse = {
     slug: string;
     type: 'FLASH_SALE' | 'DEAL' | 'PROMOTION';
     description?: string | null;
+    bannerImage?: string | null;
+    startsAt?: string | null;
     endsAt?: string | null;
   };
   products: Product[];
@@ -124,9 +126,18 @@ const getTimeLeft = (endsAt?: string | null) => {
   };
 };
 
+const isCampaignCurrentlyRunning = (campaign?: ActiveCampaignResponse['campaign'] | null) => {
+  if (!campaign) return false;
+  const now = Date.now();
+  const startsAt = campaign.startsAt ? new Date(campaign.startsAt).getTime() : null;
+  const endsAt = campaign.endsAt ? new Date(campaign.endsAt).getTime() : null;
+  return (!startsAt || startsAt <= now) && (!endsAt || endsAt > now);
+};
+
 export const HomePage = () => {
   const [activeDeals, setActiveDeals] = useState<ActiveCampaignResponse[]>([]);
   const [activeDealIndex, setActiveDealIndex] = useState(0);
+  const [isCampaignOverlayOpen, setIsCampaignOverlayOpen] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(null));
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
@@ -139,7 +150,7 @@ export const HomePage = () => {
       if (active) setProducts([]);
     });
 
-    fetch('/api/campaigns/active?type=DEAL,FLASH_SALE')
+    fetch('/api/campaigns/active?type=DEAL,FLASH_SALE,PROMOTION')
       .then((response) => (response.ok ? response.json() : null))
       .then((payload) => {
         if (!active) return;
@@ -150,6 +161,7 @@ export const HomePage = () => {
             : [];
         setActiveDeals(campaigns);
         setActiveDealIndex(0);
+        setIsCampaignOverlayOpen(true);
         setTimeLeft(getTimeLeft(campaigns[0]?.campaign?.endsAt));
       })
       .catch(() => {
@@ -162,6 +174,7 @@ export const HomePage = () => {
   }, []);
 
   const activeDeal = activeDeals[activeDealIndex] || null;
+  const activeOverlayCampaign = activeDeals.find((item) => Boolean(item.campaign.bannerImage) && isCampaignCurrentlyRunning(item.campaign)) || null;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -178,6 +191,12 @@ export const HomePage = () => {
     return () => clearInterval(timer);
   }, [activeDeals.length]);
 
+  useEffect(() => {
+    if (!activeOverlayCampaign || !isCampaignOverlayOpen) return undefined;
+    const timer = window.setTimeout(() => setIsCampaignOverlayOpen(false), 9000);
+    return () => window.clearTimeout(timer);
+  }, [activeOverlayCampaign?.campaign.id, isCampaignOverlayOpen]);
+
   const formatNum = (n: number) => n.toString().padStart(2, '0');
   const displayProducts = products.length ? products : SAMPLE_PRODUCTS;
   const productsByCategory = (categorySlug: string, fallback: Product[]) => {
@@ -191,8 +210,45 @@ export const HomePage = () => {
   };
   const dealProducts = activeDeal?.products || [];
   const dealLink = activeDeal?.campaign?.slug ? `/${activeDeal.campaign.slug}` : '/flash-sale';
+  const showActiveDeal = Boolean(activeDeal && isCampaignCurrentlyRunning(activeDeal.campaign) && (!activeDeal.campaign.endsAt || timeLeft.totalMs > 0));
   return (
       <div className="container mx-auto px-4 py-12 space-y-20">
+        <AnimatePresence>
+          {activeOverlayCampaign && isCampaignOverlayOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                className="relative w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/20 bg-background shadow-2xl"
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsCampaignOverlayOpen(false)}
+                  className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background/90 text-foreground shadow-lg transition-colors hover:bg-primary hover:text-primary-foreground"
+                  aria-label="Đóng banner khuyến mãi"
+                >
+                  ×
+                </button>
+                <Link to={`/${activeOverlayCampaign.campaign.slug}`} onClick={() => setIsCampaignOverlayOpen(false)} className="block">
+                  <img src={activeOverlayCampaign.campaign.bannerImage || ''} alt={activeOverlayCampaign.campaign.name} className="h-auto max-h-[72vh] w-full object-cover" />
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 to-transparent p-5 text-white">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/80">Đang khuyến mãi</p>
+                    <h2 className="mt-1 text-2xl font-black uppercase italic tracking-tight md:text-4xl">{activeOverlayCampaign.campaign.name}</h2>
+                    {activeOverlayCampaign.campaign.endsAt && (
+                      <p className="mt-2 text-sm font-bold text-white/85">Kết thúc: {new Date(activeOverlayCampaign.campaign.endsAt).toLocaleString('vi-VN')}</p>
+                    )}
+                  </div>
+                </Link>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <section className="space-y-6 text-center py-10 md:py-20 animate-in fade-in slide-in-from-bottom-10 duration-1000">
           <span className="text-primary font-bold tracking-[0.3em] text-xs uppercase">Chính hãng • Giá tốt • Hiện đại</span>
           <h1 className="text-5xl md:text-8xl font-heading font-black text-foreground uppercase italic tracking-tighter leading-none">
@@ -237,7 +293,7 @@ export const HomePage = () => {
         </section>
 
         {/* Flash Sale */}
-        {activeDeal && (
+        {showActiveDeal && activeDeal && (
         <section className="bg-foreground text-background rounded-[3rem] p-8 md:p-12 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[100px] -mr-48 -mt-48 group-hover:bg-primary/30 transition-colors duration-1000" />
           
@@ -316,8 +372,8 @@ export const HomePage = () => {
                     <div className="space-y-1 text-background">
                       <h3 className="text-xs font-black uppercase tracking-tight line-clamp-1 group-hover/item:text-primary transition-colors">{product.name}</h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-primary italic">{(product.promotionalPrice || product.price / 2).toLocaleString('vi-VN')} Ä'</span>
-                        <span className="text-[10px] line-through opacity-40 font-bold">{product.price.toLocaleString('vi-VN')} Ä'</span>
+                        <span className="text-sm font-black text-primary italic">{(product.promotionalPrice || product.price / 2).toLocaleString('vi-VN')} ?</span>
+                        <span className="text-[10px] line-through opacity-40 font-bold">{product.price.toLocaleString('vi-VN')} ?</span>
                       </div>
                     </div>
                   </div>
@@ -494,4 +550,3 @@ export const HomePage = () => {
       </div>
   );
 };
-

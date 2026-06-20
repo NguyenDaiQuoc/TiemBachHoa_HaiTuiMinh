@@ -174,6 +174,7 @@ export interface InventoryReceiptItemPayload {
     name: string;
     sku?: string | null;
     images?: string[];
+    variantsJson?: unknown[] | null;
   };
 }
 
@@ -182,6 +183,8 @@ export interface InventoryReceiptLineInput {
   productName?: string;
   categoryId?: string | null;
   sku?: string | null;
+  variantId?: string | null;
+  variantAttributes?: Record<string, string> | null;
   imageUrl?: string | null;
   imageUrls?: string[];
   quantity: number;
