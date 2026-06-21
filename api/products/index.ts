@@ -44,6 +44,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const maxPrice = url.searchParams.get('maxPrice');
     const minRating = url.searchParams.get('minRating');
     const sortBy = url.searchParams.get('sortBy');
+    const brand = url.searchParams.get('brand');
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
     const limit = Math.min(48, Math.max(1, Number(url.searchParams.get('limit')) || 12));
     const skip = (page - 1) * limit;
@@ -62,6 +63,28 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
             }
           : {},
         category ? { OR: [{ category: { slug: category } }, { category: { name: category } }] } : {},
+        brand
+          ? {
+              OR: [
+                {
+                  brand: {
+                    in: brand
+                      .split(',')
+                      .map((value) => value.trim())
+                      .filter(Boolean),
+                  },
+                },
+                {
+                  subcategory: {
+                    in: brand
+                      .split(',')
+                      .map((value) => value.trim())
+                      .filter(Boolean),
+                  },
+                },
+              ],
+            }
+          : {},
         minPrice ? { price: { gte: Number(minPrice) } } : {},
         maxPrice ? { price: { lte: Number(maxPrice) } } : {},
       ],

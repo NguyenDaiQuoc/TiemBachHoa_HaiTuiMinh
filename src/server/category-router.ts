@@ -23,16 +23,16 @@ const ensureCoreCategories = async () => {
   await prisma.category.updateMany({ where: { slug: 'san-pham-nhap-kho' }, data: { isActive: false } }).catch(() => undefined);
 };
 
-router.get("/", async (req, res, next) => {
+router.get("/", async (_req, res, next) => {
   try {
     await ensureCoreCategories();
     const categories = await prisma.category.findMany({
       where: {
         slug: { in: coreCategories.map((category) => category.slug) },
         isActive: true,
-        deletedAt: null
+        deletedAt: null,
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
     return sendSuccess(res, categories);
   } catch (error) {

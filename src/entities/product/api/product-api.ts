@@ -165,6 +165,25 @@ export interface ProductBrand {
   count: number;
 }
 
+export interface ProductFacetChild {
+  name: string;
+  count: number;
+}
+
+export interface ProductCategoryFacet {
+  id: string;
+  name: string;
+  slug: string;
+  count: number;
+  children: ProductFacetChild[];
+}
+
+export interface ProductFacetsResponse {
+  categories: ProductCategoryFacet[];
+  brands: ProductBrand[];
+  total: number;
+}
+
 export const fetchBrands = async (category?: string): Promise<ProductBrand[]> => {
   const params = new URLSearchParams();
   if (category) params.set('category', category);
@@ -183,4 +202,21 @@ export const useProductBrands = (category?: string) =>
   useQuery({
     queryKey: [...productKeys.all, 'brands', category || 'all'] as const,
     queryFn: () => fetchBrands(category),
+  });
+
+export const fetchProductFacets = async (): Promise<ProductFacetsResponse> => {
+  const response = await fetch(`${BASE_URL}/facets`);
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(payload?.error || payload?.message || 'Không thể tải bộ lọc sản phẩm');
+  }
+
+  return (payload.data || { categories: [], brands: [], total: 0 }) as ProductFacetsResponse;
+};
+
+export const useProductFacets = () =>
+  useQuery({
+    queryKey: [...productKeys.all, 'facets'] as const,
+    queryFn: fetchProductFacets,
   });

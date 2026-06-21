@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronRight, Filter, LayoutGrid, List, ListFilter, Loader2, Star, Store, Tag, X } from 'lucide-react';
-import { useProducts, useProductBrands } from '@/src/entities/product/api/product-api';
-import { usePublicCategories } from '@/src/entities/category/api/category-api';
+import { useProducts, useProductFacets } from '@/src/entities/product/api/product-api';
 import { Product } from '@/src/entities/product/model/types';
 import { ProductCard } from '@/src/entities/product/ui/product-card';
 import { cn } from '@/src/shared/lib/utils';
@@ -41,8 +40,10 @@ export const SearchPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const { data: categories = [] } = usePublicCategories();
-  const { data: brands = [] } = useProductBrands(category || undefined);
+  const { data: facets } = useProductFacets();
+  const categories = facets?.categories || [];
+  const currentCategoryFacet = categories.find((option) => option.slug === category);
+  const brands = category ? currentCategoryFacet?.children || [] : facets?.brands || [];
 
   const { data, isLoading, isFetching } = useProducts({
     query,
@@ -122,6 +123,20 @@ export const SearchPage = () => {
     }
     // Reset brand selection when switching category since brand list changes.
     nextParams.delete('brand');
+    nextParams.set('page', '1');
+    setSearchParams(nextParams);
+  };
+
+  const selectCategoryChild = (categorySlug: string, childName: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    const active = category === categorySlug && selectedBrands.includes(childName);
+
+    nextParams.set('category', categorySlug);
+    if (active) {
+      nextParams.delete('brand');
+    } else {
+      nextParams.set('brand', childName);
+    }
     nextParams.set('page', '1');
     setSearchParams(nextParams);
   };
@@ -280,6 +295,81 @@ export const SearchPage = () => {
     </div>
   );
 
+  const CategoryFacetList = ({ onSelect }: { onSelect?: () => void }) => (
+    <div className="space-y-1">
+      <button
+        onClick={() => {
+          selectCategory(category || '');
+          if (!category) onSelect?.();
+        }}
+        className={cn(
+          'flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-black uppercase tracking-wider transition-all',
+          !category ? 'bg-primary text-primary-foreground' : 'text-foreground/80 hover:bg-muted'
+        )}
+      >
+        <ListFilter className="h-4 w-4" />
+        <span className="flex-1">Tất cả sản phẩm</span>
+        <span className={cn('text-[10px] font-black', !category ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+          {facets?.total || 0}
+        </span>
+        {!category && <ChevronRight className="h-4 w-4" />}
+      </button>
+
+      {categories.map((option: any) => {
+        const active = category === option.slug;
+
+        return (
+          <div key={option.id || option.slug} className="space-y-1">
+            <button
+              onClick={() => {
+                selectCategory(option.slug);
+                onSelect?.();
+              }}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-black uppercase tracking-wider transition-all',
+                active ? 'bg-primary text-primary-foreground' : 'text-foreground/80 hover:bg-muted'
+              )}
+            >
+              <span className="flex-1 truncate">{option.name}</span>
+              <span className={cn('text-[10px] font-black', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+                {option.count || 0}
+              </span>
+              {active && <ChevronRight className="h-4 w-4" />}
+            </button>
+
+            {option.children?.length > 0 && (
+              <div className="space-y-1 pl-3">
+                {option.children.map((child: any) => {
+                  const childActive = active && selectedBrands.includes(child.name);
+
+                  return (
+                    <button
+                      key={`${option.slug}-${child.name}`}
+                      onClick={() => {
+                        selectCategoryChild(option.slug, child.name);
+                        onSelect?.();
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-extrabold transition-all',
+                        childActive ? 'bg-accent text-accent-foreground' : 'text-foreground/70 hover:bg-muted'
+                      )}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-50" />
+                      <span className="flex-1 truncate">{child.name}</span>
+                      <span className={cn('text-[10px] font-black', childActive ? 'text-accent-foreground/80' : 'text-muted-foreground')}>
+                        {child.count || 0}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="bg-background font-sans">
       <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -361,7 +451,7 @@ export const SearchPage = () => {
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground">Tất cả danh mục</h3>
                 </div>
                 <div className="p-3">
-                  <CategoryList />
+                  <CategoryFacetList />
                 </div>
               </div>
 
@@ -503,7 +593,7 @@ export const SearchPage = () => {
               <div className="space-y-8">
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Danh mục</h4>
-                  <CategoryList onSelect={() => undefined} />
+                  <CategoryFacetList onSelect={() => undefined} />
                 </div>
 
                 <FilterSections inDrawer />

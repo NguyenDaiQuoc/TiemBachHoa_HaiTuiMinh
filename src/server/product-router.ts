@@ -63,12 +63,24 @@ router.get('/', async (req, res, next) => {
           : {},
         req.query.brand
           ? {
-              brand: {
-                in: String(req.query.brand)
-                  .split(",")
-                  .map((value) => value.trim())
-                  .filter(Boolean),
-              },
+              OR: [
+                {
+                  brand: {
+                    in: String(req.query.brand)
+                      .split(',')
+                      .map((value) => value.trim())
+                      .filter(Boolean),
+                  },
+                },
+                {
+                  subcategory: {
+                    in: String(req.query.brand)
+                      .split(',')
+                      .map((value) => value.trim())
+                      .filter(Boolean),
+                  },
+                },
+              ],
             }
           : {},
         minPrice ? { price: { gte: Number(minPrice) } } : {},
@@ -140,6 +152,79 @@ router.get('/brands', async (req, res, next) => {
       .map((item) => ({ name: item.brand as string, count: item._count._all }));
 
     return res.status(200).json({ success: true, data: brands, message: 'Tải danh sách thương hiệu thành công' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/facets', async (_req, res, next) => {
+  try {
+    const baseWhere: Prisma.ProductWhereInput = { isActive: true, deletedAt: null };
+
+    const [categories, categoryCounts, brandCounts, subcategoryCounts, total] = await Promise.all([
+      prisma.category.findMany({
+        where: { isActive: true, deletedAt: null },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.product.groupBy({
+        by: ['categoryId'],
+        where: baseWhere,
+        _count: { _all: true },
+      }),
+      prisma.product.groupBy({
+        by: ['categoryId', 'brand'],
+        where: { ...baseWhere, brand: { not: null } },
+        _count: { _all: true },
+      }),
+      prisma.product.groupBy({
+        by: ['categoryId', 'subcategory'],
+        where: { ...baseWhere, subcategory: { not: null } },
+        _count: { _all: true },
+      }),
+      prisma.product.count({ where: baseWhere }),
+    ]);
+
+    const countsByCategory = new Map(categoryCounts.map((item) => [item.categoryId, item._count._all]));
+
+    const childrenByCategory = new Map<string, Map<string, number>>();
+    const addChild = (categoryId: string, name: string | null, count: number) => {
+      const cleanName = name?.trim();
+      if (!cleanName) return;
+      const current = childrenByCategory.get(categoryId) ?? new Map<string, number>();
+      current.set(cleanName, (current.get(cleanName) || 0) + count);
+      childrenByCategory.set(categoryId, current);
+    };
+
+    brandCounts.forEach((item) => addChild(item.categoryId, item.brand, item._count._all));
+    subcategoryCounts.forEach((item) => addChild(item.categoryId, item.subcategory, item._count._all));
+
+    const categoryFacets = categories
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        count: countsByCategory.get(category.id) || 0,
+        children: Array.from(childrenByCategory.get(category.id)?.entries() || [])
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'vi')),
+      }))
+      .filter((category) => category.count > 0 || category.children.length > 0);
+
+    const brands = Array.from(
+      brandCounts.reduce((map, item) => {
+        const name = item.brand?.trim();
+        if (name) map.set(name, (map.get(name) || 0) + item._count._all);
+        return map;
+      }, new Map<string, number>())
+    )
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'vi'));
+
+    return res.status(200).json({
+      success: true,
+      data: { categories: categoryFacets, brands, total },
+      message: 'Tải bộ lọc sản phẩm thành công',
+    });
   } catch (error) {
     next(error);
   }
