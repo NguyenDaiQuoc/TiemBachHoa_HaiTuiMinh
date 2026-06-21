@@ -58,6 +58,11 @@ type ReceiptLineDraft = {
   salePrice: number;
 };
 
+const RECEIPT_IMAGE_MAX_DIMENSION = 960;
+const RECEIPT_IMAGE_QUALITY = 0.72;
+const RECEIPT_MAX_DATA_URL_BYTES = 450_000;
+const RECEIPT_MAX_PAYLOAD_IMAGE_BYTES = 2_500_000;
+
 const SKU_ATTRIBUTE_OPTIONS = ['Màu', 'Size', 'Mùi', 'Dung lượng', 'Phiên bản', 'Chất liệu', 'Model'];
 
 const copy = {
@@ -272,6 +277,48 @@ const readFileAsDataUrl = (file: File) =>
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+
+const dataUrlByteSize = (value: string) => Math.ceil(value.length * 0.75);
+const isDataUrl = (value: string) => value.startsWith('data:');
+
+const resizeReceiptImage = async (file: File): Promise<string> => {
+  const original = await readFileAsDataUrl(file);
+  if (!file.type.startsWith('image/') || typeof Image === 'undefined') return original;
+
+  const image = new Image();
+  image.src = original;
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = reject;
+  });
+
+  const ratio = Math.min(1, RECEIPT_IMAGE_MAX_DIMENSION / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * ratio));
+  const height = Math.max(1, Math.round(image.height * ratio));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return original;
+  context.drawImage(image, 0, 0, width, height);
+
+  const resized = canvas.toDataURL('image/jpeg', RECEIPT_IMAGE_QUALITY);
+  return dataUrlByteSize(resized) < dataUrlByteSize(original) ? resized : original;
+};
+
+const compactReceiptImages = (images: string[]) => {
+  let usedBytes = 0;
+
+  return images.filter((image) => {
+    if (!image) return false;
+    if (!isDataUrl(image)) return true;
+
+    const bytes = dataUrlByteSize(image);
+    if (bytes > RECEIPT_MAX_DATA_URL_BYTES || usedBytes + bytes > RECEIPT_MAX_PAYLOAD_IMAGE_BYTES) return false;
+    usedBytes += bytes;
+    return true;
+  });
+};
 
 export const AdminProducts = () => {
   const { refreshTick } = useOutletContext<AdminOutletContext>();
@@ -632,10 +679,12 @@ export const AdminProducts = () => {
     if (!files?.length) return;
 
     try {
-      const imageUrls = await Promise.all(Array.from(files).map(readFileAsDataUrl));
+      const imageUrls = await Promise.all(Array.from(files).map(resizeReceiptImage));
+      const skipped = imageUrls.filter((image) => isDataUrl(image) && dataUrlByteSize(image) > RECEIPT_MAX_DATA_URL_BYTES).length;
       const line = receiptLines.find((item) => item.id === lineId);
-      const nextImages = [...imageUrls, ...(line?.imageUrls || [])].filter(Boolean).slice(0, 8);
+      const nextImages = compactReceiptImages([...imageUrls, ...(line?.imageUrls || [])]).slice(0, 8);
       updateReceiptLine(lineId, { imageUrl: nextImages[0] || '', imageUrls: nextImages });
+      if (skipped) toast.warning(locale === 'vi' ? 'Một số ảnh quá lớn đã được bỏ qua. Hãy dùng ảnh nhỏ hơn hoặc URL ảnh.' : 'Some oversized images were skipped. Use smaller images or image URLs.');
     } catch {
       toast.error(locale === 'vi' ? 'Không thể đọc ảnh sản phẩm.' : 'Unable to read product image.');
     }
@@ -656,19 +705,26 @@ export const AdminProducts = () => {
   };
 
   const handleSaveReceipt = async () => {
-    const normalizedLines = validReceiptLines.map(({ line, product, productName, imageUrl, imageUrls }) => ({
-      productId: product?.id,
-      productName: product ? undefined : productName,
-      categoryId: product ? undefined : line.categoryId || undefined,
-      sku: line.sku.trim() || product?.sku || undefined,
-      variantId: line.variantId || undefined,
-      variantAttributes: Object.keys(line.variantAttributes || {}).length ? line.variantAttributes : undefined,
-      imageUrl: imageUrl || undefined,
-      imageUrls: imageUrls.length ? imageUrls : undefined,
-      quantity: Math.max(1, Number(line.quantity) || 1),
-      costPrice: Math.max(0, Number(line.costPrice) || 0),
-      salePrice: Math.max(1, Number(line.salePrice) || 0),
-    }));
+    let droppedImages = 0;
+    const normalizedLines = validReceiptLines.map(({ line, product, productName, imageUrl, imageUrls }) => {
+      const compactImages = compactReceiptImages(imageUrls);
+      droppedImages += Math.max(0, imageUrls.length - compactImages.length);
+      const compactImageUrl = compactImages[0] || (!isDataUrl(imageUrl) ? imageUrl : '');
+
+      return {
+        productId: product?.id,
+        productName: product ? undefined : productName,
+        categoryId: product ? undefined : line.categoryId || undefined,
+        sku: line.sku.trim() || product?.sku || undefined,
+        variantId: line.variantId || undefined,
+        variantAttributes: Object.keys(line.variantAttributes || {}).length ? line.variantAttributes : undefined,
+        imageUrl: compactImageUrl || undefined,
+        imageUrls: compactImages.length ? compactImages : undefined,
+        quantity: Math.max(1, Number(line.quantity) || 1),
+        costPrice: Math.max(0, Number(line.costPrice) || 0),
+        salePrice: Math.max(1, Number(line.salePrice) || 0),
+      };
+    });
 
     if (normalizedLines.length === 0 || normalizedLines.some((line) => (!line.productId && (!line.productName || !line.categoryId)) || line.salePrice <= 0 || line.quantity <= 0)) {
       toast.error(t.receiptRequired);
@@ -682,6 +738,10 @@ export const AdminProducts = () => {
       receivedAt: new Date(`${receiptDate}T08:00:00`).toISOString(),
       items: normalizedLines,
     };
+
+    if (droppedImages) {
+      toast.warning(locale === 'vi' ? 'Một số ảnh quá lớn không được gửi để tránh lỗi 413. Hãy dùng URL ảnh hoặc ảnh nhẹ hơn.' : 'Some oversized images were not sent to avoid a 413 error. Use image URLs or smaller images.');
+    }
 
     setReceiptSubmitting(true);
     try {

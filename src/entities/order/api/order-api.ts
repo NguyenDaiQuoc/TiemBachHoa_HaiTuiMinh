@@ -31,7 +31,7 @@ export const fetchOrder = async (id: string) => {
 // Admin endpoints
 export const fetchAdminOrders = async () => {
   const response = await fetch("/api/admin/orders", {
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders({}, 'admin'),
   });
   
   if (!response.ok) throw new Error("Failed to fetch admin orders");
@@ -42,7 +42,7 @@ export const fetchAdminOrders = async () => {
 export const updateOrderStatus = async ({ id, status }: { id: string; status: string }) => {
   const response = await fetch(`${ADMIN_BASE_URL}/${id}/status`, {
     method: "PATCH",
-    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+    headers: getAuthHeaders({ "Content-Type": "application/json" }, 'admin'),
     body: JSON.stringify({ status }),
   });
   if (!response.ok) {
@@ -55,7 +55,7 @@ export const updateOrderStatus = async ({ id, status }: { id: string; status: st
 export const updateBatchOrderStatus = async ({ ids, status }: { ids: string[]; status: string }) => {
   const response = await fetch(`${ADMIN_BASE_URL}/batch-status`, {
     method: "POST",
-    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+    headers: getAuthHeaders({ "Content-Type": "application/json" }, 'admin'),
     body: JSON.stringify({ ids, status }),
   });
   if (!response.ok) {
@@ -77,7 +77,7 @@ export const useAdminOrders = () => {
     queryKey: [...orderKeys.all, "admin-list"],
     queryFn: async () => {
        const res = await fetch("/api/admin/orders", {
-         headers: getAuthHeaders(),
+         headers: getAuthHeaders({}, 'admin'),
        });
        
        if (!res.ok) throw new Error("Failed to fetch admin orders");
