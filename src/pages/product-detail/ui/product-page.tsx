@@ -7,6 +7,8 @@ import {
   BadgeCheck,
   Check,
   ChevronRight,
+  Minus,
+  Plus,
   Eye,
   Flame,
   Heart,
@@ -175,11 +177,18 @@ export const ProductDetailPage = () => {
   const [reviewContent, setReviewContent] = useState('');
   const [reviewMedia, setReviewMedia] = useState<CommunityReviewMedia[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [quantity, setQuantity] = useState(1);
+  const [cartFlyAnimation, setCartFlyAnimation] = useState<{
+    id: number;
+    image: string;
+    from: { x: number; y: number; width: number; height: number };
+    to: { x: number; y: number };
+  } | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   const addRecentlyViewed = useRecentlyViewedStore((state) => state.addProduct);
   const recentlyViewedProducts = useRecentlyViewedStore((state) => state.products);
-  const addItem = useCartStore((state) => state.addItem);
+  const restoreItems = useCartStore((state) => state.restoreItems);
   const isAuthenticated = useAuthStore((state) => !!state.token);
   const canonicalProductKey = product?.id || id || '';
 
@@ -221,6 +230,10 @@ export const ProductDetailPage = () => {
   }, [product?.id]);
 
   useEffect(() => {
+    setQuantity(1);
+  }, [product?.id]);
+
+  useEffect(() => {
     let active = true;
     if (!product?.categoryId) {
       setRelatedProducts([]);
@@ -256,6 +269,7 @@ export const ProductDetailPage = () => {
   const recentlyViewed = useMemo(() => recentlyViewedProducts.filter((entry) => entry.id !== product?.id), [product?.id, recentlyViewedProducts]);
   const similarProducts = relatedProducts.filter((entry) => entry.id !== product?.id).slice(0, 4);
   const frequentlyBoughtTogether = similarProducts.slice(0, 2);
+  const maxPurchasableQuantity = Math.max(1, product?.stock || 1);
 
   const comparisonRows = useMemo(() => {
     if (!product) return [];
@@ -274,9 +288,40 @@ export const ProductDetailPage = () => {
     }
   };
 
+  const updateQuantity = (nextQuantity: number) => {
+    setQuantity(Math.min(maxPurchasableQuantity, Math.max(1, Math.trunc(nextQuantity) || 1)));
+  };
+
+  const playAddToCartAnimation = () => {
+    if (!product || reduceMotion) return;
+
+    const source = galleryRef.current?.querySelector('img');
+    const target = document.querySelector('[data-cart-target]');
+    if (!(source instanceof HTMLImageElement) || !(target instanceof HTMLElement)) return;
+
+    const sourceRect = source.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    setCartFlyAnimation({
+      id: Date.now(),
+      image: product.images?.[0] || product.image || source.src,
+      from: {
+        x: sourceRect.left + sourceRect.width / 2,
+        y: sourceRect.top + sourceRect.height / 2,
+        width: Math.min(96, sourceRect.width),
+        height: Math.min(96, sourceRect.height),
+      },
+      to: {
+        x: targetRect.left + targetRect.width / 2,
+        y: targetRect.top + targetRect.height / 2,
+      },
+    });
+  };
+
   const handleAddToCart = () => {
     if (!product) return;
-    addItem({ ...product, price: activePrice });
+    const selectedQuantity = Math.min(maxPurchasableQuantity, Math.max(1, quantity));
+    restoreItems([{ ...product, price: activePrice, quantity: selectedQuantity }]);
+    playAddToCartAnimation();
     toast.success('Đã thêm sản phẩm vào giỏ hàng');
   };
 
@@ -503,6 +548,41 @@ export const ProductDetailPage = () => {
             ) : null}
 
             <div className="space-y-4">
+              <div className="flex flex-col gap-3 rounded-[24px] border border-border/60 bg-card p-4 shadow-soft sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Số lượng</p>
+                  <p className="mt-1 text-xs font-semibold text-muted-foreground">Còn {product.stock} sản phẩm</p>
+                </div>
+                <div className="flex h-12 w-full items-center justify-between rounded-2xl border border-border bg-background px-2 sm:w-44">
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(quantity - 1)}
+                    disabled={quantity <= 1}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Giảm số lượng"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={maxPurchasableQuantity}
+                    value={quantity}
+                    onChange={(event) => updateQuantity(Number(event.target.value))}
+                    className="h-full w-16 bg-transparent text-center text-sm font-black outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    aria-label="Số lượng sản phẩm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(quantity + 1)}
+                    disabled={quantity >= maxPurchasableQuantity}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Tăng số lượng"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   onClick={handleAddToCart}
@@ -880,7 +960,7 @@ export const ProductDetailPage = () => {
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Frequently bought together</p>
                 <h2 className="mt-2 text-3xl font-black uppercase tracking-tight">Thường được mua cùng</h2>
               </div>
-              <Button onClick={() => frequentlyBoughtTogether.forEach((entry) => addItem(entry))} className="rounded-2xl text-xs font-black uppercase tracking-widest">
+              <Button onClick={() => restoreItems(frequentlyBoughtTogether.map((entry) => ({ ...entry, quantity: 1 })))} className="rounded-2xl text-xs font-black uppercase tracking-widest">
                 Thêm combo
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -971,6 +1051,38 @@ export const ProductDetailPage = () => {
       />
 
       <AnimatePresence>
+        {cartFlyAnimation && (
+          <motion.img
+            key={cartFlyAnimation.id}
+            src={cartFlyAnimation.image}
+            alt=""
+            initial={{
+              x: cartFlyAnimation.from.x - cartFlyAnimation.from.width / 2,
+              y: cartFlyAnimation.from.y - cartFlyAnimation.from.height / 2,
+              width: cartFlyAnimation.from.width,
+              height: cartFlyAnimation.from.height,
+              opacity: 0.95,
+              scale: 1,
+              rotate: 0,
+            }}
+            animate={{
+              x: cartFlyAnimation.to.x - 18,
+              y: cartFlyAnimation.to.y - 18,
+              width: 36,
+              height: 36,
+              opacity: 0.25,
+              scale: 0.7,
+              rotate: 12,
+            }}
+            exit={{ opacity: 0, scale: 0.4 }}
+            transition={{ type: 'spring', stiffness: 140, damping: 18, mass: 0.7 }}
+            onAnimationComplete={() => setCartFlyAnimation(null)}
+            className="pointer-events-none fixed left-0 top-0 z-[120] rounded-2xl border-2 border-background object-cover shadow-2xl"
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {!!socialProofQuery.data?.latestPurchaseCity && (
           <motion.div
             initial={reduceMotion ? undefined : { x: -80, opacity: 0 }}
@@ -993,5 +1105,3 @@ export const ProductDetailPage = () => {
     </div>
   );
 };
-
-

@@ -238,6 +238,7 @@ export const Header = () => {
             <AccountDropdown />
 
             <motion.div
+              data-cart-target
               className="group relative cursor-pointer"
               onClick={() => setIsCartOpen(true)}
               whileHover={{ scale: 1.05 }}
