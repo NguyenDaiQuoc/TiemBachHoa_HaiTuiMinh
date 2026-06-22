@@ -7,11 +7,12 @@ import { calculateShippingPrice } from '@/src/entities/shipping/lib/shipping-eng
 
 export const OrderSummary = () => {
   const { items, totalPrice } = useCartStore();
-  const { selectedShippingMethod } = useCheckoutStore();
+  const { currentOrder, selectedShippingMethod } = useCheckoutStore();
   
-  const subtotal = totalPrice();
-  const shipping = selectedShippingMethod ? calculateShippingPrice(selectedShippingMethod) : 0;
-  const total = subtotal + shipping;
+  const displayItems = currentOrder?.items?.length ? currentOrder.items : items;
+  const shipping = currentOrder ? currentOrder.shippingFee : selectedShippingMethod ? calculateShippingPrice(selectedShippingMethod) : 0;
+  const total = currentOrder ? currentOrder.totalAmount : totalPrice() + shipping;
+  const subtotal = Math.max(0, total - shipping);
 
   return (
     <div className="bg-muted/30 rounded-3xl p-6 space-y-6 sticky top-24">
@@ -19,7 +20,7 @@ export const OrderSummary = () => {
       
       <ScrollArea className="max-h-[300px] pr-4">
         <div className="space-y-4">
-          {items.map((item) => (
+          {displayItems.map((item) => (
             <div key={item.id} className="flex gap-4">
               <div className="h-16 w-12 rounded-lg overflow-hidden border bg-background shrink-0">
                 <img src={item.image} alt={item.name} className="h-full w-full object-cover" />

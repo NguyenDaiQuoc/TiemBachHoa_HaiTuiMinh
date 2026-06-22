@@ -1,7 +1,6 @@
 import { Order, OrderStatus, PaymentStatus } from '@/src/entities/order/model/types';
 import { PaymentMethod } from '@/src/entities/payment/model/types';
 import { generateTransferContent } from '@/src/entities/order/lib/order-utils';
-import { QRCodeSVG } from 'qrcode.react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, Loader2, Copy, ExternalLink, ArrowRight, RefreshCw, TimerReset } from 'lucide-react';
@@ -28,6 +27,15 @@ const bankTransferConfig = {
   accountHolder: readViteEnv('VITE_BANK_ACCOUNT_HOLDER'),
 };
 
+const buildVietQrImageUrl = (bankCode: string, accountNumber: string, accountHolder: string, amount: number, content: string) => {
+  const params = new URLSearchParams({
+    amount: String(Math.round(amount)),
+    addInfo: content,
+    accountName: accountHolder,
+  });
+  return `https://img.vietqr.io/image/${encodeURIComponent(bankCode)}-${encodeURIComponent(accountNumber)}-compact2.png?${params.toString()}`;
+};
+
 const isPaidStatus = (value?: string) => value === 'PAID' || value === PaymentStatus.SUCCESS;
 
 export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
@@ -48,9 +56,10 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
     () => generateTransferContent(order.orderNumber || order.id, order.shippingInfo.fullName),
     [order.id, order.orderNumber, order.shippingInfo.fullName]
   );
-  const bankQrValue = bankTransferConfig.accountNumber
-    ? `BANK:${bankTransferConfig.bankCode || bankTransferConfig.bankName}|ACC:${bankTransferConfig.accountNumber}|NAME:${bankTransferConfig.accountHolder}|AMOUNT:${Math.round(order.totalAmount)}|CONTENT:${transferContent}`
-    : `PAYMENT_CONFIG_MISSING|ORDER:${trackingCode}|AMOUNT:${Math.round(order.totalAmount)}|CONTENT:${transferContent}`;
+  const hasBankConfig = Boolean(bankTransferConfig.bankCode && bankTransferConfig.accountNumber && bankTransferConfig.accountHolder);
+  const bankQrImageUrl = hasBankConfig
+    ? buildVietQrImageUrl(bankTransferConfig.bankCode, bankTransferConfig.accountNumber, bankTransferConfig.accountHolder, order.totalAmount, transferContent)
+    : '';
 
   const checkPaymentStatus = useCallback(
     async (isSilent = false) => {
@@ -247,12 +256,16 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
 
             <div className="flex flex-col items-center space-y-4">
               <div className="p-4 bg-surface-default rounded-3xl shadow-soft border-4 border-border/10">
-                <QRCodeSVG
-                  value={bankQrValue}
-                  size={200}
-                  level="H"
-                  includeMargin
-                />
+                {hasBankConfig ? (
+                  <img src={bankQrImageUrl} alt="Mã VietQR chuyển khoản" className="h-[240px] w-[240px] rounded-2xl bg-white object-contain" />
+                ) : (
+                  <div className="flex h-[240px] w-[240px] flex-col items-center justify-center rounded-2xl border border-dashed border-destructive/30 bg-destructive/5 p-5 text-center">
+                    <p className="text-sm font-black text-destructive">Chưa cấu hình VietQR</p>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      Cần thêm VITE_BANK_CODE, VITE_BANK_ACCOUNT_NUMBER và VITE_BANK_ACCOUNT_HOLDER trên Vercel.
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col items-center gap-3 text-center">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">

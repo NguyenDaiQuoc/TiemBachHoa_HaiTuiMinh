@@ -78,6 +78,7 @@ export const useCheckoutStore = create<CheckoutState>()(
         const persistedOrder = {
           ...draftOrder,
           ...payload.data,
+          items: payload.data?.items?.length ? payload.data.items : draftOrder.items,
           paymentMethod: selectedPaymentMethod,
           shippingInfo,
           shippingFee: payload.data?.shippingFee ?? shippingFee,
@@ -115,4 +116,3 @@ export const useCheckoutStore = create<CheckoutState>()(
     }
   )
 );
-
