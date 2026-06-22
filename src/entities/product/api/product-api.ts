@@ -176,6 +176,8 @@ export interface ProductCategoryFacet {
   slug: string;
   count: number;
   children: ProductFacetChild[];
+  brands?: ProductFacetChild[];
+  subcategories?: ProductFacetChild[];
 }
 
 export interface ProductFacetsResponse {

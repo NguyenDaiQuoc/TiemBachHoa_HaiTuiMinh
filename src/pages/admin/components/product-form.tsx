@@ -1,10 +1,11 @@
-import { useState, type ChangeEvent } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Image as ImageIcon, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCategories } from '@/src/entities/category/api/category-api';
+import { useProductFacets } from '@/src/entities/product/api/product-api';
 import { getWarrantyLabel, setWarrantyTag, WARRANTY_OPTIONS } from '@/src/entities/product/lib/warranty';
 import { Product, ProductVariant } from '@/src/entities/product/model/types';
 import { Button } from '@/src/shared/ui/button';
@@ -83,8 +84,21 @@ const SKU_ATTRIBUTE_OPTIONS = ['Màu', 'Size', 'Mùi', 'Dung lượng', 'Phiên 
 
 const TAG_OPTIONS = ['Chính hãng', 'Bán chạy', 'Hàng mới', 'Giá tốt', 'Cao cấp', 'Giá rẻ', 'Phù hợp văn phòng', 'Nhỏ gọn', 'Pin lâu', 'Tiết kiệm điện', 'Dễ sử dụng', 'Quà tặng', 'Bảo hành dài', 'Freeship', 'Limited'];
 
+const CATEGORY_BRAND_OPTIONS: Record<string, string[]> = {
+  'cong-nghe': ['Baseus', 'Cuktech', 'Anker', 'Ugreen', 'Sony', 'JBL', 'Apple', 'Samsung', 'Logitech', 'Razer', 'Asus', 'Dell', 'HP', 'Lenovo', 'Xiaomi'],
+  'gia-dung': ['Philips', 'Electrolux', 'Panasonic', 'Sunhouse', 'LocknLock', 'Bear', 'Comet', 'Xiaomi'],
+  'my-pham': ["L'Oreal", 'La Roche-Posay', 'The Ordinary', 'CeraVe', 'Cocoon', 'Maybelline', 'Innisfree', 'Some By Mi', 'Simple'],
+};
+
+const CATEGORY_SUBCATEGORY_OPTIONS: Record<string, string[]> = {
+  'cong-nghe': ['Điện thoại', 'Laptop', 'Máy tính bảng', 'Chuột', 'Bàn phím', 'Màn hình', 'Tai nghe', 'Loa', 'Sạc/cáp', 'Pin dự phòng', 'Webcam', 'Camera an ninh', 'Đồng hồ thông minh'],
+  'gia-dung': ['Nồi chiên', 'Nồi cơm điện', 'Máy xay sinh tố', 'Ấm siêu tốc', 'Bếp điện', 'Máy hút bụi', 'Robot hút bụi', 'Quạt điện', 'Máy lọc không khí', 'Đèn LED', 'Đồ dùng nhà bếp'],
+  'my-pham': ['Chăm sóc da', 'Trang điểm', 'Chăm sóc tóc', 'Nước hoa', 'Chống nắng', 'Sữa rửa mặt', 'Mặt nạ', 'Son môi'],
+};
+
 export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: ProductFormProps) => {
   const { data: categories } = useCategories();
+  const { data: facets } = useProductFacets();
   const sellableCategories = (categories || []).filter((category: any) => category.isActive !== false && category.slug !== 'san-pham-nhap-kho');
   const initialVariants: VariantDraft[] =
     initialData?.variants?.flatMap((group) =>
@@ -105,6 +119,8 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
 
   const [variantDrafts, setVariantDrafts] = useState<VariantDraft[]>(initialVariants);
   const [skuFilters, setSkuFilters] = useState<Record<string, string>>({});
+  const [customBrandsByCategory, setCustomBrandsByCategory] = useState<Record<string, string[]>>({});
+  const [customSubcategoriesByCategory, setCustomSubcategoriesByCategory] = useState<Record<string, string[]>>({});
 
   const form = useForm<ProductFormInput, unknown, ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -146,6 +162,65 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
           variants: [],
         },
   });
+
+  const selectedCategoryId = form.watch('categoryId');
+  const selectedCategory = sellableCategories.find((category: any) => category.id === selectedCategoryId);
+  const selectedCategorySlug = selectedCategory?.slug || '';
+  const selectedCategoryFacet = facets?.categories.find((category) => category.slug === selectedCategorySlug);
+  const selectedBrand = form.watch('brand')?.trim() || '';
+  const selectedSubcategory = form.watch('subcategory')?.trim() || '';
+
+  const mergeOptionNames = (...groups: Array<Array<string | undefined>>) =>
+    Array.from(new Set(groups.flat().map((value) => value?.trim()).filter((value): value is string => Boolean(value)))).sort((left, right) => left.localeCompare(right, 'vi'));
+
+  const categoryBrandOptions = selectedCategorySlug
+    ? mergeOptionNames(
+        CATEGORY_BRAND_OPTIONS[selectedCategorySlug] || [],
+        selectedCategoryFacet?.brands?.map((item) => item.name) || [],
+        customBrandsByCategory[selectedCategorySlug] || [],
+        initialData?.categoryId === selectedCategoryId ? [initialData?.brand || undefined] : []
+      )
+    : BRAND_OPTIONS;
+
+  const categorySubcategoryOptions = selectedCategorySlug
+    ? mergeOptionNames(
+        CATEGORY_SUBCATEGORY_OPTIONS[selectedCategorySlug] || [],
+        selectedCategoryFacet?.subcategories?.map((item) => item.name) || [],
+        customSubcategoriesByCategory[selectedCategorySlug] || [],
+        initialData?.categoryId === selectedCategoryId ? [initialData?.subcategory || undefined] : []
+      )
+    : SUBCATEGORY_OPTIONS;
+
+  const addScopedOption = (type: 'brand' | 'subcategory') => {
+    if (!selectedCategorySlug) {
+      toast.error('Vui lòng chọn danh mục trước khi thêm lựa chọn con.');
+      return;
+    }
+
+    const value = type === 'brand' ? selectedBrand : selectedSubcategory;
+    if (!value) return;
+
+    const setState = type === 'brand' ? setCustomBrandsByCategory : setCustomSubcategoriesByCategory;
+    setState((current) => ({
+      ...current,
+      [selectedCategorySlug]: mergeOptionNames(current[selectedCategorySlug] || [], [value]),
+    }));
+  };
+
+  useEffect(() => {
+    if (!selectedCategorySlug) return;
+
+    const currentBrand = form.getValues('brand')?.trim();
+    const currentSubcategory = form.getValues('subcategory')?.trim();
+
+    if (currentBrand && !categoryBrandOptions.includes(currentBrand)) {
+      form.setValue('brand', '', { shouldDirty: true });
+    }
+
+    if (currentSubcategory && !categorySubcategoryOptions.includes(currentSubcategory)) {
+      form.setValue('subcategory', '', { shouldDirty: true });
+    }
+  }, [selectedCategorySlug]);
 
   const syncVariants = (nextVariants: VariantDraft[]) => {
     setVariantDrafts(nextVariants);
@@ -351,19 +426,35 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
               <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Hãng / thương hiệu</label>
               <input {...form.register('brand')} list="brand-options" className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-bold outline-none" placeholder="Baseus, Sony..." />
               <datalist id="brand-options">
-                {BRAND_OPTIONS.map((brand) => (
+                {categoryBrandOptions.map((brand) => (
                   <option key={brand} value={brand} />
                 ))}
               </datalist>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-medium text-muted-foreground">Chỉ gợi ý hãng thuộc danh mục đang chọn.</p>
+                {selectedBrand && !categoryBrandOptions.includes(selectedBrand) && (
+                  <button type="button" onClick={() => addScopedOption('brand')} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">
+                    Thêm hãng
+                  </button>
+                )}
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Loại con</label>
               <input {...form.register('subcategory')} list="subcategory-options" className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-bold outline-none" placeholder="Điện thoại, laptop..." />
               <datalist id="subcategory-options">
-                {SUBCATEGORY_OPTIONS.map((subcategory) => (
+                {categorySubcategoryOptions.map((subcategory) => (
                   <option key={subcategory} value={subcategory} />
                 ))}
               </datalist>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-medium text-muted-foreground">Lưu sản phẩm xong lựa chọn mới sẽ nằm dưới danh mục này.</p>
+                {selectedSubcategory && !categorySubcategoryOptions.includes(selectedSubcategory) && (
+                  <button type="button" onClick={() => addScopedOption('subcategory')} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">
+                    Thêm danh mục con
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -583,7 +674,3 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
     </form>
   );
 };
-
-
-
-

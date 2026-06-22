@@ -27,6 +27,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     const countsByCategory = new Map(categoryCounts.map((item: any) => [item.categoryId, item._count._all]));
     const childrenByCategory = new Map<string, Map<string, number>>();
+    const brandsByCategory = new Map<string, Map<string, number>>();
+    const subcategoriesByCategory = new Map<string, Map<string, number>>();
 
     const addChild = (categoryId: string, name: string | null, count: number) => {
       const cleanName = name?.trim();
@@ -36,8 +38,27 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       childrenByCategory.set(categoryId, current);
     };
 
-    brandCounts.forEach((item: any) => addChild(item.categoryId, item.brand, item._count._all));
-    subcategoryCounts.forEach((item: any) => addChild(item.categoryId, item.subcategory, item._count._all));
+    const addScoped = (map: Map<string, Map<string, number>>, categoryId: string, name: string | null, count: number) => {
+      const cleanName = name?.trim();
+      if (!cleanName) return;
+      const current = map.get(categoryId) ?? new Map<string, number>();
+      current.set(cleanName, (current.get(cleanName) || 0) + count);
+      map.set(categoryId, current);
+    };
+
+    const toOptions = (map?: Map<string, number>) =>
+      Array.from(map?.entries() || [])
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'vi'));
+
+    brandCounts.forEach((item: any) => {
+      addChild(item.categoryId, item.brand, item._count._all);
+      addScoped(brandsByCategory, item.categoryId, item.brand, item._count._all);
+    });
+    subcategoryCounts.forEach((item: any) => {
+      addChild(item.categoryId, item.subcategory, item._count._all);
+      addScoped(subcategoriesByCategory, item.categoryId, item.subcategory, item._count._all);
+    });
 
     const categoriesWithCounts = categories
       .map((category: any) => ({
@@ -45,9 +66,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         name: category.name,
         slug: category.slug,
         count: countsByCategory.get(category.id) || 0,
-        children: Array.from(childrenByCategory.get(category.id)?.entries() || [])
-          .map(([name, count]) => ({ name, count }))
-          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'vi')),
+        children: toOptions(childrenByCategory.get(category.id)),
+        brands: toOptions(brandsByCategory.get(category.id)),
+        subcategories: toOptions(subcategoriesByCategory.get(category.id)),
       }))
       .filter((category: any) => category.count > 0 || category.children.length > 0);
 
