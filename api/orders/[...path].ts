@@ -14,7 +14,7 @@ const parsePath = (req: IncomingMessage) => {
   return (rewritten || url.pathname.replace(/^\/api\/orders\/?/, '')).replace(/\/$/, '');
 };
 
-const numberOr = (value: unknown, fallback = 0) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
+const numberOr = (value: unknown, fallback = 0) => (value === null || value === undefined || value === '' ? fallback : Number.isFinite(Number(value)) ? Number(value) : fallback);
 const intOr = (value: unknown, fallback = 0) => Math.trunc(numberOr(value, fallback));
 const textOrNull = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : null);
 
@@ -38,6 +38,30 @@ const methodDays: Record<string, number> = {
 
 const createOrderNumber = () => `HTM-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
 
+const committedOrderStatuses = new Set(['PROCESSING', 'SHIPPED', 'DELIVERED', 'PACKING', 'SHIPPING', 'DELIVERING']);
+const shouldRestoreInventory = (status: string) => committedOrderStatuses.has(status);
+
+const commitOrderItems = async (tx: any, items: Array<{ product: { id: string; name: string; stock: number }; quantity: number }>) => {
+  for (const item of items) {
+    const latest = await tx.product.findUnique({ where: { id: item.product.id }, select: { id: true, name: true, stock: true } });
+    if (!latest) throw new Error('Có sản phẩm không hợp lệ trong đơn hàng');
+    if (latest.stock < item.quantity) throw new Error(`Sản phẩm ${latest.name} chỉ còn ${latest.stock} trong kho`);
+    await tx.product.update({
+      where: { id: item.product.id },
+      data: { stock: { decrement: item.quantity }, soldCount: { increment: item.quantity } },
+    });
+  }
+};
+
+const restoreOrderItems = async (tx: any, order: { items: Array<{ productId: string; quantity: number }> }) => {
+  for (const item of order.items) {
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
+    });
+  }
+};
+
 const parseShippingAddress = (raw: string) => {
   try {
     const parsed = JSON.parse(raw || '{}');
@@ -51,6 +75,15 @@ const parseShippingAddress = (raw: string) => {
     };
   } catch {
     return { fullName: 'Khách hàng', email: '', phone: '', address: raw, note: '', city: '' };
+  }
+};
+
+const parseShippingJson = (raw: string) => {
+  try {
+    const parsed = JSON.parse(raw || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
 };
 
@@ -108,16 +141,25 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
     return fail(res, 'Vui lòng nhập đầy đủ tên, số điện thoại và địa chỉ giao hàng', 400);
   }
 
-  const ids = items.map((item: any) => String(item.id || item.productId || '')).filter(Boolean);
+  const requestedByProduct = new Map<string, number>();
+  for (const item of items) {
+    const productId = String(item.id || item.productId || '');
+    if (!productId) continue;
+    requestedByProduct.set(productId, (requestedByProduct.get(productId) || 0) + Math.max(1, intOr(item.quantity, 1)));
+  }
+
+  const ids = [...requestedByProduct.keys()];
+  if (!ids.length) return fail(res, 'Giỏ hàng không có sản phẩm hợp lệ', 400);
+
   const products = await prisma.product.findMany({ where: { id: { in: ids }, isActive: true, deletedAt: null }, include: { category: true } });
   const productMap = new Map(products.map((product) => [product.id, product] as const));
 
-  const normalizedItems = items.map((item: any) => {
-    const productId = String(item.id || item.productId || '');
+  const normalizedItems = ids.map((productId) => {
     const product = productMap.get(productId);
-    const quantity = Math.max(1, intOr(item.quantity, 1));
+    const quantity = requestedByProduct.get(productId) || 0;
     if (!product) throw new Error('Có sản phẩm không hợp lệ trong giỏ hàng');
-    if (product.stock < quantity) throw new Error(`Sản phẩm ${product.name} không đủ tồn kho`);
+    if (quantity <= 0) throw new Error('Số lượng sản phẩm không hợp lệ');
+    if (product.stock < quantity) throw new Error(`Sản phẩm ${product.name} chỉ còn ${product.stock} trong kho`);
     const price = product.promotionalPrice || product.price;
     return { product, quantity, price };
   });
@@ -151,11 +193,9 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
       include: { items: true },
     });
 
-    for (const item of normalizedItems) {
-      await tx.product.update({
-        where: { id: item.product.id },
-        data: { stock: { decrement: item.quantity }, soldCount: { increment: item.quantity } },
-      });
+
+    if (paymentMethod === 'COD') {
+      await commitOrderItems(tx, normalizedItems);
     }
 
     return created;
@@ -193,11 +233,8 @@ const expireCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
   }
 
   const expired = await prisma.$transaction(async (tx) => {
-    for (const item of order.items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
-      });
+    if (shouldRestoreInventory(order.status)) {
+      await restoreOrderItems(tx, order);
     }
 
     return tx.order.update({
@@ -207,13 +244,13 @@ const expireCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
     });
   });
 
-  return ok(res, { order: serializeOrder(expired), restoredItems }, 'Expired order cancelled and stock restored');
+  return ok(res, { order: serializeOrder(expired), restoredItems }, 'Order cancelled and cart restored');
 };
 
 const orderStage = (order: any) => {
   if (order.status === 'CANCELLED') return 'DELIVERY_FAILED';
   if (order.status === 'DELIVERED') return 'DELIVERED';
-  if (['SHIPPING', 'DELIVERING'].includes(order.status)) return 'OUT_FOR_DELIVERY';
+  if (['SHIPPED', 'SHIPPING', 'DELIVERING'].includes(order.status)) return 'OUT_FOR_DELIVERY';
   if (['PROCESSING', 'PACKING'].includes(order.status)) return 'PICKED_UP';
   return 'PENDING_PICKUP';
 };
@@ -235,6 +272,8 @@ const buildTracking = (order: any) => {
   const provider = providerByMethod[order.shippingMethod] || 'GHN';
   const origin = { lat: 10.8953, lng: 106.5771, name: 'Kho Hai Tụi Mình - Hóc Môn, TP.HCM', type: 'ORIGIN' };
   const destination = { lat: 10.7963, lng: 106.6675, name: destinationName || 'Địa chỉ nhận hàng', type: 'DESTINATION' };
+  const savedTracking = parseShippingJson(order.shippingAddress).deliveryTracking;
+  const savedEvents = Array.isArray(savedTracking?.events) ? savedTracking.events : [];
   const eventData = [
     ['PENDING_PICKUP', origin, createdAt, order.paymentStatus === 'PAID' ? 'Đơn hàng đã được xác nhận thanh toán.' : 'Đơn hàng đã được ghi nhận và đang chờ xác nhận thanh toán.'],
     ['PICKED_UP', origin, createdAt + 6 * 60 * 60 * 1000, 'Cửa hàng đang chuẩn bị và đóng gói đơn hàng.'],
@@ -243,7 +282,7 @@ const buildTracking = (order: any) => {
     ['DELIVERED', destination, createdAt + 48 * 60 * 60 * 1000, 'Đơn hàng đã giao thành công.'],
   ] as const;
 
-  const events = eventData.map(([status, location, timestamp, description], index) => ({
+  const baseEvents = eventData.map(([status, location, timestamp, description], index) => ({
     id: `${order.id}-${index}`,
     status,
     location,
@@ -251,6 +290,25 @@ const buildTracking = (order: any) => {
     description,
     isCompleted: completed.has(status),
   }));
+
+  const manualEvents = savedEvents.map((event: any, index: number) => ({
+    id: event.id || `${order.id}-manual-${index}`,
+    status: event.status === 'DELIVERED' ? 'DELIVERED' : 'OUT_FOR_DELIVERY',
+    location: {
+      lat: numberOr(event.lat, destination.lat),
+      lng: numberOr(event.lng, destination.lng),
+      name: event.address || event.note || 'Vị trí người giao vừa cập nhật',
+      type: event.status === 'DELIVERED' ? 'DESTINATION' : 'COURIER',
+    },
+    timestamp: event.timestamp || new Date().toISOString(),
+    description: event.status === 'DELIVERED'
+      ? 'Người giao đã hoàn thành đơn hàng và gửi ảnh minh chứng.'
+      : `Người giao cập nhật vị trí: ${event.address || event.note || 'đang trên đường giao'}`,
+    isCompleted: true,
+    proofImage: event.proofImage || null,
+  }));
+
+  const events = [...baseEvents, ...manualEvents].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   return {
     trackingId: order.orderNumber,
@@ -289,7 +347,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     const path = parsePath(req);
     if (path === 'checkout') return createCheckoutOrder(req, res);
-    if (path === 'expire') return expireCheckoutOrder(req, res);
+    if (path === 'expire' || path === 'cancel') return expireCheckoutOrder(req, res);
     if (path === 'track') return trackOrder(req, res);
     return fail(res, 'Không tìm thấy API đơn hàng', 404);
   } catch (error) {

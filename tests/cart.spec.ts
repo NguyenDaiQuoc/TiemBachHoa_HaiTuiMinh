@@ -6,17 +6,12 @@ test.describe('Cart Flow', () => {
   });
 
   test('should add a product to cart', async ({ page }) => {
-    // Wait for product grid to load
-    const productCard = page.locator('div:has-text("Nến Thơm Đà Lạt")').first();
-    
-    // Hover to reveal button
-    await productCard.hover();
-    
-    const addToCartButton = productCard.getByRole('button', { name: /THÊM VÀO GIỎ/i });
+    const addToCartButton = page.getByTestId('add-to-cart-tai-nghe-bluetooth-fitgo');
+    await addToCartButton.scrollIntoViewIfNeeded();
     await addToCartButton.click();
     
     // Check for toast
-    await expect(page.getByText(/Đã thêm .* vào giỏ hàng/i)).toBeVisible();
+    await expect(page.getByText(/Đã thêm vào giỏ hàng/i)).toBeVisible();
     
     // Check cart counter in header
     const cartCounter = page.locator('header').getByText('1');
@@ -24,18 +19,16 @@ test.describe('Cart Flow', () => {
   });
 
   test('should open cart drawer and show item', async ({ page }) => {
-    // Add item first
-    const productCard = page.locator('div:has-text("Nến Thơm Đà Lạt")').first();
-    await productCard.hover();
-    await productCard.getByRole('button', { name: /THÊM VÀO GIỎ/i }).click();
+    const addToCartButton = page.getByTestId('add-to-cart-tai-nghe-bluetooth-fitgo');
+    await addToCartButton.scrollIntoViewIfNeeded();
+    await addToCartButton.click();
 
-    // Click cart icon (it's inside the CartDrawer trigger)
-    await page.locator('header').getByRole('button', { name: /shopping bag/i }).click();
+    await page.getByTestId('cart-trigger').click();
     
     // Check drawer title
-    await expect(page.getByText('Giỏ hàng của bạn')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /GIỎ HÀNG/i })).toBeVisible();
     
     // Check if item is in drawer
-    await expect(page.locator('h4').getByText('Nến Thơm Đà Lạt')).toBeVisible();
+    await expect(page.locator('h4').getByText('Tai nghe Bluetooth FitGo')).toBeVisible();
   });
 });

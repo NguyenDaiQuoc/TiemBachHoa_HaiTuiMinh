@@ -3,7 +3,7 @@ import { PaymentMethod } from '@/src/entities/payment/model/types';
 import { generateTransferContent } from '@/src/entities/order/lib/order-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, Loader2, Copy, ExternalLink, ArrowRight, RefreshCw, TimerReset } from 'lucide-react';
+import { Check, Loader2, Copy, ExternalLink, ArrowRight, RefreshCw, TimerReset, XCircle } from 'lucide-react';
 import { Button } from '@/src/shared/ui/button';
 import { toast } from 'sonner';
 import { useCheckoutStore } from '../model/checkout-store';
@@ -21,10 +21,10 @@ const readViteEnv = (key: string) => {
 };
 
 const bankTransferConfig = {
-  bankName: readViteEnv('VITE_BANK_NAME'),
-  bankCode: readViteEnv('VITE_BANK_CODE'),
-  accountNumber: readViteEnv('VITE_BANK_ACCOUNT_NUMBER'),
-  accountHolder: readViteEnv('VITE_BANK_ACCOUNT_HOLDER'),
+  bankName: readViteEnv('VITE_BANK_NAME') || 'MBBANK',
+  bankCode: readViteEnv('VITE_BANK_CODE') || 'MB',
+  accountNumber: readViteEnv('VITE_BANK_ACCOUNT_NUMBER') || '0931454176',
+  accountHolder: readViteEnv('VITE_BANK_ACCOUNT_HOLDER') || 'NGUYENDAIQUOC',
 };
 
 const buildVietQrImageUrl = (bankCode: string, accountNumber: string, accountHolder: string, amount: number, content: string) => {
@@ -45,10 +45,12 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
   const [countdown, setCountdown] = useState(PAYMENT_WINDOW_SECONDS);
   const [isChecking, setIsChecking] = useState(false);
   const [isExpiring, setIsExpiring] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const { updateOrderStatus } = useCheckoutStore();
   const restoreItems = useCartStore((state) => state.restoreItems);
 
   const trackingCode = order.trackingId || order.orderNumber || order.id;
+  const requiresPaymentConfirmation = order.paymentMethod === PaymentMethod.BANK_TRANSFER;
   const bankName = bankTransferConfig.bankName || bankTransferConfig.bankCode || 'Chưa cấu hình ngân hàng';
   const accountNumber = bankTransferConfig.accountNumber || 'Chưa cấu hình số tài khoản';
   const accountHolder = bankTransferConfig.accountHolder || 'Chưa cấu hình chủ tài khoản';
@@ -129,8 +131,38 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
     }
   }, [isExpiring, order.id, order.orderNumber, restoreItems, trackingCode, updateOrderStatus]);
 
+  const cancelPayment = useCallback(async () => {
+    if (!trackingCode || isCancelling) return;
+    setIsCancelling(true);
+
+    try {
+      const response = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, orderNumber: order.orderNumber, trackingId: trackingCode }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || payload?.message || 'Không thể hủy thanh toán');
+      }
+
+      const restoredItems = Array.isArray(payload.data?.restoredItems) ? payload.data.restoredItems : [];
+      if (restoredItems.length) restoreItems(restoredItems);
+      updateOrderStatus(OrderStatus.CANCELLED, PaymentStatus.FAILED);
+      toast.info('Đã hủy thanh toán', {
+        description: 'Sản phẩm đã được đưa lại vào giỏ hàng. Tồn kho không bị trừ khi đơn chưa xác nhận thanh toán.',
+      });
+      window.location.href = '/checkout';
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể hủy thanh toán');
+    } finally {
+      setIsCancelling(false);
+    }
+  }, [isCancelling, order.id, order.orderNumber, restoreItems, trackingCode, updateOrderStatus]);
+
   useEffect(() => {
-    if (status === PaymentStatus.SUCCESS || status === PaymentStatus.FAILED) return;
+    if (!requiresPaymentConfirmation || status === PaymentStatus.SUCCESS || status === PaymentStatus.FAILED) return;
 
     const timer = window.setInterval(() => {
       setCountdown((prev) => {
@@ -144,13 +176,13 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [expireOrder, status]);
+  }, [expireOrder, requiresPaymentConfirmation, status]);
 
   useEffect(() => {
-    if (status !== PaymentStatus.PENDING) return;
+    if (!requiresPaymentConfirmation || status !== PaymentStatus.PENDING) return;
     const poller = window.setInterval(() => checkPaymentStatus(true), 30000);
     return () => window.clearInterval(poller);
-  }, [checkPaymentStatus, status]);
+  }, [checkPaymentStatus, requiresPaymentConfirmation, status]);
 
   const copyToClipboard = async (text: string, label: string) => {
     await navigator.clipboard.writeText(text);
@@ -193,17 +225,21 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
   return (
     <div className="space-y-8">
       <div className="text-center p-6 bg-muted/30 rounded-3xl border-dashed border-2 border-border">
-        <h2 className="text-2xl font-bold font-heading">{isExpired ? 'Giao dịch đã hết hạn' : 'Đang chờ thanh toán'}</h2>
+        <h2 className="text-2xl font-bold font-heading">
+          {isExpired ? 'Giao dịch đã hết hạn' : requiresPaymentConfirmation ? 'Đang chờ thanh toán' : 'Đơn hàng đã được ghi nhận'}
+        </h2>
         <p className="text-sm text-muted-foreground mt-2">
           {isExpired ? (
             'Vui lòng tạo lại đơn hoặc liên hệ cửa hàng nếu bạn đã chuyển khoản.'
-          ) : (
+          ) : requiresPaymentConfirmation ? (
             <>
               Giao dịch sẽ hết hạn sau{' '}
               <span className="font-bold text-foreground">
                 {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
               </span>
             </>
+          ) : (
+            'Cửa hàng đã ghi nhận đơn COD và giữ tồn kho cho đơn này.'
           )}
         </p>
       </div>
@@ -272,10 +308,16 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
                   {isExpired ? <TimerReset className="h-3 w-3" /> : <Loader2 className="h-3 w-3 animate-spin" />}
                   {isExpired ? 'Đã dừng chờ xác nhận' : 'Đang chờ xác nhận từ hệ thống'}
                 </div>
-                <Button type="button" variant="outline" className="rounded-full" onClick={() => checkPaymentStatus()} disabled={isChecking || isExpired}>
-                  {isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  Kiểm tra thanh toán
-                </Button>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button type="button" variant="outline" className="rounded-full" onClick={() => checkPaymentStatus()} disabled={isChecking || isExpired}>
+                    {isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    Kiểm tra thanh toán
+                  </Button>
+                  <Button type="button" variant="ghost" className="rounded-full text-destructive hover:text-destructive" onClick={cancelPayment} disabled={isCancelling || isExpired}>
+                    {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+                    Hủy thanh toán
+                  </Button>
+                </div>
               </div>
             </div>
           </motion.div>

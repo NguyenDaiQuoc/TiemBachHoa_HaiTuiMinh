@@ -185,6 +185,31 @@ const percentGrowth = (current: number, previous: number) => {
   return Number((((current - previous) / previous) * 100).toFixed(1));
 };
 
+const committedOrderStatuses = new Set(['PROCESSING', 'SHIPPED', 'DELIVERED', 'PACKING', 'SHIPPING', 'DELIVERING']);
+const shouldCommitInventory = (fromStatus: string, toStatus: string) => fromStatus === 'PENDING' && committedOrderStatuses.has(toStatus);
+const shouldRestoreInventory = (fromStatus: string, toStatus: string) => toStatus === 'CANCELLED' && committedOrderStatuses.has(fromStatus);
+
+const commitOrderInventory = async (tx: any, order: { items: Array<{ productId: string; quantity: number }> }) => {
+  for (const item of order.items) {
+    const product = await tx.product.findUnique({ where: { id: item.productId }, select: { id: true, name: true, stock: true } });
+    if (!product) throw new Error('Có sản phẩm không hợp lệ trong đơn hàng');
+    if (product.stock < item.quantity) throw new Error(`Sản phẩm ${product.name} chỉ còn ${product.stock} trong kho`);
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { stock: { decrement: item.quantity }, soldCount: { increment: item.quantity } },
+    });
+  }
+};
+
+const restoreOrderInventory = async (tx: any, order: { items: Array<{ productId: string; quantity: number }> }) => {
+  for (const item of order.items) {
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
+    });
+  }
+};
+
 const isProductLowStock = (product: { stock: number; initialStock: number; reorderLevel: number }) => {
   if (product.initialStock <= 2) return false;
   const threshold = Math.max(product.reorderLevel || 0, Math.ceil(product.initialStock * 0.5));
@@ -1913,18 +1938,16 @@ router.post('/orders/batch-status', async (req, res, next) => {
     });
 
     await prisma.$transaction(async (tx) => {
-      if (status === 'CANCELLED') {
-        for (const order of orders) {
-          if (order.status === 'CANCELLED') continue;
-          for (const item of order.items) {
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
-            });
-          }
-        }
+      for (const order of orders) {
+        if (shouldCommitInventory(order.status, status)) await commitOrderInventory(tx, order);
+        if (shouldRestoreInventory(order.status, status)) await restoreOrderInventory(tx, order);
       }
-      await tx.order.updateMany({ where: { id: { in: ids } }, data: { status } });
+      const nextData = status === 'CANCELLED'
+        ? { status, paymentStatus: 'FAILED' }
+        : committedOrderStatuses.has(status)
+          ? { status, paymentStatus: 'PAID' }
+          : { status };
+      await tx.order.updateMany({ where: { id: { in: ids } }, data: nextData });
     });
     await prisma.auditLog.create({ data: { userId: (req as any).user?.id, action: 'ADMIN_BATCH_UPDATE_ORDERS', entity: 'Order' } });
 
@@ -1964,15 +1987,9 @@ router.patch('/orders/:id/status', async (req, res, next) => {
     if (!existing) return sendError(res, 'Không tìm thấy đơn hàng', 404);
 
     const order = await prisma.$transaction(async (tx) => {
-      if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
-        for (const item of existing.items) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
-          });
-        }
-      }
-      return tx.order.update({ where: { id: existing.id }, data: { status } });
+      if (shouldCommitInventory(existing.status, status)) await commitOrderInventory(tx, existing);
+      if (shouldRestoreInventory(existing.status, status)) await restoreOrderInventory(tx, existing);
+      return tx.order.update({ where: { id: existing.id }, data: status === 'CANCELLED' ? { status, paymentStatus: 'FAILED' } : shouldCommitInventory(existing.status, status) ? { status, paymentStatus: 'PAID' } : { status } });
     });
     await prisma.auditLog.create({ data: { userId: (req as any).user?.id, action: 'ADMIN_UPDATE_ORDER_STATUS', entity: 'Order', entityId: order.id } });
 

@@ -1,14 +1,19 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Link, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './layouts/app-shell';
 import { ProfileLayout } from '@/src/pages/profile/ui/profile-layout';
 import { withTheme } from './providers/with-theme';
 import { useAuthStore } from '@/src/shared/model/auth-store';
 import { useThemeStore } from '@/src/shared/store/theme-store';
 
+const createTestQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+
 const renderShell = (initialEntry = '/profile') =>
   render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+    <QueryClientProvider client={createTestQueryClient()}>
+      <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route element={<AppShell />}>
           <Route
@@ -25,7 +30,8 @@ const renderShell = (initialEntry = '/profile') =>
           </Route>
         </Route>
       </Routes>
-    </MemoryRouter>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 
 describe('App shell and profile inheritance', () => {
@@ -50,7 +56,7 @@ describe('App shell and profile inheritance', () => {
   it('keeps the shared header and footer visible on /profile', async () => {
     renderShell();
 
-    expect(screen.getByRole('link', { name: /tiệm bách hoá hai tụi mình/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /hai tui minh home/i })).toBeInTheDocument();
     expect(screen.getByText(/profile overview/i)).toBeInTheDocument();
     expect(screen.getByText(/powered by antigravity engine/i)).toBeInTheDocument();
   });
@@ -67,7 +73,11 @@ describe('App shell and profile inheritance', () => {
 
   it('preserves dark theme state through the theme wrapper', () => {
     const Wrapped = withTheme(() => <div>Theme probe</div>);
-    render(<Wrapped />);
+    render(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <Wrapped />
+      </QueryClientProvider>
+    );
 
     expect(document.documentElement).toHaveClass('dark');
     expect(screen.getByText('Theme probe')).toBeInTheDocument();

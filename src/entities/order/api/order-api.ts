@@ -65,6 +65,35 @@ export const updateBatchOrderStatus = async ({ ids, status }: { ids: string[]; s
   return response.json();
 };
 
+export const addDeliveryEvent = async ({
+  id,
+  status,
+  lat,
+  lng,
+  address,
+  note,
+  proofImage,
+}: {
+  id: string;
+  status: 'OUT_FOR_DELIVERY' | 'DELIVERED';
+  lat?: number;
+  lng?: number;
+  address?: string;
+  note?: string;
+  proofImage?: string | null;
+}) => {
+  const response = await fetch(`${ADMIN_BASE_URL}/${id}/delivery-event`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }, 'admin'),
+    body: JSON.stringify({ status, lat, lng, address, note, proofImage }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.message || error?.error || 'Failed to update delivery tracking');
+  }
+  return response.json();
+};
+
 export const useOrders = () => {
   return useQuery({
     queryKey: orderKeys.lists(),
@@ -102,6 +131,16 @@ export const useUpdateBatchOrderStatus = () => {
     mutationFn: updateBatchOrderStatus,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.all });
+    },
+  });
+};
+
+export const useAddDeliveryEvent = () => {
+  return useMutation({
+    mutationFn: addDeliveryEvent,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(id) });
     },
   });
 };

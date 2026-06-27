@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Clock, Download, Eye, Loader2, Search, ShoppingCart, Truck, XCircle } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
-import { useAdminOrders, useUpdateBatchOrderStatus } from '@/src/entities/order/api/order-api';
+import { useAdminOrders, useUpdateBatchOrderStatus, useUpdateOrderStatus } from '@/src/entities/order/api/order-api';
 import type { AdminOutletContext } from '@/src/app/layouts/admin-layout';
 import { Button } from '@/src/shared/ui/button';
 import { cn } from '@/src/shared/lib/utils';
@@ -31,6 +31,7 @@ export const AdminOrders = () => {
   const { refreshTick } = useOutletContext<AdminOutletContext>();
   const { data: orders = [], isLoading, refetch } = useAdminOrders();
   const batchMutation = useUpdateBatchOrderStatus();
+  const statusMutation = useUpdateOrderStatus();
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]['value']>('ALL');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -64,6 +65,17 @@ export const AdminOrders = () => {
       refetch();
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const handleQuickStatus = async (order: any, status: string, openTracking = false) => {
+    try {
+      await statusMutation.mutateAsync({ id: order.id, status });
+      toast.success('Đã cập nhật trạng thái đơn hàng');
+      refetch();
+      if (openTracking) window.open(`/tracking?code=${encodeURIComponent(order.orderNumber || order.id)}`, '_blank', 'noopener,noreferrer');
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể cập nhật trạng thái đơn hàng');
     }
   };
 
@@ -156,7 +168,7 @@ export const AdminOrders = () => {
                 <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Tổng tiền</th>
                 <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Trạng thái</th>
                 <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Ngày tạo</th>
-                <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground text-right">Chi tiết</th>
+                <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -201,18 +213,35 @@ export const AdminOrders = () => {
                         </div>
                       </td>
                       <td className="p-5 text-[11px] font-semibold text-muted-foreground">{new Date(order.createdAt).toLocaleString('vi-VN')}</td>
-                      <td className="p-5 text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary"
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setIsDetailOpen(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                      <td className="p-5">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          {order.status === 'PENDING' && (
+                            <>
+                              <Button variant="outline" className="h-9 rounded-xl px-3 text-[9px] font-black uppercase tracking-widest" onClick={() => handleQuickStatus(order, 'PROCESSING')} disabled={statusMutation.isPending}>
+                                Xác nhận
+                              </Button>
+                              <Button variant="outline" className="h-9 rounded-xl px-3 text-[9px] font-black uppercase tracking-widest text-rose-600" onClick={() => handleQuickStatus(order, 'CANCELLED')} disabled={statusMutation.isPending}>
+                                Hủy đơn
+                              </Button>
+                            </>
+                          )}
+                          {order.status === 'PROCESSING' && (
+                            <Button variant="outline" className="h-9 rounded-xl px-3 text-[9px] font-black uppercase tracking-widest text-purple-600" onClick={() => handleQuickStatus(order, 'SHIPPED', true)} disabled={statusMutation.isPending}>
+                              {order.paymentStatus === 'UNPAID' ? 'Bắt đầu vận chuyển' : 'Đã soạn hàng'}
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setIsDetailOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -230,7 +259,7 @@ export const AdminOrders = () => {
               Chi tiết <span className="text-primary italic">đơn hàng</span>
             </DialogTitle>
           </DialogHeader>
-          {selectedOrder && <OrderDetail order={selectedOrder} onClose={() => setIsDetailOpen(false)} />}
+          {selectedOrder && <OrderDetail order={selectedOrder} onClose={() => setIsDetailOpen(false)} onUpdated={refetch} />}
         </DialogContent>
       </Dialog>
     </div>

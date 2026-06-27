@@ -27,6 +27,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const categoryLabel = typeof product.category === 'object' ? product.category?.name || 'Danh mục' : product.category || 'Danh mục';
   const warrantyLabel = getWarrantyLabel(product.tags);
+  const productTestId = `product-card-${product.slug || product.id}`;
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -62,6 +63,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
       layout
       className="relative"
       onClick={() => navigate(getProductUrl(product))}
+      data-testid={productTestId}
     >
       <Card className={cn(
         "overflow-hidden border-border/50 shadow-soft group cursor-pointer transition-all duration-500",
@@ -122,6 +124,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
               variant="secondary" 
               className="rounded-full shadow-lg bg-surface-elevated/90 backdrop-blur-md border border-border/50 hover:bg-surface-elevated"
               onClick={handleToggleWishlist}
+              aria-label={`${isWishlisted ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích'} ${product.name}`}
             >
               <Heart className={cn("h-4 w-4 transition-colors", isWishlisted && "fill-destructive text-destructive")} />
             </Button>
@@ -134,6 +137,8 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
                 showSuccess ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"
               )}
               onClick={handleAddToCart}
+              data-testid={`add-to-cart-${product.slug || product.id}`}
+              aria-label={`Thêm ${product.name} vào giỏ hàng`}
               loading={isAdding}
               success={showSuccess}
             >

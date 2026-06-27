@@ -11,7 +11,7 @@ const serverEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   
   // Database
-  DATABASE_URL: z.string().default('file:./dev.db'),
+  DATABASE_URL: z.string().default('postgresql://postgres:postgres@127.0.0.1:5432/ecommerce?schema=public'),
   REDIS_URL: z.string().url('Invalid REDIS_URL format').default('redis://localhost:6379'),
   
   // Auth

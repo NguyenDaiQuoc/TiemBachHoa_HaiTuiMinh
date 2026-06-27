@@ -97,16 +97,14 @@ router.get('/', async (req, res, next) => {
             ? [{ soldCount: 'desc' }, { createdAt: 'desc' }]
             : { createdAt: 'desc' };
 
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        include: { category: true },
-        orderBy,
-        skip,
-        take: parsedLimit,
-      }),
-      prisma.product.count({ where }),
-    ]);
+    const products = await prisma.product.findMany({
+      where,
+      include: { category: true },
+      orderBy,
+      skip,
+      take: parsedLimit,
+    });
+    const total = await prisma.product.count({ where });
 
     const requiredRating = minRating ? Number(minRating) : null;
     const enrichedProducts = products.map(serializeProduct).filter((product) => (requiredRating ? product.rating >= requiredRating : true));
@@ -161,28 +159,26 @@ router.get('/facets', async (_req, res, next) => {
   try {
     const baseWhere: Prisma.ProductWhereInput = { isActive: true, deletedAt: null };
 
-    const [categories, categoryCounts, brandCounts, subcategoryCounts, total] = await Promise.all([
-      prisma.category.findMany({
-        where: { isActive: true, deletedAt: null },
-        orderBy: { name: 'asc' },
-      }),
-      prisma.product.groupBy({
-        by: ['categoryId'],
-        where: baseWhere,
-        _count: { _all: true },
-      }),
-      prisma.product.groupBy({
-        by: ['categoryId', 'brand'],
-        where: { ...baseWhere, brand: { not: null } },
-        _count: { _all: true },
-      }),
-      prisma.product.groupBy({
-        by: ['categoryId', 'subcategory'],
-        where: { ...baseWhere, subcategory: { not: null } },
-        _count: { _all: true },
-      }),
-      prisma.product.count({ where: baseWhere }),
-    ]);
+    const categories = await prisma.category.findMany({
+      where: { isActive: true, deletedAt: null },
+      orderBy: { name: 'asc' },
+    });
+    const categoryCounts = await prisma.product.groupBy({
+      by: ['categoryId'],
+      where: baseWhere,
+      _count: { _all: true },
+    });
+    const brandCounts = await prisma.product.groupBy({
+      by: ['categoryId', 'brand'],
+      where: { ...baseWhere, brand: { not: null } },
+      _count: { _all: true },
+    });
+    const subcategoryCounts = await prisma.product.groupBy({
+      by: ['categoryId', 'subcategory'],
+      where: { ...baseWhere, subcategory: { not: null } },
+      _count: { _all: true },
+    });
+    const total = await prisma.product.count({ where: baseWhere });
 
     const countsByCategory = new Map(categoryCounts.map((item) => [item.categoryId, item._count._all]));
 

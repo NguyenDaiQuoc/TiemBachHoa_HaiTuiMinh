@@ -62,6 +62,9 @@ export const TrackingTimeline = ({ events, currentStatus }: TrackingTimelineProp
                     <MapPin className="h-3 w-3 shrink-0" />
                     {event.location.name}
                   </p>
+                  {(event as any).proofImage && (
+                    <img src={(event as any).proofImage} alt="Ảnh minh chứng giao hàng" className="mt-3 h-28 w-28 rounded-2xl border border-border object-cover" />
+                  )}
                 </div>
                 <time className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-2 py-0.5 rounded-full shrink-0">
                   {new Date(event.timestamp).toLocaleString('vi-VN', { 

@@ -45,7 +45,7 @@ export const CheckoutFlow = () => {
       toast.success('Đơn hàng đã được khởi tạo!');
       setStep(3); // 3: Verification / Success
     } catch (error) {
-      toast.error('Có lỗi xảy ra khi tạo đơn hàng');
+      toast.error(error instanceof Error ? error.message : 'Có lỗi xảy ra khi tạo đơn hàng');
     } finally {
       setIsCreating(false);
     }
@@ -150,7 +150,7 @@ export const CheckoutFlow = () => {
       </div>
 
       <div className="lg:col-span-4">
-        <OrderSummary />
+        <OrderSummary useCurrentOrder={step === 3} />
       </div>
     </div>
   );

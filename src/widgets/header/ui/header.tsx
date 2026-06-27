@@ -237,8 +237,11 @@ export const Header = () => {
 
             <AccountDropdown />
 
-            <motion.div
+            <motion.button
+              type="button"
               data-cart-target
+              data-testid="cart-trigger"
+              aria-label={totalItemsCount > 0 ? `Mở giỏ hàng, ${totalItemsCount} sản phẩm` : 'Mở giỏ hàng'}
               className="group relative cursor-pointer"
               onClick={() => setIsCartOpen(true)}
               whileHover={{ scale: 1.05 }}
@@ -262,7 +265,7 @@ export const Header = () => {
                   </motion.span>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </motion.button>
           </div>
         </div>
       </div>

@@ -11,21 +11,21 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
     Skip to content
   </a>
   <header
-    class="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md border-border/50"
+    class="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md"
   >
     <div
-      class="container mx-auto flex h-16 items-center justify-between px-4"
+      class="container mx-auto flex h-16 min-w-0 items-center justify-between gap-2 px-2 sm:px-4"
     >
       <div
-        class="flex items-center gap-4"
+        class="flex min-w-0 items-center gap-2 sm:gap-4"
       >
         <button
           aria-expanded="false"
           aria-haspopup="dialog"
-          class="group/button relative inline-flex shrink-0 items-center justify-center bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 md:hidden rounded-lg hover:bg-primary/5 transition-all w-10 h-10 border border-transparent hover:border-border/50"
+          class="group/button relative inline-flex shrink-0 items-center justify-center bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 h-9 w-9 rounded-lg border border-transparent transition-all hover:border-border/50 hover:bg-primary/5 sm:h-10 sm:w-10 md:hidden"
           data-base-ui-click-trigger=""
           data-slot="sheet-trigger"
-          id="base-ui-_r_1i_"
+          id="base-ui-_r_1u_"
           tabindex="0"
           type="button"
         >
@@ -59,27 +59,37 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
           </span>
         </button>
         <a
-          class="flex items-center gap-2 group"
+          aria-label="Hai Tui Minh home"
+          class="group flex min-w-0 items-center gap-2"
           data-discover="true"
           href="/"
         >
           <span
-            class="text-xl font-heading font-black tracking-tight text-primary italic uppercase"
+            class="flex min-w-0 items-end gap-x-2 text-primary"
           >
-            TIỆM BÁCH HOÁ HAI TỤI MÌNH
+            <span
+              class="hidden font-heading text-lg font-semibold uppercase tracking-[0.16em] text-foreground transition-colors group-hover:text-primary sm:inline"
+            >
+              Tiệm bách hoá
+            </span>
+            <span
+              class="shrink-0 whitespace-nowrap font-accent text-[1.05rem] leading-none text-primary min-[380px]:text-[1.18rem] sm:text-[1.75rem] lg:text-[1.95rem]"
+            >
+              Hai Tụi Mình
+            </span>
           </span>
         </a>
       </div>
       <nav
-        class="hidden md:flex items-center space-x-6 text-sm font-medium"
+        class="hidden items-center space-x-6 md:flex"
       >
         <div
-          class="relative group"
+          class="group relative"
         >
           <button
-            class="flex items-center gap-1.5 hover:text-primary transition-all uppercase tracking-[0.2em] text-[10px] font-black py-1 text-foreground/60"
+            class="flex items-center gap-1.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] transition-all text-foreground/60"
           >
-            CỬA HÀNG
+            Cửa hàng
             <svg
               aria-hidden="true"
               class="lucide lucide-chevron-down h-3 w-3 transition-transform"
@@ -98,45 +108,59 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               />
             </svg>
             <span
-              class="absolute bottom-0 left-0 w-full h-[2px] bg-primary transition-transform origin-left scale-x-0"
+              class="absolute bottom-0 left-0 h-[2px] w-full origin-left bg-primary transition-transform scale-x-0"
             />
           </button>
         </div>
         <div
-          class="relative group"
+          class="group relative"
         >
           <a
-            class="hover:text-primary transition-all text-foreground/60 hover:text-foreground uppercase tracking-[0.2em] text-[10px] font-black relative overflow-hidden group py-1"
+            class="group relative overflow-hidden py-1 text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60 transition-all hover:text-foreground"
             data-discover="true"
-            href="/search"
+            href="/products"
           >
-            KHÁM PHÁ
+            Khám phá
             <span
-              class="absolute bottom-0 left-0 w-full h-[2px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
+              class="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-primary transition-transform group-hover:scale-x-100"
             />
           </a>
         </div>
         <div
-          class="relative group"
+          class="group relative"
         >
           <a
-            class="hover:text-primary transition-all text-foreground/60 hover:text-foreground uppercase tracking-[0.2em] text-[10px] font-black relative overflow-hidden group py-1"
+            class="group relative overflow-hidden py-1 text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60 transition-all hover:text-foreground"
+            data-discover="true"
+            href="/blog"
+          >
+            Cẩm nang
+            <span
+              class="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-primary transition-transform group-hover:scale-x-100"
+            />
+          </a>
+        </div>
+        <div
+          class="group relative"
+        >
+          <a
+            class="group relative overflow-hidden py-1 text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60 transition-all hover:text-foreground"
             data-discover="true"
             href="/tracking"
           >
-            THEO DÕI
+            Theo dõi
             <span
-              class="absolute bottom-0 left-0 w-full h-[2px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
+              class="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-primary transition-transform group-hover:scale-x-100"
             />
           </a>
         </div>
         <div
-          class="relative group"
+          class="group relative"
         >
           <button
-            class="flex items-center gap-1.5 hover:text-primary transition-all uppercase tracking-[0.2em] text-[10px] font-black py-1 text-foreground/60"
+            class="flex items-center gap-1.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] transition-all text-foreground/60"
           >
-            BỘ SƯU TẬP
+            Bộ sưu tập
             <svg
               aria-hidden="true"
               class="lucide lucide-chevron-down h-3 w-3 transition-transform"
@@ -155,16 +179,16 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               />
             </svg>
             <span
-              class="absolute bottom-0 left-0 w-full h-[2px] bg-primary transition-transform origin-left scale-x-0"
+              class="absolute bottom-0 left-0 h-[2px] w-full origin-left bg-primary transition-transform scale-x-0"
             />
           </button>
         </div>
       </nav>
       <div
-        class="flex items-center space-x-4"
+        class="flex shrink-0 items-center gap-1 sm:gap-3"
       >
         <button
-          class="group/button relative inline-flex shrink-0 items-center justify-center bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 rounded-full hover:bg-primary/5 transition-all w-10 h-10 border border-transparent hover:border-border/50"
+          class="group/button relative shrink-0 items-center justify-center bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 hidden h-9 w-9 rounded-full border border-transparent transition-all hover:border-border/50 hover:bg-primary/5 min-[380px]:inline-flex sm:h-10 sm:w-10"
           data-slot="button"
           tabindex="0"
           type="button"
@@ -223,11 +247,11 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
           </span>
         </button>
         <div
-          class="flex items-center space-x-1 sm:space-x-2"
+          class="flex items-center gap-1 sm:gap-2"
         >
           <button
             aria-label="Tìm kiếm"
-            class="group/button relative shrink-0 items-center justify-center bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 rounded-full flex hover:bg-primary/5 transition-all w-10 h-10 border border-transparent hover:border-border/50"
+            class="group/button relative shrink-0 items-center justify-center bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 flex h-9 w-9 rounded-full border border-transparent transition-all hover:border-border/50 hover:bg-primary/5 sm:h-10 sm:w-10"
             data-slot="button"
             tabindex="0"
             type="button"
@@ -261,34 +285,72 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             </span>
           </button>
           <div
+            class="hidden min-[380px]:block"
+          >
+            <button
+              aria-expanded="false"
+              aria-haspopup="menu"
+              class="relative flex h-10 w-10 items-center justify-center rounded-full border border-transparent outline-none transition-all hover:border-border/50 hover:bg-primary/5"
+              data-slot="dropdown-menu-trigger"
+              id="base-ui-_r_2c_"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-bell h-5 w-5"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10.268 21a2 2 0 0 0 3.464 0"
+                />
+                <path
+                  d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
             class="relative"
           >
             <button
               aria-expanded="false"
               aria-haspopup="menu"
-              class="rounded-full hover:bg-primary/5 transition-all w-10 h-10 border border-transparent hover:border-border/50 overflow-hidden outline-none flex items-center justify-center cursor-pointer"
+              class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-transparent outline-none transition-all hover:border-border/50 hover:bg-primary/5"
               data-slot="dropdown-menu-trigger"
-              id="base-ui-_r_20_"
+              id="base-ui-_r_2i_"
               tabindex="0"
               type="button"
             >
               <div
-                class="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-black text-xs uppercase italic"
+                class="flex h-full w-full items-center justify-center bg-primary/10 text-xs font-black uppercase italic text-primary"
               >
                 T
               </div>
             </button>
           </div>
-          <div
-            class="relative cursor-pointer group"
+          <button
+            aria-label="Mở giỏ hàng"
+            class="group relative cursor-pointer"
+            data-cart-target="true"
+            data-testid="cart-trigger"
             tabindex="0"
+            type="button"
           >
             <div
-              class="p-2.5 rounded-full hover:bg-primary/5 transition-all border border-transparent group-hover:border-border/50"
+              class="rounded-full border border-transparent p-2 transition-all group-hover:border-border/50 group-hover:bg-primary/5 sm:p-2.5"
             >
               <svg
                 aria-hidden="true"
-                class="lucide lucide-shopping-bag h-5 w-5 transition-colors"
+                class="lucide lucide-shopping-bag h-4 w-4 transition-colors sm:h-5 sm:w-5"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -310,7 +372,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                 />
               </svg>
             </div>
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -321,23 +383,23 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
     tabindex="-1"
   >
     <div
-      class="bg-background pt-10 pb-20 px-4 md:px-8"
+      class="bg-background px-4 pb-20 pt-10 md:px-8"
     >
       <div
-        class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8"
+        class="mx-auto grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-12"
       >
         <div
-          class="lg:hidden flex items-center justify-between bg-card border border-border/50 p-4 rounded-[24px] shadow-soft mb-4"
+          class="mb-4 flex items-center justify-between rounded-[24px] border border-border/50 bg-card p-4 shadow-soft lg:hidden"
         >
           <div
             class="flex items-center gap-3"
           >
             <div
-              class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden"
+              class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-primary/10"
             >
               <svg
                 aria-hidden="true"
-                class="lucide lucide-user w-5 h-5 text-primary"
+                class="lucide lucide-user h-5 w-5 text-primary"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -360,19 +422,19 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             </div>
             <div>
               <h3
-                class="text-xs font-black uppercase tracking-tight italic leading-none"
+                class="font-heading text-base font-semibold leading-none"
               >
                 Test User
               </h3>
               <p
-                class="text-[10px] font-bold text-muted-foreground mt-0.5"
+                class="mt-1 text-xs tracking-wide text-muted-foreground"
               >
                 Hồ sơ cá nhân
               </p>
             </div>
           </div>
           <button
-            class="group/button relative inline-flex shrink-0 items-center justify-center border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 rounded-xl h-10 w-10 bg-muted/30 hover:bg-muted"
+            class="group/button relative inline-flex shrink-0 items-center justify-center border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-10 h-10 w-10 rounded-xl bg-muted/30 hover:bg-muted"
             data-slot="button"
             tabindex="0"
             type="button"
@@ -383,7 +445,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             >
               <svg
                 aria-hidden="true"
-                class="lucide lucide-menu w-5 h-5"
+                class="lucide lucide-menu h-5 w-5"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -408,59 +470,59 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
           </button>
         </div>
         <aside
-          class="hidden lg:block lg:col-span-3 space-y-6"
+          class="hidden space-y-6 lg:col-span-3 lg:block"
         >
           <div
-            class="group/card flex flex-col gap-4 rounded-xl text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl p-6 overflow-hidden relative group border border-border/50 shadow-soft bg-card/90 backdrop-blur-md"
+            class="group/card flex flex-col gap-4 rounded-xl text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl group relative overflow-hidden border border-border/50 bg-card/90 p-6 shadow-soft backdrop-blur-md"
             data-size="default"
             data-slot="card"
           >
             <div
-              class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"
+              class="absolute right-0 top-0 -mr-16 -mt-16 h-32 w-32 rounded-full bg-primary/5 transition-transform group-hover:scale-110"
             />
             <div
               class="relative flex flex-col items-center text-center"
             >
               <div
-                class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 ring-4 ring-background shadow-xl overflow-hidden group-hover:scale-105 transition-transform"
+                class="mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 ring-4 ring-background shadow-xl transition-transform group-hover:scale-105"
               >
                 <span
-                  class="text-2xl font-black text-primary italic uppercase"
+                  class="font-heading text-3xl font-semibold text-primary"
                 >
                   T
                 </span>
               </div>
               <h2
-                class="text-xl font-black uppercase italic tracking-tight truncate w-full"
+                class="w-full truncate font-heading text-3xl font-semibold tracking-tight"
               >
                 Test User
               </h2>
               <p
-                class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60 truncate w-full"
+                class="mt-1 w-full truncate text-xs tracking-[0.18em] text-muted-foreground"
               >
                 tester@example.com
               </p>
               <div
-                class="mt-6 w-full p-4 rounded-xl bg-muted/30 dark:bg-muted/10 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                class="mt-6 w-full cursor-pointer rounded-xl border border-border/50 bg-muted/30 p-4 transition-colors hover:bg-muted/50 dark:bg-muted/10"
               >
                 <div
-                  class="flex items-center justify-between mb-2"
+                  class="mb-2 flex items-center justify-between"
                 >
                   <span
-                    class="text-[9px] font-black uppercase tracking-widest text-slate-400"
+                    class="font-heading text-sm font-semibold text-indigo-400"
                   >
                     Hạng 
-                    Bạc
+                    Bạch kim
                   </span>
                   <span
-                    class="text-[9px] font-black text-primary"
+                    class="text-xs font-semibold text-primary"
                   >
-                    47
+                    100
                     %
                   </span>
                 </div>
                 <div
-                  class="h-1.5 w-full bg-muted rounded-full overflow-hidden"
+                  class="h-1.5 w-full overflow-hidden rounded-full bg-muted"
                 >
                   <div
                     class="h-full bg-primary"
@@ -474,7 +536,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             class="space-y-1"
           >
             <a
-              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group bg-primary text-primary-foreground shadow-lg shadow-primary/25 translate-x-2"
+              class="group flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-300 translate-x-2 bg-primary text-primary-foreground shadow-lg shadow-primary/25"
               data-discover="true"
               href="/profile"
             >
@@ -483,7 +545,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <svg
                   aria-hidden="true"
-                  class="lucide lucide-user w-5 h-5 transition-transform group-hover:scale-110"
+                  class="lucide lucide-user h-5 w-5 transition-transform group-hover:scale-110"
                   fill="none"
                   height="24"
                   stroke="currentColor"
@@ -504,14 +566,14 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                   />
                 </svg>
                 <span
-                  class="text-xs font-black uppercase tracking-widest"
+                  class="font-heading text-base font-semibold"
                 >
                   Hồ sơ cá nhân
                 </span>
               </div>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-primary-foreground"
+                class="lucide lucide-chevron-right h-4 w-4 opacity-50 transition-transform group-hover:translate-x-1 text-primary-foreground"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -528,7 +590,59 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              class="group flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-300 border border-transparent text-muted-foreground hover:border-border hover:bg-card hover:text-foreground"
+              data-discover="true"
+              href="/profile/notifications"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-bell h-5 w-5 transition-transform group-hover:scale-110"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10.268 21a2 2 0 0 0 3.464 0"
+                  />
+                  <path
+                    d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
+                  />
+                </svg>
+                <span
+                  class="font-heading text-base font-semibold"
+                >
+                  Trung tâm thông báo
+                </span>
+              </div>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-right h-4 w-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m9 18 6-6-6-6"
+                />
+              </svg>
+            </a>
+            <a
+              class="group flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-300 border border-transparent text-muted-foreground hover:border-border hover:bg-card hover:text-foreground"
               data-discover="true"
               href="/profile/orders"
             >
@@ -537,7 +651,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <svg
                   aria-hidden="true"
-                  class="lucide lucide-package w-5 h-5 transition-transform group-hover:scale-110"
+                  class="lucide lucide-package h-5 w-5 transition-transform group-hover:scale-110"
                   fill="none"
                   height="24"
                   stroke="currentColor"
@@ -562,14 +676,14 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                   />
                 </svg>
                 <span
-                  class="text-xs font-black uppercase tracking-widest"
+                  class="font-heading text-base font-semibold"
                 >
                   Lịch sử đơn hàng
                 </span>
               </div>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                class="lucide lucide-chevron-right h-4 w-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -586,7 +700,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              class="group flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-300 border border-transparent text-muted-foreground hover:border-border hover:bg-card hover:text-foreground"
               data-discover="true"
               href="/profile/wishlist"
             >
@@ -595,7 +709,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <svg
                   aria-hidden="true"
-                  class="lucide lucide-heart w-5 h-5 transition-transform group-hover:scale-110"
+                  class="lucide lucide-heart h-5 w-5 transition-transform group-hover:scale-110"
                   fill="none"
                   height="24"
                   stroke="currentColor"
@@ -611,14 +725,14 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                   />
                 </svg>
                 <span
-                  class="text-xs font-black uppercase tracking-widest"
+                  class="font-heading text-base font-semibold"
                 >
                   Danh sách yêu thích
                 </span>
               </div>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                class="lucide lucide-chevron-right h-4 w-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -635,7 +749,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              class="group flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-300 border border-transparent text-muted-foreground hover:border-border hover:bg-card hover:text-foreground"
               data-discover="true"
               href="/profile/recently-viewed"
             >
@@ -644,7 +758,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <svg
                   aria-hidden="true"
-                  class="lucide lucide-eye w-5 h-5 transition-transform group-hover:scale-110"
+                  class="lucide lucide-eye h-5 w-5 transition-transform group-hover:scale-110"
                   fill="none"
                   height="24"
                   stroke="currentColor"
@@ -665,14 +779,14 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                   />
                 </svg>
                 <span
-                  class="text-xs font-black uppercase tracking-widest"
+                  class="font-heading text-base font-semibold"
                 >
                   Sản phẩm vừa xem
                 </span>
               </div>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                class="lucide lucide-chevron-right h-4 w-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -689,7 +803,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              class="group flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-300 border border-transparent text-muted-foreground hover:border-border hover:bg-card hover:text-foreground"
               data-discover="true"
               href="/profile/membership"
             >
@@ -698,7 +812,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <svg
                   aria-hidden="true"
-                  class="lucide lucide-trophy w-5 h-5 transition-transform group-hover:scale-110"
+                  class="lucide lucide-trophy h-5 w-5 transition-transform group-hover:scale-110"
                   fill="none"
                   height="24"
                   stroke="currentColor"
@@ -729,14 +843,14 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                   />
                 </svg>
                 <span
-                  class="text-xs font-black uppercase tracking-widest"
+                  class="font-heading text-base font-semibold"
                 >
                   Hạng thành viên
                 </span>
               </div>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                class="lucide lucide-chevron-right h-4 w-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -753,7 +867,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              class="group flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-300 border border-transparent text-muted-foreground hover:border-border hover:bg-card hover:text-foreground"
               data-discover="true"
               href="/profile/addresses"
             >
@@ -762,7 +876,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <svg
                   aria-hidden="true"
-                  class="lucide lucide-map-pin w-5 h-5 transition-transform group-hover:scale-110"
+                  class="lucide lucide-map-pin h-5 w-5 transition-transform group-hover:scale-110"
                   fill="none"
                   height="24"
                   stroke="currentColor"
@@ -783,14 +897,14 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                   />
                 </svg>
                 <span
-                  class="text-xs font-black uppercase tracking-widest"
+                  class="font-heading text-base font-semibold"
                 >
                   Địa chỉ của tôi
                 </span>
               </div>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                class="lucide lucide-chevron-right h-4 w-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -807,7 +921,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              class="group flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-300 border border-transparent text-muted-foreground hover:border-border hover:bg-card hover:text-foreground"
               data-discover="true"
               href="/profile/security"
             >
@@ -816,7 +930,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <svg
                   aria-hidden="true"
-                  class="lucide lucide-shield-check w-5 h-5 transition-transform group-hover:scale-110"
+                  class="lucide lucide-shield-check h-5 w-5 transition-transform group-hover:scale-110"
                   fill="none"
                   height="24"
                   stroke="currentColor"
@@ -835,14 +949,14 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                   />
                 </svg>
                 <span
-                  class="text-xs font-black uppercase tracking-widest"
+                  class="font-heading text-base font-semibold"
                 >
-                  Mật khẩu & Bảo mật
+                  Mật khẩu & bảo mật
                 </span>
               </div>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                class="lucide lucide-chevron-right h-4 w-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -859,7 +973,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group hover:bg-card border border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+              class="group flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-300 border border-transparent text-muted-foreground hover:border-border hover:bg-card hover:text-foreground"
               data-discover="true"
               href="/profile/settings"
             >
@@ -868,7 +982,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <svg
                   aria-hidden="true"
-                  class="lucide lucide-bell w-5 h-5 transition-transform group-hover:scale-110"
+                  class="lucide lucide-settings h-5 w-5 transition-transform group-hover:scale-110"
                   fill="none"
                   height="24"
                   stroke="currentColor"
@@ -880,21 +994,23 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
-                    d="M10.268 21a2 2 0 0 0 3.464 0"
+                    d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
                   />
-                  <path
-                    d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="3"
                   />
                 </svg>
                 <span
-                  class="text-xs font-black uppercase tracking-widest"
+                  class="font-heading text-base font-semibold"
                 >
                   Cài đặt thông báo
                 </span>
               </div>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-right w-4 h-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
+                class="lucide lucide-chevron-right h-4 w-4 opacity-50 transition-transform group-hover:translate-x-1 text-muted-foreground"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -911,11 +1027,11 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <button
-              class="w-full flex items-center gap-3 p-4 rounded-2xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all duration-300 mt-4 group"
+              class="group mt-4 flex w-full items-center gap-3 rounded-2xl p-4 text-rose-500 transition-all duration-300 hover:bg-rose-50 dark:hover:bg-rose-500/10"
             >
               <svg
                 aria-hidden="true"
-                class="lucide lucide-log-out w-5 h-5 transition-transform group-hover:-translate-x-1"
+                class="lucide lucide-log-out h-5 w-5 transition-transform group-hover:-translate-x-1"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -937,7 +1053,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
                 />
               </svg>
               <span
-                class="text-xs font-black uppercase tracking-widest"
+                class="font-heading text-base font-semibold"
               >
                 Đăng xuất
               </span>
@@ -945,7 +1061,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
           </nav>
         </aside>
         <main
-          class="lg:col-span-9 min-h-[600px]"
+          class="min-h-[600px] lg:col-span-9"
         >
           <div
             class="h-full"
@@ -960,16 +1076,16 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
     </div>
   </main>
   <footer
-    class="border-t bg-muted/30 pt-16 pb-8"
+    class="border-t bg-muted/30 pb-8 pt-16"
   >
     <div
       class="container mx-auto px-4"
     >
       <div
-        class="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16"
+        class="mb-16 grid grid-cols-1 gap-12 lg:grid-cols-12"
       >
         <div
-          class="lg:col-span-4 space-y-6"
+          class="space-y-6 lg:col-span-4"
         >
           <a
             class="inline-block"
@@ -977,26 +1093,26 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             href="/"
           >
             <h3
-              class="font-heading font-black text-2xl italic text-primary tracking-tighter"
+              class="font-heading text-2xl font-black italic tracking-tighter text-primary"
             >
               HAI TỤI MÌNH
             </h3>
           </a>
           <p
-            class="text-sm text-muted-foreground font-medium max-w-sm leading-relaxed"
+            class="max-w-sm text-sm font-medium leading-relaxed text-muted-foreground"
           >
-            Tiệm Bách Hoá Hai Tụi Mình – Chuyên mỹ phẩm chính hãng, đồ gia dụng thông minh và phụ kiện công nghệ chất lượng cao. Chúng mình tin rằng mỗi sản phẩm là một lời cam kết về giá trị thực.
+            Tiệm Bách Hoá Hai Tụi Mình chuyên mỹ phẩm chính hãng, đồ gia dụng tiện ích và sản phẩm công nghệ với mức giá cạnh tranh, minh bạch và đáng tin cậy.
           </p>
           <div
             class="flex gap-4"
           >
             <a
-              class="size-10 rounded-xl bg-background border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all group"
-              href="#"
+              class="flex size-10 items-center justify-center rounded-xl border border-border/50 bg-background text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-white"
+              href="https://www.instagram.com/"
             >
               <svg
                 aria-hidden="true"
-                class="lucide lucide-instagram size-5 group-hover:scale-110 transition-transform"
+                class="lucide lucide-instagram size-5"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -1027,12 +1143,12 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="size-10 rounded-xl bg-background border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all group"
-              href="#"
+              class="flex size-10 items-center justify-center rounded-xl border border-border/50 bg-background text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-white"
+              href="https://www.facebook.com/"
             >
               <svg
                 aria-hidden="true"
-                class="lucide lucide-facebook size-5 group-hover:scale-110 transition-transform"
+                class="lucide lucide-facebook size-5"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -1049,12 +1165,12 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="size-10 rounded-xl bg-background border border-border/50 flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all group"
-              href="#"
+              class="flex size-10 items-center justify-center rounded-xl border border-border/50 bg-background text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-white"
+              href="https://zalo.me/0931454176"
             >
               <svg
                 aria-hidden="true"
-                class="lucide lucide-message-circle size-5 group-hover:scale-110 transition-transform"
+                class="lucide lucide-message-circle size-5"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -1073,22 +1189,22 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
           </div>
         </div>
         <div
-          class="lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-8"
+          class="grid grid-cols-1 gap-8 md:grid-cols-3 lg:col-span-8"
         >
           <div
             class="space-y-4"
           >
             <button
-              class="flex items-center justify-between w-full md:cursor-default group"
+              class="group flex w-full items-center justify-between md:cursor-default"
             >
               <h4
-                class="font-black text-[10px] uppercase tracking-[0.2em] text-foreground/70"
+                class="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/70"
               >
                 MUA SẮM
               </h4>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-down size-4 md:hidden transition-transform"
+                class="lucide lucide-chevron-down size-4 transition-transform md:hidden"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -1112,48 +1228,48 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
                     href="/collections"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Bộ sưu tập
                   </a>
                 </li>
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
-                    href="/search?sort=newest"
+                    href="/new-arrivals"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Sản phẩm mới
                   </a>
                 </li>
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
-                    href="/search?sort=popular"
+                    href="/products?sortBy=popular"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Bán chạy nhất
                   </a>
                 </li>
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
-                    href="/#flash-sale"
+                    href="/flash-sale"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Flash Sale
                   </a>
@@ -1165,16 +1281,16 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             class="space-y-4"
           >
             <button
-              class="flex items-center justify-between w-full md:cursor-default group"
+              class="group flex w-full items-center justify-between md:cursor-default"
             >
               <h4
-                class="font-black text-[10px] uppercase tracking-[0.2em] text-foreground/70"
+                class="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/70"
               >
                 DỊCH VỤ KHÁCH HÀNG
               </h4>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-down size-4 md:hidden transition-transform"
+                class="lucide lucide-chevron-down size-4 transition-transform md:hidden"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -1198,48 +1314,48 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
                     href="/faq"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Trung tâm trợ giúp (FAQ)
                   </a>
                 </li>
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
                     href="/shipping-policy"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Chính sách vận chuyển
                   </a>
                 </li>
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
                     href="/return-policy"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Chính sách đổi trả
                   </a>
                 </li>
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
                     href="/faq#payment"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Phương thức thanh toán
                   </a>
@@ -1251,16 +1367,16 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             class="space-y-4"
           >
             <button
-              class="flex items-center justify-between w-full md:cursor-default group"
+              class="group flex w-full items-center justify-between md:cursor-default"
             >
               <h4
-                class="font-black text-[10px] uppercase tracking-[0.2em] text-foreground/70"
+                class="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/70"
               >
                 VỀ CHÚNG MÌNH
               </h4>
               <svg
                 aria-hidden="true"
-                class="lucide lucide-chevron-down size-4 md:hidden transition-transform"
+                class="lucide lucide-chevron-down size-4 transition-transform md:hidden"
                 fill="none"
                 height="24"
                 stroke="currentColor"
@@ -1284,48 +1400,48 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               >
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
                     href="/about"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Câu chuyện thương hiệu
                   </a>
                 </li>
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
                     href="/contact"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Liên hệ
                   </a>
                 </li>
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
-                    href="/about#careers"
+                    href="/why-buy"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
-                    Tuyển dụng
+                    Vì sao chọn Hai Tụi Mình
                   </a>
                 </li>
                 <li>
                   <a
-                    class="text-sm text-muted-foreground hover:text-primary transition-colors font-medium flex items-center gap-2 group"
+                    class="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     data-discover="true"
                     href="/privacy-policy"
                   >
                     <span
-                      class="w-0 h-[1px] bg-primary group-hover:w-3 transition-all duration-300"
+                      class="h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-3"
                     />
                     Chính sách bảo mật
                   </a>
@@ -1336,13 +1452,13 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
         </div>
       </div>
       <div
-        class="p-8 md:p-12 rounded-[3rem] bg-background border border-border/50 grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 shadow-soft"
+        class="mb-16 grid grid-cols-1 gap-8 rounded-[3rem] border border-border/50 bg-background p-8 shadow-soft md:grid-cols-3 md:p-12"
       >
         <div
-          class="flex items-center gap-6 group"
+          class="group flex items-center gap-6"
         >
           <div
-            class="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-all"
+            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-white"
           >
             <svg
               aria-hidden="true"
@@ -1371,17 +1487,17 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               Mua hàng nhanh
             </p>
             <p
-              class="font-black italic text-lg tracking-tight"
+              class="text-lg font-black italic tracking-tight"
             >
               0931.454.176
             </p>
           </div>
         </div>
         <div
-          class="flex items-center gap-6 group"
+          class="group flex items-center gap-6"
         >
           <div
-            class="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-all"
+            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-white"
           >
             <svg
               aria-hidden="true"
@@ -1417,17 +1533,17 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               Phản hồi & Khiếu nại
             </p>
             <p
-              class="font-black italic text-lg tracking-tight"
+              class="text-lg font-black italic tracking-tight"
             >
               hello@haituiminh.vn
             </p>
           </div>
         </div>
         <div
-          class="flex items-center gap-6 group"
+          class="group flex items-center gap-6"
         >
           <div
-            class="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-all"
+            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-white"
           >
             <svg
               aria-hidden="true"
@@ -1461,7 +1577,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               Địa chỉ cửa hàng
             </p>
             <p
-              class="font-black italic text-lg tracking-tight"
+              class="text-lg font-black italic leading-tight tracking-tight"
             >
               82/1E ấp Xuân Thới Đông 3, xã Xuân Thới Đông, Hóc Môn, TP.HCM
             </p>
@@ -1469,13 +1585,13 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
         </div>
       </div>
       <div
-        class="pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-6"
+        class="flex flex-col items-center justify-between gap-6 border-t pt-8 md:flex-row"
       >
         <div
           class="flex flex-wrap justify-center gap-4"
         >
           <div
-            class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-border/50"
+            class="rounded-xl border border-border/50 bg-background px-3 py-1.5"
           >
             <span
               class="text-[10px] font-black uppercase italic tracking-tighter"
@@ -1484,7 +1600,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             </span>
           </div>
           <div
-            class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-border/50"
+            class="rounded-xl border border-border/50 bg-background px-3 py-1.5"
           >
             <span
               class="text-[10px] font-black uppercase italic tracking-tighter"
@@ -1493,7 +1609,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             </span>
           </div>
           <div
-            class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-border/50"
+            class="rounded-xl border border-border/50 bg-background px-3 py-1.5"
           >
             <span
               class="text-[10px] font-black uppercase italic tracking-tighter"
@@ -1503,15 +1619,15 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
           </div>
         </div>
         <div
-          class="text-center md:text-right space-y-1"
+          class="space-y-1 text-center md:text-right"
         >
           <p
-            class="text-[10px] text-muted-foreground font-medium uppercase tracking-widest"
+            class="text-[10px] font-medium uppercase tracking-widest text-muted-foreground"
           >
-            © 2026 Tiệm Bách Hoá Hai Tụi Mình. Crafted with ♡
+            © 2026 Tiệm Bách Hoá Hai Tụi Mình
           </p>
           <p
-            class="text-[9px] text-muted-foreground/30 uppercase font-black"
+            class="text-[9px] font-black uppercase text-muted-foreground/30"
           >
             Powered by Antigravity Engine
           </p>

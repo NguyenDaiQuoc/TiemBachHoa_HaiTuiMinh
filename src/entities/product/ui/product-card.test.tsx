@@ -1,7 +1,8 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { ProductCard } from './product-card';
 import { Product } from '../model/types';
+import { renderWithProviders } from '@/src/shared/lib/test-utils/render-with-providers';
 
 const mockProduct: Product = {
   id: 'test-1',
@@ -23,7 +24,7 @@ const mockProduct: Product = {
 
 describe('ProductCard component', () => {
   it('renders product information correctly', () => {
-    render(<ProductCard product={mockProduct} />);
+    renderWithProviders(<ProductCard product={mockProduct} />);
     expect(screen.getByText('Test Product')).toBeInTheDocument();
     expect(screen.getByText('TEST')).toBeInTheDocument();
     expect(screen.getByText('NEW')).toBeInTheDocument();
@@ -31,8 +32,8 @@ describe('ProductCard component', () => {
   });
 
   it('renders add to cart action', () => {
-    render(<ProductCard product={mockProduct} />);
-    const addButton = screen.getByRole('button', { name: /thêm vào giỏ/i });
+    renderWithProviders(<ProductCard product={mockProduct} />);
+    const addButton = screen.getByTestId('add-to-cart-test-product');
     fireEvent.click(addButton);
     expect(addButton).toBeInTheDocument();
   });

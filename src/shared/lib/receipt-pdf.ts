@@ -1,5 +1,3 @@
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { formatCurrencyVND } from '@/src/shared/lib/utils';
 
 type ReceiptPdfItem = {
@@ -24,6 +22,8 @@ type ReceiptPdfPayload = {
 const createCell = (content: string, className = '') => `<td class="${className}">${content}</td>`;
 
 export const exportReceiptPdf = async (receipt: ReceiptPdfPayload, locale: 'vi' | 'en' = 'vi') => {
+  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+
   const totalQuantity = receipt.items.reduce((sum, item) => sum + item.quantity, 0);
   const totalCost = receipt.items.reduce((sum, item) => sum + item.quantity * item.costPrice, 0);
 

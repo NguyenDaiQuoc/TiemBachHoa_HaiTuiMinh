@@ -15,7 +15,8 @@ const checkoutSchema = z.object({
 // Create order details from cart
 router.post("/checkout", authenticate, async (req: any, res, next) => {
   try {
-    const { shippingAddress, shippingMethod } = checkoutSchema.parse(req.body);
+    const { shippingAddress, shippingMethod, paymentMethod } = checkoutSchema.parse(req.body);
+    const normalizedPaymentMethod = paymentMethod.toUpperCase();
 
     const cart = await prisma.cart.findUnique({
       where: { userId: req.user.id },
@@ -51,7 +52,7 @@ router.post("/checkout", authenticate, async (req: any, res, next) => {
           totalAmount,
           shippingAddress,
           shippingMethod,
-          status: "PENDING",
+          status: normalizedPaymentMethod === "COD" ? "PROCESSING" : "PENDING",
           paymentStatus: "UNPAID",
           items: {
             create: cart.items.map(item => ({
@@ -66,15 +67,17 @@ router.post("/checkout", authenticate, async (req: any, res, next) => {
         include: { items: true }
       });
 
-      // 2. Reduce stock & update sold count
-      for (const item of cart.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: { decrement: item.quantity },
-            soldCount: { increment: item.quantity }
-          }
-        });
+      // 2. COD reserves stock immediately; bank transfer waits for payment confirmation.
+      if (normalizedPaymentMethod === "COD") {
+        for (const item of cart.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: { decrement: item.quantity },
+              soldCount: { increment: item.quantity }
+            }
+          });
+        }
       }
 
       // 3. Clear cart

@@ -1,23 +1,27 @@
-
 import { useCartStore } from '@/src/entities/cart/model/store';
 import { Separator } from '@/src/shared/ui/separator';
 import { ScrollArea } from '@/src/shared/ui/scroll-area';
 import { useCheckoutStore } from '../model/checkout-store';
 import { calculateShippingPrice } from '@/src/entities/shipping/lib/shipping-engine';
 
-export const OrderSummary = () => {
-  const { items, totalPrice } = useCartStore();
+interface OrderSummaryProps {
+  useCurrentOrder?: boolean;
+}
+
+export const OrderSummary = ({ useCurrentOrder = false }: OrderSummaryProps) => {
+  const { items } = useCartStore();
   const { currentOrder, selectedShippingMethod } = useCheckoutStore();
-  
-  const displayItems = currentOrder?.items?.length ? currentOrder.items : items;
-  const shipping = currentOrder ? currentOrder.shippingFee : selectedShippingMethod ? calculateShippingPrice(selectedShippingMethod) : 0;
-  const total = currentOrder ? currentOrder.totalAmount : totalPrice() + shipping;
-  const subtotal = Math.max(0, total - shipping);
+
+  const orderForSummary = useCurrentOrder ? currentOrder : null;
+  const displayItems = orderForSummary?.items?.length ? orderForSummary.items : items;
+  const shipping = orderForSummary ? orderForSummary.shippingFee : selectedShippingMethod ? calculateShippingPrice(selectedShippingMethod) : 0;
+  const subtotal = displayItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = orderForSummary ? orderForSummary.totalAmount : subtotal + shipping;
 
   return (
     <div className="bg-muted/30 rounded-3xl p-6 space-y-6 sticky top-24">
       <h3 className="text-xl font-bold font-heading">Tóm tắt đơn hàng</h3>
-      
+
       <ScrollArea className="max-h-[300px] pr-4">
         <div className="space-y-4">
           {displayItems.map((item) => (
@@ -48,8 +52,8 @@ export const OrderSummary = () => {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Phí vận chuyển</span>
-          <span className={shipping === 0 ? "text-success font-bold" : "font-medium"}>
-            {shipping === 0 ? "Miễn phí" : shipping.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+          <span className={shipping === 0 ? 'text-success font-bold' : 'font-medium'}>
+            {shipping === 0 ? 'Miễn phí' : shipping.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
           </span>
         </div>
         <Separator className="bg-border/50" />
@@ -60,7 +64,7 @@ export const OrderSummary = () => {
       </div>
 
       <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest leading-loose">
-        Bằng cách đặt hàng, bạn đồng ý với <br/> 
+        Bằng cách đặt hàng, bạn đồng ý với <br />
         <span className="underline cursor-pointer">Điều khoản dịch vụ</span> của chúng tôi.
       </p>
     </div>

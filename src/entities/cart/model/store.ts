@@ -17,11 +17,25 @@ interface CartStore {
   totalPrice: () => number;
 }
 
+const getMaxStock = (product: Pick<Product, 'stock'>) => Math.max(0, Math.trunc(Number(product.stock) || 0));
+const clampQuantity = (product: Pick<Product, 'stock'>, quantity: number) => {
+  const maxStock = getMaxStock(product);
+  if (maxStock <= 0) return 0;
+  return Math.min(maxStock, Math.max(1, Math.trunc(quantity) || 1));
+};
+
+const sanitizeCartItems = (items: CartItem[]) =>
+  items
+    .map((item) => ({ ...item, quantity: clampQuantity(item, item.quantity) }))
+    .filter((item) => item.quantity > 0);
+
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
       addItem: (product) => {
+        const maxStock = getMaxStock(product);
+        if (maxStock <= 0) return;
         const items = get().items;
         const existingItem = items.find((item) => item.id === product.id);
 
@@ -29,7 +43,7 @@ export const useCartStore = create<CartStore>()(
           set({
             items: items.map((item) =>
               item.id === product.id
-                ? { ...item, quantity: item.quantity + 1 }
+                ? { ...item, ...product, quantity: clampQuantity(product, item.quantity + 1) }
                 : item
             ),
           });
@@ -42,11 +56,13 @@ export const useCartStore = create<CartStore>()(
         const nextItems = [...items];
 
         for (const product of products) {
-          const quantity = Math.max(1, Number(product.quantity) || 1);
+          const quantity = clampQuantity(product, Number(product.quantity) || 1);
+          if (quantity <= 0) continue;
           const existingIndex = nextItems.findIndex((item) => item.id === product.id);
 
           if (existingIndex >= 0) {
-            nextItems[existingIndex] = { ...nextItems[existingIndex], quantity: nextItems[existingIndex].quantity + quantity };
+            const merged = { ...nextItems[existingIndex], ...product };
+            nextItems[existingIndex] = { ...merged, quantity: clampQuantity(merged, nextItems[existingIndex].quantity + quantity) };
           } else {
             nextItems.push({ ...product, quantity });
           }
@@ -59,9 +75,9 @@ export const useCartStore = create<CartStore>()(
       },
       updateQuantity: (productId, quantity) => {
         set({
-          items: get().items.map((item) =>
-            item.id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
-          ),
+          items: get().items
+            .map((item) => (item.id === productId ? { ...item, quantity: clampQuantity(item, quantity) } : item))
+            .filter((item) => item.quantity > 0),
         });
       },
       clearCart: () => set({ items: [] }),
@@ -70,6 +86,14 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: 'cart-storage',
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<CartStore> | undefined;
+        return {
+          ...currentState,
+          ...persisted,
+          items: sanitizeCartItems(Array.isArray(persisted?.items) ? persisted.items : []),
+        };
+      },
     }
   )
 );

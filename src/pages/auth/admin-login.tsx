@@ -117,25 +117,25 @@ export const AdminLoginPage: React.FC = () => {
         </div>
 
         <div className="p-6 sm:p-8 lg:p-10">
-          <Card className="border-white/10 bg-white/95 p-6 text-stone-900 shadow-none dark:bg-white">
+          <Card className="border-white/10 bg-white p-6 text-stone-950 shadow-none dark:bg-white dark:text-stone-950">
             <div className="mb-6 space-y-2">
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">
                 <Sparkles className="h-3.5 w-3.5" />
                 Secure Sign-In
               </div>
-              <h2 className="text-2xl font-black uppercase tracking-tight">Đăng nhập quản trị</h2>
-              <p className="text-sm text-stone-500">Sử dụng tài khoản được cấp quyền để truy cập khu vực admin.</p>
+              <h2 className="text-2xl font-black uppercase tracking-tight text-stone-950 dark:text-stone-950">Đăng nhập quản trị</h2>
+              <p className="text-sm font-medium text-stone-600 dark:text-stone-600">Sử dụng tài khoản được cấp quyền để truy cập khu vực admin.</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-2">
-                <label className="ml-1 text-sm font-bold text-stone-700">Email quản trị</label>
+                <label className="ml-1 text-sm font-bold text-stone-700 dark:text-stone-700">Email quản trị</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                   <Input
                     {...register('email')}
                     placeholder="admin@haituiminh.com"
-                    className="h-12 border-stone-200 bg-stone-50 pl-12 focus:ring-2 focus:ring-amber-500/20"
+                    className="h-12 border-stone-300 bg-white pl-12 text-stone-950 placeholder:text-stone-500 focus:ring-2 focus:ring-amber-500/20 dark:border-stone-300 dark:bg-white dark:text-stone-950 dark:placeholder:text-stone-500"
                   />
                 </div>
                 {errors.email && <p className="ml-1 text-xs font-medium text-red-500">{errors.email.message}</p>}
@@ -143,8 +143,8 @@ export const AdminLoginPage: React.FC = () => {
 
               <div className="space-y-2">
                 <div className="ml-1 flex items-center justify-between">
-                  <label className="text-sm font-bold text-stone-700">Mật khẩu</label>
-                  <Link to="/login" className="text-xs font-semibold text-amber-700 hover:underline">
+                  <label className="text-sm font-bold text-stone-700 dark:text-stone-700">Mật khẩu</label>
+                  <Link to="/login" tabIndex={-1} className="text-xs font-semibold text-amber-700 hover:underline">
                     Đăng nhập khách hàng
                   </Link>
                 </div>
@@ -154,10 +154,11 @@ export const AdminLoginPage: React.FC = () => {
                     {...register('password')}
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    className="h-12 border-stone-200 bg-stone-50 pl-12 pr-12 focus:ring-2 focus:ring-amber-500/20"
+                    className="h-12 border-stone-300 bg-white pl-12 pr-12 text-stone-950 placeholder:text-stone-500 focus:ring-2 focus:ring-amber-500/20 dark:border-stone-300 dark:bg-white dark:text-stone-950 dark:placeholder:text-stone-500"
                   />
                   <button
                     type="button"
+                    tabIndex={-1}
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
                     aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
@@ -168,7 +169,7 @@ export const AdminLoginPage: React.FC = () => {
                 {errors.password && <p className="ml-1 text-xs font-medium text-red-500">{errors.password.message}</p>}
               </div>
 
-              <Button type="submit" disabled={isLoading} className="h-12 w-full bg-stone-950 text-sm font-black uppercase tracking-[0.18em] hover:bg-stone-800">
+              <Button type="submit" disabled={isLoading} className="h-12 w-full bg-stone-950 text-sm font-black uppercase tracking-[0.18em] text-white hover:bg-stone-800 dark:bg-stone-950 dark:text-white dark:hover:bg-stone-800">
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (

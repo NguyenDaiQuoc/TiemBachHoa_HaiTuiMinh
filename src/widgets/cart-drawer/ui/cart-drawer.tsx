@@ -71,6 +71,7 @@ export const CartDrawer = ({ isOpen, onOpenChange }: CartDrawerProps) => {
                           <button 
                             className="h-8 w-8 flex items-center justify-center hover:bg-surface-default rounded-lg transition-colors"
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
                             aria-label="Giảm số lượng"
                           >
                             <Minus className="h-3 w-3" />
@@ -79,6 +80,7 @@ export const CartDrawer = ({ isOpen, onOpenChange }: CartDrawerProps) => {
                           <button 
                             className="h-8 w-8 flex items-center justify-center hover:bg-surface-default rounded-lg transition-colors"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            disabled={item.quantity >= Math.max(0, item.stock || 0)}
                             aria-label="Tăng số lượng"
                           >
                             <Plus className="h-3 w-3" />

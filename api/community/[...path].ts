@@ -16,12 +16,11 @@ const parsePath = (req: IncomingMessage) => {
   return (rewritten || url.pathname.replace(/^\/api\/community\/?/, '')).replace(/\/$/, '');
 };
 
-const optionalUser = async (req: IncomingMessage): Promise<AuthUser | null> => {
-  const authHeader = req.headers.authorization;
-  if (!hasJwtSecret || !authHeader?.startsWith('Bearer ')) return null;
+const userFromToken = async (token: string): Promise<AuthUser | null> => {
+  if (!hasJwtSecret || !token) return null;
 
   try {
-    const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET) as AuthUser;
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: { id: true, email: true, role: true, isActive: true, deletedAt: true },
@@ -32,6 +31,28 @@ const optionalUser = async (req: IncomingMessage): Promise<AuthUser | null> => {
     return null;
   }
 };
+
+const optionalUser = async (req: IncomingMessage): Promise<AuthUser | null> => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : '';
+  return userFromToken(token);
+};
+
+const serializeNotificationCenter = (items: Array<any>) => ({
+  items: items.map((item) => ({
+    id: item.id,
+    scope: item.scope,
+    type: item.type,
+    title: item.title,
+    message: item.message,
+    link: item.link,
+    isRead: item.isRead,
+    readAt: item.readAt,
+    createdAt: item.createdAt,
+    metadata: item.metadata,
+  })),
+  unreadCount: items.filter((item) => !item.isRead).length,
+});
 
 const requireUser = async (req: IncomingMessage, res: ServerResponse) => {
   const user = await optionalUser(req);
@@ -201,6 +222,52 @@ const handleReviews = async (req: IncomingMessage, res: ServerResponse, productI
   return fail(res, 'Phương thức không được hỗ trợ', 405);
 };
 
+const handleNotifications = async (req: IncomingMessage, res: ServerResponse, path: string) => {
+  if (path === 'notifications/stream') {
+    const url = new URL(req.url || '/', 'https://haituiminh.vercel.app');
+    const user = await userFromToken(url.searchParams.get('token') || '');
+    if (!user) return fail(res, 'Unauthorized', 401);
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+    });
+    res.write('event: ping\ndata: connected\n\n');
+    return res.end();
+  }
+
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  if (path === 'notifications' && req.method === 'GET') {
+    const notifications = await prisma.appNotification.findMany({
+      where: { userId: user.id, scope: 'USER' },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+    return ok(res, serializeNotificationCenter(notifications));
+  }
+
+  if (path === 'notifications/read-all' && req.method === 'POST') {
+    const result = await prisma.appNotification.updateMany({
+      where: { userId: user.id, scope: 'USER', isRead: false },
+      data: { isRead: true, readAt: new Date() },
+    });
+    return ok(res, { count: result.count }, 'Đã đánh dấu toàn bộ thông báo');
+  }
+
+  const readMatch = path.match(/^notifications\/([^/]+)\/read$/);
+  if (readMatch && req.method === 'PATCH') {
+    const id = decodeURIComponent(readMatch[1]);
+    const notification = await prisma.appNotification.findUnique({ where: { id }, select: { id: true, userId: true } });
+    if (!notification || notification.userId !== user.id) return fail(res, 'Không tìm thấy thông báo', 404);
+    const updated = await prisma.appNotification.update({ where: { id }, data: { isRead: true, readAt: new Date() } });
+    return ok(res, updated, 'Đã đánh dấu đã đọc');
+  }
+
+  return fail(res, 'Không tìm thấy API thông báo', 404);
+};
+
 const handleHelpful = async (req: IncomingMessage, res: ServerResponse, path: string) => {
   if (req.method !== 'POST') return fail(res, 'Phương thức không được hỗ trợ', 405);
   const user = await requireUser(req, res);
@@ -226,6 +293,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   try {
     const path = parsePath(req);
+    if (path.startsWith('notifications')) return handleNotifications(req, res, path);
+
+    if (path === 'chat/stream') {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+      });
+      res.write('event: ping\ndata: connected\n\n');
+      return res.end();
+    }
+
     const socialProductId = productIdFromPath(path, 'social-proof');
     if (socialProductId) return handleSocialProof(req, res, socialProductId);
 

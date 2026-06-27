@@ -29,6 +29,32 @@ Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
   value: () => {},
 });
 
+class MockEventSource {
+  public onopen: ((event: Event) => void) | null = null;
+  public onmessage: ((event: MessageEvent) => void) | null = null;
+  public onerror: ((event: Event) => void) | null = null;
+  public readonly readyState = 0;
+  public readonly url: string;
+
+  constructor(url: string) {
+    this.url = url;
+  }
+
+  addEventListener() {}
+  removeEventListener() {}
+  close() {}
+}
+
+Object.defineProperty(window, 'EventSource', {
+  writable: true,
+  value: MockEventSource,
+});
+
+Object.defineProperty(globalThis, 'EventSource', {
+  writable: true,
+  value: MockEventSource,
+});
+
 afterEach(() => {
   cleanup();
   window.localStorage.clear();

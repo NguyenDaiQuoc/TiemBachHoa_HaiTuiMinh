@@ -1,10 +1,69 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react';
-import maplibregl from 'maplibre-gl';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapPin, Truck, Warehouse, Home, Navigation2, Maximize2, Minimize2 } from 'lucide-react';
 import { cn } from '@/src/shared/lib/utils';
 import { ShipmentDetails, TrackingLocation } from '@/src/entities/shipping/model/types';
+
+type MapLibreRuntime = {
+  workerUrl?: string;
+  Map: new (...args: any[]) => any;
+  Marker: new (...args: any[]) => any;
+  LngLatBounds: new (...args: any[]) => any;
+};
+
+declare global {
+  interface Window {
+    maplibregl?: MapLibreRuntime;
+  }
+}
+
+const MAPLIBRE_SCRIPT_URL = '/vendor/maplibre/maplibre-gl.js';
+const MAPLIBRE_STYLE_URL = '/vendor/maplibre/maplibre-gl.css';
+const MAPLIBRE_WORKER_URL = '/vendor/maplibre/maplibre-gl-csp-worker.js';
+
+let mapLibrePromise: Promise<MapLibreRuntime> | null = null;
+
+const loadMapLibre = () => {
+  if (typeof window === 'undefined') return Promise.reject(new Error('MapLibre requires a browser runtime'));
+  if (window.maplibregl) return Promise.resolve(window.maplibregl);
+  if (mapLibrePromise) return mapLibrePromise;
+
+  mapLibrePromise = new Promise((resolve, reject) => {
+    if (!document.querySelector('link[data-maplibre="true"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = MAPLIBRE_STYLE_URL;
+      link.dataset.maplibre = 'true';
+      document.head.appendChild(link);
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>('script[data-maplibre="true"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => (window.maplibregl ? resolve(window.maplibregl) : reject(new Error('MapLibre did not initialize'))), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Unable to load MapLibre')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = MAPLIBRE_SCRIPT_URL;
+    script.async = true;
+    script.dataset.maplibre = 'true';
+    script.onload = () => {
+      if (!window.maplibregl) {
+        reject(new Error('MapLibre did not initialize'));
+        return;
+      }
+
+      window.maplibregl.workerUrl = MAPLIBRE_WORKER_URL;
+      resolve(window.maplibregl);
+    };
+    script.onerror = () => reject(new Error('Unable to load MapLibre'));
+    document.head.appendChild(script);
+  });
+
+  return mapLibrePromise;
+};
 
 interface DeliveryMapProps {
   shipment: ShipmentDetails;
@@ -13,8 +72,9 @@ interface DeliveryMapProps {
 
 export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
-  const courierMarker = useRef<maplibregl.Marker | null>(null);
+  const maplibreRef = useRef<MapLibreRuntime | null>(null);
+  const map = useRef<any>(null);
+  const courierMarker = useRef<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -59,11 +119,12 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
   };
 
   const updateCamera = () => {
-    if (!map.current || !isMapLoaded) return;
+    const maplibre = maplibreRef.current;
+    if (!map.current || !isMapLoaded || !maplibre) return;
 
     if (status === 'OUT_FOR_DELIVERY') {
       // Focus on courier and destination for tight neighborhood context - Flat view
-      const bounds = new maplibregl.LngLatBounds()
+      const bounds = new maplibre.LngLatBounds()
         .extend(courierCoords as [number, number])
         .extend([destination.lng, destination.lat] as [number, number]);
 
@@ -75,7 +136,7 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
       });
     } else {
       // Regional view showing the full context - Flat
-      const bounds = new maplibregl.LngLatBounds()
+      const bounds = new maplibre.LngLatBounds()
         .extend([origin.lng, origin.lat])
         .extend([destination.lng, destination.lat]);
 
@@ -89,24 +150,30 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
 
   useEffect(() => {
     if (!mapContainer.current) return;
+    let cancelled = false;
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-      center: courierCoords as [number, number],
-      zoom: 11,
-      attributionControl: false,
-    });
+    loadMapLibre()
+      .then((maplibre) => {
+        if (cancelled || !mapContainer.current) return;
+        maplibreRef.current = maplibre;
 
-    map.current.on('load', () => {
-      setIsMapLoaded(true);
-      if (!map.current) return;
+        map.current = new maplibre.Map({
+          container: mapContainer.current,
+          style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+          center: courierCoords as [number, number],
+          zoom: 11,
+          attributionControl: false,
+        });
 
-      const fullRoute: [number, number][] = [
-        [origin.lng, origin.lat],
-        ...events.map(e => [e.location.lng, e.location.lat] as [number, number]),
-        [destination.lng, destination.lat]
-      ];
+        map.current.on('load', () => {
+          setIsMapLoaded(true);
+          if (!map.current) return;
+
+          const fullRoute: [number, number][] = [
+            [origin.lng, origin.lat],
+            ...events.map(e => [e.location.lng, e.location.lat] as [number, number]),
+            [destination.lng, destination.lat]
+          ];
 
       // Add full route source
       map.current.addSource('full-route', {
@@ -177,13 +244,13 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
       // Markers for Origin and Destination
       const elOrigin = document.createElement('div');
       elOrigin.className = 'marker-origin';
-      new maplibregl.Marker({ element: elOrigin, anchor: 'bottom' })
+      new maplibre.Marker({ element: elOrigin, anchor: 'bottom' })
         .setLngLat([origin.lng, origin.lat] as [number, number])
         .addTo(map.current);
 
       const elDest = document.createElement('div');
       elDest.className = 'marker-destination';
-      new maplibregl.Marker({ element: elDest, anchor: 'bottom' })
+      new maplibre.Marker({ element: elDest, anchor: 'bottom' })
         .setLngLat([destination.lng, destination.lat] as [number, number])
         .addTo(map.current);
 
@@ -192,15 +259,20 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
       elCourier.className = 'marker-courier';
       elCourier.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18h14c.6 0 1-.4 1-1V6c0-.6-.4-1-1-1H5c-.6 0-1 .4-1 1v11c0 .6.4 1 1 1z"/><path d="M7 5H5v3h2V5z"/><path d="M19 5h-2v3h2V5z"/><path d="M11 18H9v3h2v-3z"/><path d="M15 18h-2v3h2v-3z"/><path d="M10 8h4"/></svg>`;
       
-      courierMarker.current = new maplibregl.Marker({ element: elCourier, rotationAlignment: 'map' })
+      courierMarker.current = new maplibre.Marker({ element: elCourier, rotationAlignment: 'map' })
         .setLngLat(courierCoords as [number, number])
         .addTo(map.current);
 
       // Initial camera fit
-      updateCamera();
-    });
+          updateCamera();
+        });
+      })
+      .catch(() => {
+        setIsMapLoaded(true);
+      });
 
     return () => {
+      cancelled = true;
       map.current?.remove();
     };
   }, []);
@@ -213,7 +285,7 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
       courierMarker.current.setRotation(heading);
       
       // Update active route line
-      const source = map.current.getSource('active-route') as maplibregl.GeoJSONSource;
+      const source = map.current.getSource('active-route') as any;
       if (source) {
         const fullPath = [origin, ...events.map(e => e.location), destination];
         const segmentCount = fullPath.length - 1;
@@ -404,4 +476,3 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
     </div>
   );
 };
-

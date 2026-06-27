@@ -57,9 +57,55 @@ const ensureShopProfile = () =>
 const parseDate = (value: unknown) => (typeof value === 'string' && value ? new Date(value) : null);
 const textOrNull = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : null);
 const stringArray = (value: unknown) => (Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : []);
-const numberOr = (value: unknown, fallback = 0) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
+const numberOr = (value: unknown, fallback = 0) => (value === null || value === undefined || value === '' ? fallback : Number.isFinite(Number(value)) ? Number(value) : fallback);
+const nullableNumber = (value: unknown) => (value === null || value === undefined || value === '' ? null : Number.isFinite(Number(value)) ? Number(value) : null);
 const intOr = (value: unknown, fallback = 0) => Math.trunc(numberOr(value, fallback));
 const DEFAULT_PRODUCT_IMAGE = '/favicon.svg';
+
+const parseJsonObject = (raw: string | null | undefined) => {
+  try {
+    const parsed = JSON.parse(raw || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, any> : {};
+  } catch {
+    return { street: raw || '' };
+  }
+};
+
+const compactDeliveryTracking = (tracking: any) => {
+  const events = Array.isArray(tracking?.events) ? tracking.events : [];
+  return {
+    ...(tracking && typeof tracking === 'object' ? tracking : {}),
+    events: events.map(({ proofImage, ...event }: any) => ({
+      ...event,
+      hasProofImage: Boolean(proofImage),
+    })),
+  };
+};
+
+const committedOrderStatuses = new Set(['PROCESSING', 'SHIPPED', 'DELIVERED', 'PACKING', 'SHIPPING', 'DELIVERING']);
+const shouldCommitInventory = (fromStatus: string, toStatus: string) => fromStatus === 'PENDING' && committedOrderStatuses.has(toStatus);
+const shouldRestoreInventory = (fromStatus: string, toStatus: string) => toStatus === 'CANCELLED' && committedOrderStatuses.has(fromStatus);
+
+const commitOrderInventory = async (tx: Prisma.TransactionClient, order: { items: Array<{ productId: string; quantity: number }> }) => {
+  for (const item of order.items) {
+    const product = await tx.product.findUnique({ where: { id: item.productId }, select: { id: true, name: true, stock: true } });
+    if (!product) throw new Error('Có sản phẩm không hợp lệ trong đơn hàng');
+    if (product.stock < item.quantity) throw new Error(`Sản phẩm ${product.name} chỉ còn ${product.stock} trong kho`);
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { stock: { decrement: item.quantity }, soldCount: { increment: item.quantity } },
+    });
+  }
+};
+
+const restoreOrderInventory = async (tx: Prisma.TransactionClient, order: { items: Array<{ productId: string; quantity: number }> }) => {
+  for (const item of order.items) {
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
+    });
+  }
+};
 
 const slugify = (value: string) =>
   value
@@ -274,14 +320,19 @@ const serializeOrder = (order: any) => ({
   paymentStatus: order.paymentStatus,
   shippingMethod: order.shippingMethod,
   createdAt: order.createdAt,
+  updatedAt: order.updatedAt,
   items: order.items || [],
   shippingAddress: (() => {
     try {
       const parsed = JSON.parse(order.shippingAddress || '{}');
       return {
-        street: parsed.street || parsed.detail || order.shippingAddress || '',
+        fullName: parsed.fullName || parsed.name || parsed.receiverName || '',
+        email: parsed.email || '',
+        street: parsed.address || parsed.street || parsed.detail || '',
         city: parsed.city || parsed.province || '',
         phone: parsed.phone || '',
+        note: parsed.note || '',
+        deliveryTracking: compactDeliveryTracking(parsed.deliveryTracking),
       };
     } catch {
       return { street: order.shippingAddress || '', city: '', phone: '' };
@@ -683,6 +734,43 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (path === 'analytics') return handleAnalytics(res);
     if (path === 'products' || path.startsWith('products/')) return handleProducts(req, res, user, path);
     if (path === 'orders') return ok(res, (await prisma.order.findMany({ include: { items: true, user: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' } })).map(serializeOrder));
+    if (path.endsWith('/delivery-event') && path.startsWith('orders/') && req.method === 'POST') {
+      const body = await readJsonBody<any>(req);
+      const id = path.split('/')[1];
+      const order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
+      if (!order) return fail(res, 'Không tìm thấy đơn hàng', 404);
+
+      const envelope = parseJsonObject(order.shippingAddress);
+      const deliveryTracking = envelope.deliveryTracking && typeof envelope.deliveryTracking === 'object' ? envelope.deliveryTracking : {};
+      const events = Array.isArray(deliveryTracking.events) ? deliveryTracking.events : [];
+      const eventStatus = String(body.status || 'OUT_FOR_DELIVERY').toUpperCase() === 'DELIVERED' ? 'DELIVERED' : 'OUT_FOR_DELIVERY';
+      const nextEvent = {
+        id: `delivery-${Date.now()}`,
+        status: eventStatus,
+        lat: nullableNumber(body.lat),
+        lng: nullableNumber(body.lng),
+        address: textOrNull(body.address) || textOrNull(body.note) || 'Người giao đã cập nhật vị trí',
+        note: textOrNull(body.note),
+        proofImage: textOrNull(body.proofImage),
+        timestamp: new Date().toISOString(),
+        updatedBy: user.id,
+      };
+
+      const updated = await prisma.order.update({
+        where: { id },
+        data: {
+          status: eventStatus === 'DELIVERED' ? 'DELIVERED' : order.status === 'PROCESSING' ? 'SHIPPED' : order.status,
+          paymentStatus: eventStatus === 'DELIVERED' ? 'PAID' : order.paymentStatus,
+          shippingAddress: JSON.stringify({
+            ...envelope,
+            deliveryTracking: { ...deliveryTracking, events: [...events, nextEvent] },
+          }),
+        },
+        include: { items: true, user: { select: { name: true, email: true } } },
+      });
+      await createAuditLog(user, 'ADMIN_UPDATE_DELIVERY_TRACKING', 'Order', order.id);
+      return ok(res, serializeOrder(updated), 'Đã cập nhật hành trình giao hàng');
+    }
     if (path.endsWith('/status') && path.startsWith('orders/') && req.method === 'PATCH') {
       const body = await readJsonBody<any>(req);
       const id = path.split('/')[1];
@@ -690,12 +778,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       const existing = await prisma.order.findUnique({ where: { id }, include: { items: true } });
       if (!existing) return fail(res, 'Không tìm thấy đơn hàng', 404);
       const order = await prisma.$transaction(async (tx) => {
-        if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
-          for (const item of existing.items) {
-            await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } } });
-          }
-        }
-        return tx.order.update({ where: { id }, data: { status } });
+        if (shouldCommitInventory(existing.status, status)) await commitOrderInventory(tx, existing);
+        if (shouldRestoreInventory(existing.status, status)) await restoreOrderInventory(tx, existing);
+        return tx.order.update({ where: { id }, data: status === 'CANCELLED' ? { status, paymentStatus: 'FAILED' } : shouldCommitInventory(existing.status, status) ? { status, paymentStatus: 'PAID' } : { status } });
       });
       await createAuditLog(user, 'ADMIN_UPDATE_ORDER_STATUS', 'Order', order.id);
       return ok(res, order, 'Đã cập nhật trạng thái đơn hàng');
@@ -706,15 +791,16 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       const status = String(body.status);
       const orders = await prisma.order.findMany({ where: { id: { in: ids } }, select: { id: true, status: true, items: { select: { productId: true, quantity: true } } } });
       await prisma.$transaction(async (tx) => {
-        if (status === 'CANCELLED') {
-          for (const order of orders) {
-            if (order.status === 'CANCELLED') continue;
-            for (const item of order.items) {
-              await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } } });
-            }
-          }
+        for (const order of orders) {
+          if (shouldCommitInventory(order.status, status)) await commitOrderInventory(tx, order);
+          if (shouldRestoreInventory(order.status, status)) await restoreOrderInventory(tx, order);
         }
-        await tx.order.updateMany({ where: { id: { in: ids } }, data: { status } });
+        const nextData = status === 'CANCELLED'
+          ? { status, paymentStatus: 'FAILED' }
+          : committedOrderStatuses.has(status)
+            ? { status, paymentStatus: 'PAID' }
+            : { status };
+        await tx.order.updateMany({ where: { id: { in: ids } }, data: nextData });
       });
       await createAuditLog(user, 'ADMIN_BATCH_UPDATE_ORDERS', 'Order');
       return ok(res, { updated: ids.length }, 'Đã cập nhật đơn hàng');

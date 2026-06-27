@@ -5,6 +5,10 @@
       "destination": "/api/admin/[...path]?...path=$1"
     },
     {
+      "source": "/api/user/(.*)",
+      "destination": "/api/community/[...path]?...path=$1"
+    },
+    {
       "source": "/api/community/(.*)",
       "destination": "/api/community/[...path]?...path=$1"
     },
