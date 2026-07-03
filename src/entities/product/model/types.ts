@@ -1,4 +1,4 @@
-﻿export interface ProductVariant {
+export interface ProductVariant {
   id: string;
   name: string;
   value: string;

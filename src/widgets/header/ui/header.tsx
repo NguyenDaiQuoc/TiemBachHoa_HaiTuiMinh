@@ -94,7 +94,7 @@ export const Header = () => {
     { label: 'Khám phá', type: null, path: '/products', icon: <Compass className="h-5 w-5" /> },
     { label: 'Cẩm nang', type: null, path: '/blog', icon: <BookOpen className="h-5 w-5" /> },
     { label: 'Theo dõi', type: null, path: '/tracking', icon: <Package className="h-5 w-5" /> },
-    { label: 'Bộ sưu tập', type: 'collections' as const, path: '/collections', icon: <Layers className="h-5 w-5" /> },
+    { label: 'Bộ sưu tập', type: 'collections' as const, path: '/products', icon: <Layers className="h-5 w-5" /> },
   ];
 
   return (

@@ -15,14 +15,14 @@ export const orderKeys = {
 
 // User endpoints
 export const fetchOrders = async () => {
-  const response = await fetch(BASE_URL);
+  const response = await fetch(BASE_URL, { headers: getAuthHeaders({}, 'user') });
   if (!response.ok) throw new Error("Failed to fetch orders");
   const result = await response.json();
   return result.data;
 };
 
 export const fetchOrder = async (id: string) => {
-  const response = await fetch(`${BASE_URL}/${id}`);
+  const response = await fetch(`${BASE_URL}/${id}`, { headers: getAuthHeaders({}, 'user') });
   if (!response.ok) throw new Error("Failed to fetch order");
   const result = await response.json();
   return result.data;
@@ -72,6 +72,7 @@ export const addDeliveryEvent = async ({
   lng,
   address,
   note,
+  mapUrl,
   proofImage,
 }: {
   id: string;
@@ -80,18 +81,73 @@ export const addDeliveryEvent = async ({
   lng?: number;
   address?: string;
   note?: string;
+  mapUrl?: string;
   proofImage?: string | null;
 }) => {
   const response = await fetch(`${ADMIN_BASE_URL}/${id}/delivery-event`, {
     method: 'POST',
     headers: getAuthHeaders({ 'Content-Type': 'application/json' }, 'admin'),
-    body: JSON.stringify({ status, lat, lng, address, note, proofImage }),
+    body: JSON.stringify({ status, lat, lng, address, note, mapUrl, proofImage }),
   });
   if (!response.ok) {
     const error = await response.json().catch(() => null);
     throw new Error(error?.message || error?.error || 'Failed to update delivery tracking');
   }
   return response.json();
+};
+
+export const bindTraccarDevice = async ({
+  id,
+  traccarDeviceId,
+  traccarUniqueId,
+}: {
+  id: string;
+  traccarDeviceId?: string;
+  traccarUniqueId?: string;
+}) => {
+  const response = await fetch(`${ADMIN_BASE_URL}/${id}/traccar-device`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }, 'admin'),
+    body: JSON.stringify({ traccarDeviceId, traccarUniqueId }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.message || error?.error || 'Failed to bind Traccar device');
+  }
+  return response.json();
+};
+
+export const bindCarrierTracking = async ({
+  id,
+  carrier,
+  trackingCode,
+}: {
+  id: string;
+  carrier: 'SELF' | 'GHN' | 'GHTK' | 'VIETTEL_POST' | 'SPX';
+  trackingCode?: string;
+}) => {
+  const response = await fetch(`${ADMIN_BASE_URL}/${id}/carrier-tracking`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }, 'admin'),
+    body: JSON.stringify({ carrier, trackingCode }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.message || error?.error || 'Failed to bind carrier tracking');
+  }
+  return response.json();
+};
+
+export const reverseAdminGeocode = async ({ lat, lng }: { lat: number; lng: number }) => {
+  const response = await fetch(`/api/admin/geocode/reverse?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`, {
+    headers: getAuthHeaders({}, 'admin'),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.message || error?.error || 'Không thể lấy địa chỉ từ tọa độ');
+  }
+  const payload = await response.json();
+  return payload.data as { address: string; provider: string; mapUrl: string };
 };
 
 export const useOrders = () => {
@@ -138,6 +194,26 @@ export const useUpdateBatchOrderStatus = () => {
 export const useAddDeliveryEvent = () => {
   return useMutation({
     mutationFn: addDeliveryEvent,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(id) });
+    },
+  });
+};
+
+export const useBindTraccarDevice = () => {
+  return useMutation({
+    mutationFn: bindTraccarDevice,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(id) });
+    },
+  });
+};
+
+export const useBindCarrierTracking = () => {
+  return useMutation({
+    mutationFn: bindCarrierTracking,
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: orderKeys.all });
       queryClient.invalidateQueries({ queryKey: orderKeys.detail(id) });

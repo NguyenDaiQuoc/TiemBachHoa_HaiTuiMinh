@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 export const SettingsTab: React.FC = () => {
   const { data: settings, isLoading } = useNotificationSettings();
   const updateMutation = useUpdateNotificationSetting();
+  const notificationEmail = settings?.find((setting: any) => setting.emailFrom)?.emailFrom || 'luutrithon1996@gmail.com';
 
   const handleToggle = async (type: string, field: 'email' | 'sms' | 'push', value: boolean) => {
     try {
@@ -31,7 +32,7 @@ export const SettingsTab: React.FC = () => {
     },
     {
       id: 'PROMOTION',
-      title: 'ƯU ĐÃI & KHUYẾN MÃI',
+      title: 'Ưu đãi & khuyến mãi',
       desc: 'Thông tin về Flash Sales, Vouchers và chương trình thành viên',
       icon: Bell,
     },
@@ -55,7 +56,12 @@ export const SettingsTab: React.FC = () => {
   return (
     <div className="space-y-8">
       <div className="space-y-6">
-        <h3 className="text-xl font-black italic uppercase tracking-tight ml-2">CÀI ĐẶT THÔNG BÁO</h3>
+        <div className="ml-2 space-y-2">
+          <h3 className="text-xl font-black italic uppercase tracking-tight">CÀI ĐẶT THÔNG BÁO</h3>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Email gửi từ Hai Tụi Mình: <span className="text-primary">{notificationEmail}</span>
+          </p>
+        </div>
         
         <div className="grid grid-cols-1 gap-4">
           {sections.map((section) => {
@@ -82,6 +88,7 @@ export const SettingsTab: React.FC = () => {
                          onCheckedChange={(val) => handleToggle(section.id, 'email', val)} 
                          className="data-[state=checked]:bg-primary"
                        />
+                       <span className="max-w-[120px] truncate text-center text-[8px] font-bold text-muted-foreground" title={notificationEmail}>{notificationEmail}</span>
                     </div>
                     <div className="flex flex-col items-center gap-2">
                        <span className="text-[8px] font-black uppercase tracking-widest opacity-40 text-muted-foreground">SMS</span>

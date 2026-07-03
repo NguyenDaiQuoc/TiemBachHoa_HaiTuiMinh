@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { User, MapPin, Package, ShieldCheck, LogOut, ChevronRight, Bell, Heart, Eye, Trophy, Menu, Settings } from 'lucide-react';
+import { User, MapPin, Package, ShieldCheck, LogOut, ChevronRight, Bell, Heart, Eye, Trophy, Menu, Settings, Gift } from 'lucide-react';
 import { useAuthStore } from '@/src/shared/model/auth-store';
 import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { Card } from '@/src/shared/ui/card';
@@ -30,6 +30,7 @@ export const ProfileLayout: React.FC = () => {
   const menuItems = [
     { id: 'profile', label: 'Hồ sơ cá nhân', icon: User, path: '/profile' },
     { id: 'notifications', label: 'Trung tâm thông báo', icon: Bell, path: '/profile/notifications' },
+    { id: 'vouchers', label: 'Voucher của tôi', icon: Gift, path: '/profile/vouchers' },
     { id: 'orders', label: 'Lịch sử đơn hàng', icon: Package, path: '/profile/orders' },
     { id: 'wishlist', label: 'Danh sách yêu thích', icon: Heart, path: '/profile/wishlist' },
     { id: 'recent', label: 'Sản phẩm vừa xem', icon: Eye, path: '/profile/recently-viewed' },

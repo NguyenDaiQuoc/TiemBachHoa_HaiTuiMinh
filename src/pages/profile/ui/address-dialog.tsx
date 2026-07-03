@@ -111,7 +111,7 @@ export const AddressDialog: React.FC<AddressDialogProps> = ({
               {errors.district && <p className="text-[10px] text-rose-500 font-bold ml-1">{errors.district.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">PHƯỜNG/XÃ</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Phường/xã</label>
               <Input {...register('ward')} placeholder="Phường Đa Kao" className="h-12 rounded-2xl bg-muted/30 border-none px-3" />
               {errors.ward && <p className="text-[10px] text-rose-500 font-bold ml-1">{errors.ward.message}</p>}
             </div>

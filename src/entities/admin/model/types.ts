@@ -1,4 +1,4 @@
-﻿import { Product } from '@/src/entities/product/model/types';
+import { Product } from '@/src/entities/product/model/types';
 
 export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'PARTIAL' | 'FAILED' | 'REFUNDED';

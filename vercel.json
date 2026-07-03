@@ -1,4 +1,19 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "geolocation=(self), camera=(self)"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "on"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/admin/(.*)",
@@ -6,15 +21,27 @@
     },
     {
       "source": "/api/user/(.*)",
-      "destination": "/api/community/[...path]?...path=$1"
+      "destination": "/api/user/path?path=$1"
     },
     {
       "source": "/api/community/(.*)",
       "destination": "/api/community/[...path]?...path=$1"
     },
     {
+      "source": "/api/orders",
+      "destination": "/api/orders/[...path]?path="
+    },
+    {
       "source": "/api/orders/(.*)",
       "destination": "/api/orders/[...path]?...path=$1"
+    },
+    {
+      "source": "/api/products",
+      "destination": "/api/products/[...path]?path=index"
+    },
+    {
+      "source": "/api/products/(.*)",
+      "destination": "/api/products/[...path]?path=$1"
     },
     {
       "source": "/((?!api/.*).*)",

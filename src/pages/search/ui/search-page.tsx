@@ -63,8 +63,8 @@ export const SearchPage = () => {
   const pageContent = useMemo(() => {
     if (isFlashSale) {
       return {
-        eyebrow: 'ƯU ĐÃI GIỚI HẠN',
-        title: 'DEAL CHÁY GIÁ VÀNG',
+        eyebrow: 'Ưu đãi giới hạn',
+        title: 'Deal cháy giá vàng',
         accent: 'SĂN DEAL CẠNH TRANH',
         description: 'Tổng hợp những sản phẩm chính hãng đang có mức giá tốt nhất hôm nay tại Tiệm bách hoá Hai Tỷ Mạnh.',
       };
@@ -81,7 +81,7 @@ export const SearchPage = () => {
 
     return {
       eyebrow: query ? 'KẾT QUẢ TÌM KIẾM' : 'KHÁM PHÁ CỬA HÀNG',
-      title: query ? '"' + query + '"' : 'SẢN PHẨM CHÍNH HÃNG',
+      title: query ? '"' + query + '"' : 'Sản phẩm chính hãng',
       accent: query ? products.length + ' KẾT QUẢ' : 'GIÁ TỐT MỖI NGÀY',
       description:
         'Chuyên mỹ phẩm chính hãng, đồ gia dụng tiện ích và đồ công nghệ chất lượng cao. Hiện tại Tiệm chưa kinh doanh thực phẩm.',

@@ -16,7 +16,7 @@ Trạng thái hiện tại: dự án đã qua các cổng kiểm thử chính �
 - Build bundle đã được tách lại, không còn chunk vượt 500 kB.
 - Product API đã giảm burst query song song để tránh cạn Prisma connection pool khi e2e/browser chạy đồng thời.
 
-Kết luận ngắn: phần test infrastructure đã được kéo về trạng thái xanh. Dự án chưa nên gọi là “production hardening xong” vì vẫn còn rủi ro dependency audit, bundle lớn, mock/stub ở email/payment/shipping và thiếu integration test sâu cho inventory/checkout, nhưng file audit cũ đã không còn phản ánh đúng tình trạng hiện tại.
+Kết luận ngắn: phần test infrastructure đã được kéo về trạng thái xanh. Dự án chưa nên gọi là "production hardening xong" vì vẫn còn rủi ro dependency audit, bundle lớn, mock/stub ở email/payment/shipping và thiếu integration test sâu cho inventory/checkout, nhưng file audit cũ đã không còn phản ánh đúng tình trạng hiện tại.
 
 ## 2. Môi Trường Audit
 

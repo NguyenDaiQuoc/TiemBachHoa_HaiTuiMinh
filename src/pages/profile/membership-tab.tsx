@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ArrowDownCircle, ArrowUpCircle, Clock, Gift, Star, Trophy, Zap } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useTransactions } from '@/src/entities/user/api/user-api';
+import { usePoints, useTransactions } from '@/src/entities/user/api/user-api';
 import { calculateLoyalty, getTierSpendRange, TIERS } from '@/src/entities/user/lib/loyalty';
 import { formatCurrencyVND } from '@/src/shared/lib/utils';
 import { useAuthStore } from '@/src/shared/model/auth-store';
@@ -12,15 +12,27 @@ import { cn } from '@/src/shared/lib/utils';
 
 export const MembershipTab: React.FC = () => {
   const { user } = useAuthStore();
+  const { data: pointSummary } = usePoints();
   const { data: transactions, isLoading: isTransLoading } = useTransactions();
   const [showHistory, setShowHistory] = useState(false);
 
-  const loyalty = useMemo(() => calculateLoyalty(user?.membershipPoints || 0), [user?.membershipPoints]);
+  const effectivePoints = pointSummary?.points ?? user?.membershipPoints ?? 0;
+  const effectiveSpend = pointSummary?.totalSpent ?? null;
+  const loyalty = useMemo(() => calculateLoyalty(effectivePoints), [effectivePoints]);
   const { points, currentTier, nextTier, progress, tierIndex, pointsToNextTier, estimatedSpend, estimatedSavings } = loyalty;
+  const birthdayDiscountByTier = [5, 8, 12, 15];
+  const birthdayDiscount = birthdayDiscountByTier[tierIndex] || 5;
+  const hasBirthDate = Boolean(user?.birthDate);
 
   const benefits = [
     { title: 'Tích điểm đổi quà', desc: 'Mỗi 10.000đ chi tiêu nhận 1 điểm thưởng', icon: Gift },
-    { title: 'Ưu đãi sinh nhật', desc: 'Giảm giá đến 15% cho tháng sinh nhật tùy hạng thành viên', icon: Star },
+    {
+      title: 'Ưu đãi sinh nhật',
+      desc: hasBirthDate
+        ? `Hạng ${currentTier.name} được giảm ${birthdayDiscount}% trong tháng sinh nhật đã khóa.`
+        : 'Nhập ngày sinh một lần trong hồ sơ để mở ưu đãi sinh nhật, tối đa 15% tùy hạng.',
+      icon: Star,
+    },
     { title: 'Giao hàng thuận tiện', desc: 'Miễn phí vận chuyển cho đơn từ 500.000đ theo chương trình thành viên', icon: Zap },
   ];
 
@@ -63,7 +75,7 @@ export const MembershipTab: React.FC = () => {
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border border-border/50 bg-card p-5 shadow-soft">
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Chi tiêu quy đổi</p>
-          <p className="mt-2 text-2xl font-black">{formatCurrencyVND(estimatedSpend)}</p>
+          <p className="mt-2 text-2xl font-black">{formatCurrencyVND(effectiveSpend ?? estimatedSpend)}</p>
         </Card>
         <Card className="border border-border/50 bg-card p-5 shadow-soft">
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tiết kiệm ước tính</p>
@@ -126,7 +138,7 @@ export const MembershipTab: React.FC = () => {
                 ) : (
                   <div className="py-12 text-center">
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">
-                      Chưa có giao dịch điểm nào
+                      Chưa có giao dịch điểm nào từ các đơn hợp lệ. Đơn đã hủy hoặc thanh toán thất bại sẽ không được tính điểm.
                     </p>
                   </div>
                 )}
@@ -156,6 +168,9 @@ export const MembershipTab: React.FC = () => {
                       <h4 className={cn('text-lg font-black uppercase tracking-tighter', tier.color)}>{tier.name}</h4>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                         {getTierSpendRange(tier)}
+                      </p>
+                      <p className="mt-2 text-[10px] font-bold text-muted-foreground">
+                        Sinh nhật giảm {birthdayDiscountByTier[index] || 5}%
                       </p>
                     </div>
                     {isCurrent && (

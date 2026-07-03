@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Package, Heart, Settings, LogOut, ChevronRight, Eye, Trophy, ShieldCheck } from 'lucide-react';
+import { User, Package, Heart, Settings, LogOut, ChevronRight, Eye, Trophy, ShieldCheck, Gift } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -190,6 +190,12 @@ export const AccountDropdown = () => {
               </div>
               <span className="text-xs font-black uppercase tracking-widest opacity-80 group-hover:opacity-100">Danh sách yêu thích</span>
               {wishlistCount > 0 && <span className="ml-auto rounded-md bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-black text-rose-500">{wishlistCount}</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem className="h-10 cursor-pointer rounded-xl focus:bg-primary/5 group" onClick={() => navigate('/profile/vouchers')}>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-pink-500/10 transition-transform group-hover:scale-110">
+                <Gift className="h-4 w-4 text-pink-500" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-widest opacity-80 group-hover:opacity-100">Voucher của tôi</span>
             </DropdownMenuItem>
             <DropdownMenuItem className="h-10 cursor-pointer rounded-xl focus:bg-primary/5 group" onClick={() => navigate('/profile/recently-viewed')}>
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 transition-transform group-hover:scale-110">

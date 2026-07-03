@@ -78,7 +78,8 @@ const CATEGORIES = [
     image: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=1200&auto=format&fit=crop",
     preview: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=800&auto=format&fit=crop",
     fallback: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=800&auto=format&fit=crop",
-    color: "rose"
+    color: "rose",
+    slug: 'my-pham'
   },
   {
     id: 'cat-tech',
@@ -87,7 +88,8 @@ const CATEGORIES = [
     image: "https://images.unsplash.com/photo-1549463512-2051282a77bb?q=80&w=1200&auto=format&fit=crop",
     preview: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800&auto=format&fit=crop",
     fallback: "https://images.unsplash.com/photo-1549463512-2051282a77bb?q=80&w=800&auto=format&fit=crop",
-    color: "blue"
+    color: "blue",
+    slug: 'cong-nghe'
   },
   {
     id: 'cat-home',
@@ -96,7 +98,8 @@ const CATEGORIES = [
     image: "https://images.unsplash.com/photo-1585338107529-13afc5f02586?q=80&w=1200&auto=format&fit=crop",
     preview: "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=800&auto=format&fit=crop",
     fallback: "https://images.unsplash.com/photo-1585338107529-13afc5f02586?q=80&w=800&auto=format&fit=crop",
-    color: "amber"
+    color: "amber",
+    slug: 'gia-dung'
   }
 ];
 
@@ -264,7 +267,7 @@ export const HomePage = () => {
                 MUA SẮM NGAY
               </button>
             </Link>
-            <Link to="/collections">
+            <Link to="/products">
               <button className="w-full sm:w-auto bg-background border-2 border-primary/20 text-foreground px-10 py-4 rounded-full font-black uppercase tracking-widest italic hover:border-primary/50 transition-all hover:bg-muted/50">
                 KHÁM PHÁ BỘ SƯU TẬP
               </button>
@@ -390,7 +393,7 @@ export const HomePage = () => {
               <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px]">Lựa chọn tinh tuyển</span>
               <h2 className="text-3xl font-black uppercase tracking-tight italic">Danh mục nổi bật</h2>
             </div>
-            <Link to="/collections" className="text-xs font-black uppercase tracking-widest text-primary hover:underline underline-offset-4 flex items-center gap-2 group">
+            <Link to="/products" className="text-xs font-black uppercase tracking-widest text-primary hover:underline underline-offset-4 flex items-center gap-2 group">
               Xem tất cả <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -418,9 +421,9 @@ export const HomePage = () => {
              </AnimatePresence>
 
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-20">
-               {CATEGORIES.map((col, idx) => (
-                 <motion.div
-                   key={idx}
+               {CATEGORIES.map((col) => (
+                  <Link key={col.id} to={`/products?category=${encodeURIComponent(col.slug)}`} className="block">
+                  <motion.div
                    whileHover={{ y: -10 }}
                    onMouseEnter={() => setHoveredCategory(col.id)}
                    onMouseLeave={() => setHoveredCategory(null)}
@@ -455,8 +458,9 @@ export const HomePage = () => {
                      </div>
                      <h3 className="text-xl font-black uppercase tracking-tight italic leading-tight group-hover:text-primary transition-colors">{col.title}</h3>
                    </div>
-                 </motion.div>
-               ))}
+                  </motion.div>
+                  </Link>
+                ))}
              </div>
           </div>
         </section>

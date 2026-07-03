@@ -7,7 +7,7 @@ const FOOTER_SECTIONS = [
   {
     title: 'MUA SẮM',
     links: [
-      { label: 'Bộ sưu tập', href: '/collections' },
+      { label: 'Bộ sưu tập', href: '/products' },
       { label: 'Sản phẩm mới', href: '/new-arrivals' },
       { label: 'Bán chạy nhất', href: '/products?sortBy=popular' },
       { label: 'Flash Sale', href: '/flash-sale' },
@@ -152,4 +152,3 @@ export const Footer = () => {
     </footer>
   );
 };
-

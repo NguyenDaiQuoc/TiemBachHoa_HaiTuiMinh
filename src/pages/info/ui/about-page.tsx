@@ -89,7 +89,7 @@ export const AboutPage = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
-                { icon: ShieldCheck, title: "100% CHÍNH HÃNG", desc: "Mọi sản phẩm đều được kiểm định nguồn gốc rõ ràng và minh bạch." },
+                { icon: ShieldCheck, title: "100% chính hãng", desc: "Mọi sản phẩm đều được kiểm định nguồn gốc rõ ràng và minh bạch." },
                 { icon: Sparkles, title: "TUYỂN CHỌN KỸ", desc: "Chỉ những sản phẩm thực sự hiệu quả và chất lượng mới xuất hiện trên kệ." },
                 { icon: Heart, title: "TẬN TÂM HỖ TRỢ", desc: "Tư vấn như một người bạn thực thụ, giúp bạn chọn sản phẩm phù hợp nhất." },
                 { icon: Rocket, title: "GIAO HÀNG TỐC ĐỘ", desc: "Đóng gói cẩn thận và liên kết các đơn vị vận chuyển uy tín nhất." }

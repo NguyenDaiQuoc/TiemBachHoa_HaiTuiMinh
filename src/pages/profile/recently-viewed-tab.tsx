@@ -65,7 +65,7 @@ export const RecentlyViewedTab: React.FC = () => {
                     </div>
 
                     <div className="mt-auto flex items-center justify-between pt-2">
-                      <p className="text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString('vi-VN')}Ä'</p>
+                      <p className="text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString('vi-VN')}₫</p>
                       <div className="flex gap-2">
                         <Button
                           onClick={() => handleAddToCart(item)}

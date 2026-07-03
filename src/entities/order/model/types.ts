@@ -29,6 +29,8 @@ export interface ShippingInfo {
 
 export interface OrderItem {
   id: string;
+  productId?: string;
+  slug?: string;
   name: string;
   price: number;
   quantity: number;
@@ -51,5 +53,4 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
 }
-
 

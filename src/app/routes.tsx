@@ -13,6 +13,7 @@ import { AppShell } from './layouts/app-shell';
 const HomePage = lazy(() => import('@/src/pages/home').then((m) => ({ default: m.HomePage })));
 const CheckoutPage = lazy(() => import('@/src/pages/checkout').then((m) => ({ default: m.CheckoutPage })));
 const OrderTrackingPage = lazy(() => import('@/src/pages/order-tracking').then((m) => ({ default: m.OrderTrackingPage })));
+const ShipperLivePage = lazy(() => import('@/src/pages/shipper-live').then((m) => ({ default: m.ShipperLivePage })));
 const ProductDetailPage = lazy(() => import('@/src/pages/product-detail').then((m) => ({ default: m.ProductDetailPage })));
 const SearchPage = lazy(() => import('@/src/pages/search').then((m) => ({ default: m.SearchPage })));
 const CampaignPage = lazy(() => import('@/src/pages/campaign').then((m) => ({ default: m.CampaignPage })));
@@ -79,6 +80,7 @@ const resolveTitle = (pathname: string) => {
   if (pathname.startsWith('/profile/recently-viewed')) return 'Tài khoản - Đã xem gần đây';
   if (pathname.startsWith('/profile/membership')) return 'Tài khoản - Hạng thành viên';
   if (pathname.startsWith('/profile/notifications')) return 'Tài khoản - Thông báo';
+  if (pathname.startsWith('/profile/vouchers')) return 'Tài khoản - Voucher';
   if (pathname.startsWith('/profile/addresses')) return 'Tài khoản - Địa chỉ';
   if (pathname.startsWith('/profile/security')) return 'Tài khoản - Bảo mật';
   if (pathname.startsWith('/profile/settings')) return 'Tài khoản - Cài đặt';
@@ -179,6 +181,7 @@ export const AppRoutes = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/tracking" element={<OrderTrackingPage />} />
+            <Route path="/shipper/live" element={<ShipperLivePage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="/products" element={<SearchPage />} />
             <Route path="/flash-sale" element={<SearchPage />} />
@@ -240,5 +243,3 @@ export const AppRoutes = () => {
     </ErrorBoundary>
   );
 };
-
-

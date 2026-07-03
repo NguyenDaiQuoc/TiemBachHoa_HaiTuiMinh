@@ -186,7 +186,7 @@ export const NotificationDropdown = ({ scope }: { scope: AuthScope }) => {
       if (!item.isRead) {
         await markOneMutation.mutateAsync(item.id);
       }
-      navigate(item.link || viewAllRoute);
+      navigate(scope === 'user' && (item.type === 'VOUCHER' || item.type === 'PROMOTION') ? '/profile/vouchers' : (item.link || viewAllRoute));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Không thể mở thông báo');
     }

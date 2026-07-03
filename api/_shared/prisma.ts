@@ -1,6 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { createRequire } from 'node:module';
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const require = createRequire(import.meta.url);
+const { PrismaClient } = require('@prisma/client') as { PrismaClient: new (options?: any) => any };
+
+const globalForPrisma = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
 
 export const hasDatabase = Boolean(process.env.DATABASE_URL);
 

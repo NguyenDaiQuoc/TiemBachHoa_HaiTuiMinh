@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ProductCard } from '@/src/entities/product/ui/product-card';
 import { Product } from '@/src/entities/product/model/types';
 

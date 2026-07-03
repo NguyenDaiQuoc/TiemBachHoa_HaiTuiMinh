@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProfileLayout } from './ui/profile-layout';
 
@@ -12,6 +12,7 @@ import { RecentlyViewedTab } from './recently-viewed-tab';
 import { MembershipTab } from './membership-tab';
 import { SettingsTab } from './settings-tab';
 import { NotificationsTab } from './notifications-tab';
+import { VouchersTab } from './vouchers-tab';
 
 export const ProfilePage: React.FC = () => {
   return (
@@ -25,6 +26,7 @@ export const ProfilePage: React.FC = () => {
         <Route path="recently-viewed" element={<RecentlyViewedTab />} />
         <Route path="membership" element={<MembershipTab />} />
         <Route path="notifications" element={<NotificationsTab />} />
+        <Route path="vouchers" element={<VouchersTab />} />
         <Route path="settings" element={<SettingsTab />} />
         <Route path="*" element={<Navigate to="." replace />} />
       </Route>

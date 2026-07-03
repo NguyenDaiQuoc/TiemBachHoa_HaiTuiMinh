@@ -8,7 +8,7 @@ import { ShoppingBag, Heart, Check, ShieldCheck } from 'lucide-react';
 import { Button } from '@/src/shared/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCartStore } from '@/src/entities/cart/model/store';
-import { useWishlistStore } from '../model/wishlist-store';
+import { useWishlistStore } from '@/src/shared/store/wishlist-store';
 import { getProductUrl } from '../lib/product-url';
 import { getWarrantyLabel } from '../lib/warranty';
 import { toast } from 'sonner';
@@ -21,8 +21,8 @@ interface ProductCardProps {
 export const ProductCard = memo(({ product }: ProductCardProps) => {
   const navigate = useNavigate();
   const addItem = useCartStore((state) => state.addItem);
-  const { toggleWishlist, ids } = useWishlistStore();
-  const isWishlisted = ids.includes(product.id);
+  const { toggleItem, hasItem } = useWishlistStore();
+  const isWishlisted = hasItem(product.id);
   const [isAdding, setIsAdding] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const categoryLabel = typeof product.category === 'object' ? product.category?.name || 'Danh mục' : product.category || 'Danh mục';
@@ -53,7 +53,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleWishlist(product.id);
+    toggleItem(product.id);
   };
 
   return (

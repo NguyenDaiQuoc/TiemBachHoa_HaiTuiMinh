@@ -1,18 +1,20 @@
 import { env } from "../../shared/config/env.js";
 
+const STORE_EMAIL_FROM = 'luutrithon1996@gmail.com';
+
 /**
  * Transactional Email Infrastructure (Stub)
  * Implementation for Resend/SendGrid should be added here
  */
 export const sendEmail = async (to: string, subject: string, template: string, data: any) => {
-  console.log(`[EMAIL SERVICE] Sending ${template} email to ${to} with subject: ${subject}`);
+  console.log(`[EMAIL SERVICE] Sending ${template} email from ${STORE_EMAIL_FROM} to ${to} with subject: ${subject}`);
   
   if (process.env.NODE_ENV === 'production') {
     // TODO: Integrate with a real provider (e.g., Resend)
     console.log("Production email service triggered. Stub only.");
   } else {
     // Development mode: Mock output
-    console.log("Email parameters:", { to, subject, template, data });
+    console.log("Email parameters:", { from: STORE_EMAIL_FROM, to, subject, template, data });
   }
   
   return { success: true, messageId: `msg_${Math.random().toString(36).substring(7)}` };

@@ -1,8 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import jwt from 'jsonwebtoken';
-import { Prisma } from '@prisma/client';
 import { JWT_SECRET, hasJwtSecret, readJsonBody, sendJson } from '../_shared/auth.js';
 import { ensureCoreCategories } from '../_shared/catalog.js';
+import { isCarrierCode } from '../_shared/carrier-tracking.js';
 import { hasDatabase, prisma } from '../_shared/prisma.js';
 import { generateMarketingImage } from '../../src/server/services/codex-imagen-service.js';
 import { refineMarketingPrompt } from '../../src/server/services/claude-marketing-service.js';
@@ -11,6 +11,7 @@ const ADMIN_ROLES = new Set(['ADMIN', 'SUPERADMIN', 'STAFF']);
 const MAIN_SHOP_ID = 'main-shop';
 
 type AdminUser = { id: string; email: string; role: string };
+type DbTransaction = any;
 
 const ok = (res: ServerResponse, data: unknown, message = 'OK', status = 200, meta?: unknown) =>
   sendJson(res, status, { success: true, data, message, ...(meta ? { meta } : {}) });
@@ -62,6 +63,47 @@ const nullableNumber = (value: unknown) => (value === null || value === undefine
 const intOr = (value: unknown, fallback = 0) => Math.trunc(numberOr(value, fallback));
 const DEFAULT_PRODUCT_IMAGE = '/favicon.svg';
 
+const isValidCoordinate = (lat: number | null, lng: number | null) => lat !== null && lng !== null && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+
+const reverseGeocode = async (lat: number, lng: number) => {
+  const googleKey = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_GEOCODING_API_KEY;
+
+  if (googleKey) {
+    const url = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+    url.searchParams.set('latlng', `${lat},${lng}`);
+    url.searchParams.set('language', 'vi');
+    url.searchParams.set('region', 'vn');
+    url.searchParams.set('key', googleKey);
+    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    const payload = await response.json().catch(() => null);
+    const address = payload?.results?.[0]?.formatted_address;
+    if (response.ok && typeof address === 'string' && address.trim()) {
+      return { address: address.trim(), provider: 'GOOGLE', mapUrl: `https://www.google.com/maps?q=${lat},${lng}` };
+    }
+  }
+
+  const url = new URL('https://nominatim.openstreetmap.org/reverse');
+  url.searchParams.set('format', 'jsonv2');
+  url.searchParams.set('lat', String(lat));
+  url.searchParams.set('lon', String(lng));
+  url.searchParams.set('accept-language', 'vi,en');
+  url.searchParams.set('zoom', '18');
+  url.searchParams.set('addressdetails', '1');
+  const response = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'HaiTuiMinhStore/1.0 (reverse-geocoding)',
+    },
+  });
+  const payload = await response.json().catch(() => null);
+  const address = payload?.display_name;
+  if (response.ok && typeof address === 'string' && address.trim()) {
+    return { address: address.trim(), provider: 'OPENSTREETMAP', mapUrl: `https://www.google.com/maps?q=${lat},${lng}` };
+  }
+
+  return { address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`, provider: 'COORDINATES', mapUrl: `https://www.google.com/maps?q=${lat},${lng}` };
+};
+
 const parseJsonObject = (raw: string | null | undefined) => {
   try {
     const parsed = JSON.parse(raw || '{}');
@@ -86,7 +128,7 @@ const committedOrderStatuses = new Set(['PROCESSING', 'SHIPPED', 'DELIVERED', 'P
 const shouldCommitInventory = (fromStatus: string, toStatus: string) => fromStatus === 'PENDING' && committedOrderStatuses.has(toStatus);
 const shouldRestoreInventory = (fromStatus: string, toStatus: string) => toStatus === 'CANCELLED' && committedOrderStatuses.has(fromStatus);
 
-const commitOrderInventory = async (tx: Prisma.TransactionClient, order: { items: Array<{ productId: string; quantity: number }> }) => {
+const commitOrderInventory = async (tx: DbTransaction, order: { items: Array<{ productId: string; quantity: number }> }) => {
   for (const item of order.items) {
     const product = await tx.product.findUnique({ where: { id: item.productId }, select: { id: true, name: true, stock: true } });
     if (!product) throw new Error('Có sản phẩm không hợp lệ trong đơn hàng');
@@ -98,7 +140,7 @@ const commitOrderInventory = async (tx: Prisma.TransactionClient, order: { items
   }
 };
 
-const restoreOrderInventory = async (tx: Prisma.TransactionClient, order: { items: Array<{ productId: string; quantity: number }> }) => {
+const restoreOrderInventory = async (tx: DbTransaction, order: { items: Array<{ productId: string; quantity: number }> }) => {
   for (const item of order.items) {
     await tx.product.update({
       where: { id: item.productId },
@@ -129,7 +171,7 @@ const serializeProduct = (product: any) => ({
 
 const receiptProductSelect = { id: true, name: true, sku: true, images: true, variantsJson: true };
 
-const ensureReceiptCategory = async (tx: Prisma.TransactionClient) =>
+const ensureReceiptCategory = async (tx: DbTransaction) =>
   tx.category.upsert({
     where: { slug: 'san-pham-nhap-kho' },
     update: { isActive: true, deletedAt: null },
@@ -159,7 +201,7 @@ const buildReceiptLine = (item: any) => {
   return { productId, productName, categoryId, sku, variantId, variantAttributes, imageUrl, imageUrls, quantity, costPrice, salePrice };
 };
 
-const createUniqueProductSlug = async (tx: Prisma.TransactionClient, name: string) => {
+const createUniqueProductSlug = async (tx: DbTransaction, name: string) => {
   const baseSlug = slugify(name);
   let slug = baseSlug;
   let suffix = 2;
@@ -186,7 +228,7 @@ const createUniqueMarketingCampaignSlug = async (value: string) => {
 };
 
 const resolveReceiptProduct = async (
-  tx: Prisma.TransactionClient,
+  tx: DbTransaction,
   line: ReturnType<typeof buildReceiptLine>,
   categoryId: string,
   options: { affectsStock: boolean; supplier?: string | null }
@@ -288,7 +330,7 @@ const resolveReceiptProduct = async (
   return product.id;
 };
 
-const applyReceiptLines = async (tx: Prisma.TransactionClient, rawItems: any[], options: { affectsStock?: boolean; supplier?: string | null } = {}) => {
+const applyReceiptLines = async (tx: DbTransaction, rawItems: any[], options: { affectsStock?: boolean; supplier?: string | null } = {}) => {
   const lines = rawItems.map(buildReceiptLine);
   if (!lines.length) throw new Error('Phiếu nhập cần ít nhất 1 sản phẩm');
   if (lines.some((line) => (!line.productId && (!line.productName || !line.categoryId)) || line.quantity <= 0 || line.salePrice <= 0)) {
@@ -310,36 +352,41 @@ const applyReceiptLines = async (tx: Prisma.TransactionClient, rawItems: any[], 
   );
 };
 
-const serializeOrder = (order: any) => ({
-  id: order.id,
-  orderNumber: order.orderNumber,
-  customerName: order.user?.name || order.user?.email || 'Khách hàng',
-  customerEmail: order.user?.email || '',
-  totalAmount: order.totalAmount,
-  status: order.status,
-  paymentStatus: order.paymentStatus,
-  shippingMethod: order.shippingMethod,
-  createdAt: order.createdAt,
-  updatedAt: order.updatedAt,
-  items: order.items || [],
-  shippingAddress: (() => {
-    try {
-      const parsed = JSON.parse(order.shippingAddress || '{}');
-      return {
-        fullName: parsed.fullName || parsed.name || parsed.receiverName || '',
-        email: parsed.email || '',
-        street: parsed.address || parsed.street || parsed.detail || '',
-        city: parsed.city || parsed.province || '',
-        phone: parsed.phone || '',
-        note: parsed.note || '',
-        deliveryTracking: compactDeliveryTracking(parsed.deliveryTracking),
-      };
-    } catch {
-      return { street: order.shippingAddress || '', city: '', phone: '' };
-    }
-  })(),
-});
+const serializeOrder = (order: any) => {
+  const parsedAddress = parseJsonObject(order.shippingAddress);
+  const checkoutMeta = parsedAddress._checkout && typeof parsedAddress._checkout === 'object' ? parsedAddress._checkout : {};
+  const lineSubtotal = Array.isArray(order.items) ? order.items.reduce((sum: number, item: any) => sum + numberOr(item.price) * numberOr(item.quantity), 0) : 0;
+  const subtotal = numberOr(checkoutMeta.subtotal, lineSubtotal);
+  const membershipDiscount = numberOr(checkoutMeta.membershipDiscount, 0);
+  const shippingFee = numberOr(checkoutMeta.shippingFee, Math.max(0, numberOr(order.totalAmount) - Math.max(0, subtotal - membershipDiscount)));
 
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    customerName: order.user?.name || order.user?.email || 'Khách hàng',
+    customerEmail: order.user?.email || '',
+    totalAmount: order.totalAmount,
+    subtotal,
+    shippingFee,
+    checkoutMeta: { ...checkoutMeta, subtotal, shippingFee, membershipDiscount },
+    paymentMethod: checkoutMeta.paymentMethod || order.paymentMethod || null,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    shippingMethod: order.shippingMethod,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    items: order.items || [],
+    shippingAddress: {
+      fullName: parsedAddress.fullName || parsedAddress.name || parsedAddress.receiverName || '',
+      email: parsedAddress.email || '',
+      street: parsedAddress.address || parsedAddress.street || parsedAddress.detail || '',
+      city: parsedAddress.city || parsedAddress.province || '',
+      phone: parsedAddress.phone || '',
+      note: parsedAddress.note || '',
+      deliveryTracking: compactDeliveryTracking(parsedAddress.deliveryTracking),
+    },
+  };
+};
 const workflowStatus = (conversation: any) => {
   const messages = conversation.messages || [];
   const lastReadByAdminAt = conversation.lastReadByAdminAt ? new Date(conversation.lastReadByAdminAt) : null;
@@ -732,8 +779,80 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     if (path === 'stats') return handleStats(res);
     if (path === 'analytics') return handleAnalytics(res);
+    if (path === 'geocode/reverse' && req.method === 'GET') {
+      const url = new URL(req.url || '/', 'https://haituiminh.vercel.app');
+      const lat = nullableNumber(url.searchParams.get('lat'));
+      const lng = nullableNumber(url.searchParams.get('lng'));
+      if (!isValidCoordinate(lat, lng)) return fail(res, 'Tọa độ không hợp lệ', 400);
+      return ok(res, await reverseGeocode(lat as number, lng as number), 'Đã lấy địa chỉ từ tọa độ');
+    }
     if (path === 'products' || path.startsWith('products/')) return handleProducts(req, res, user, path);
     if (path === 'orders') return ok(res, (await prisma.order.findMany({ include: { items: true, user: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' } })).map(serializeOrder));
+    if (path.endsWith('/carrier-tracking') && path.startsWith('orders/') && req.method === 'POST') {
+      const body = await readJsonBody<any>(req);
+      const id = path.split('/')[1];
+      const order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
+      if (!order) return fail(res, 'Không tìm thấy đơn hàng', 404);
+
+      const carrier = String(body.carrier || '').toUpperCase();
+      if (carrier !== 'SELF' && !isCarrierCode(carrier)) return fail(res, 'Đơn vị vận chuyển không hợp lệ', 400);
+      const trackingCode = textOrNull(body.trackingCode || body.carrierTrackingCode);
+      if (carrier !== 'SELF' && !trackingCode) return fail(res, 'Vui lòng nhập mã vận đơn của đơn vị vận chuyển', 400);
+
+      const envelope = parseJsonObject(order.shippingAddress);
+      const deliveryTracking = envelope.deliveryTracking && typeof envelope.deliveryTracking === 'object' ? envelope.deliveryTracking : {};
+      const updated = await prisma.order.update({
+        where: { id },
+        data: {
+          shippingAddress: JSON.stringify({
+            ...envelope,
+            deliveryTracking: {
+              ...deliveryTracking,
+              mode: carrier === 'SELF' ? 'SELF' : 'CARRIER',
+              carrier: carrier === 'SELF' ? null : carrier,
+              carrierTrackingCode: carrier === 'SELF' ? null : trackingCode,
+              carrierBoundAt: new Date().toISOString(),
+              carrierBoundBy: user.id,
+            },
+          }),
+        },
+        include: { items: true, user: { select: { name: true, email: true } } },
+      });
+
+      await createAuditLog(user, 'ADMIN_BIND_CARRIER_TRACKING', 'Order', order.id);
+      return ok(res, serializeOrder(updated), carrier === 'SELF' ? 'Đã chuyển đơn sang tự giao' : 'Đã gắn mã vận đơn cho đơn hàng');
+    }
+    if (path.endsWith('/traccar-device') && path.startsWith('orders/') && req.method === 'POST') {
+      const body = await readJsonBody<any>(req);
+      const id = path.split('/')[1];
+      const order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
+      if (!order) return fail(res, 'Không tìm thấy đơn hàng', 404);
+
+      const envelope = parseJsonObject(order.shippingAddress);
+      const deliveryTracking = envelope.deliveryTracking && typeof envelope.deliveryTracking === 'object' ? envelope.deliveryTracking : {};
+      const traccarDeviceId = textOrNull(body.traccarDeviceId);
+      const traccarUniqueId = textOrNull(body.traccarUniqueId);
+
+      const updated = await prisma.order.update({
+        where: { id },
+        data: {
+          shippingAddress: JSON.stringify({
+            ...envelope,
+            deliveryTracking: {
+              ...deliveryTracking,
+              traccarDeviceId,
+              traccarUniqueId,
+              traccarBoundAt: new Date().toISOString(),
+              traccarBoundBy: user.id,
+            },
+          }),
+        },
+        include: { items: true, user: { select: { name: true, email: true } } },
+      });
+
+      await createAuditLog(user, 'ADMIN_BIND_TRACCAR_DEVICE', 'Order', order.id);
+      return ok(res, serializeOrder(updated), 'Đã gắn thiết bị Traccar cho đơn hàng');
+    }
     if (path.endsWith('/delivery-event') && path.startsWith('orders/') && req.method === 'POST') {
       const body = await readJsonBody<any>(req);
       const id = path.split('/')[1];
@@ -751,6 +870,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         lng: nullableNumber(body.lng),
         address: textOrNull(body.address) || textOrNull(body.note) || 'Người giao đã cập nhật vị trí',
         note: textOrNull(body.note),
+        mapUrl: textOrNull(body.mapUrl),
         proofImage: textOrNull(body.proofImage),
         timestamp: new Date().toISOString(),
         updatedBy: user.id,
@@ -763,7 +883,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           paymentStatus: eventStatus === 'DELIVERED' ? 'PAID' : order.paymentStatus,
           shippingAddress: JSON.stringify({
             ...envelope,
-            deliveryTracking: { ...deliveryTracking, events: [...events, nextEvent] },
+            deliveryTracking: { ...deliveryTracking, mode: 'SELF', events: [...events, nextEvent] },
           }),
         },
         include: { items: true, user: { select: { name: true, email: true } } },
@@ -873,7 +993,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return fail(res, 'Không tìm thấy API quản trị', 404);
   } catch (error) {
     console.error('Admin API error:', error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return fail(res, 'Dữ liệu đã tồn tại, vui lòng kiểm tra lại mã/tên/slug.', 409);
+    if (typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === 'P2002') return fail(res, 'Dữ liệu đã tồn tại, vui lòng kiểm tra lại mã/tên/slug.', 409);
     if (error instanceof Error) {
       const status = error.message.includes('Chưa cấu hình công cụ tạo ảnh thật') ? 503 : 500;
       return fail(res, error.message, status);

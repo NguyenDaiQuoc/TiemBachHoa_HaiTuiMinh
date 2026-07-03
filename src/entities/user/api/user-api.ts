@@ -10,6 +10,7 @@ export const userKeys = {
   points: () => [...userKeys.all, 'points'] as const,
   transactions: () => [...userKeys.all, 'transactions'] as const,
   notificationSettings: () => [...userKeys.all, 'notifications'] as const,
+  vouchers: () => [...userKeys.all, 'vouchers'] as const,
 };
 
 const parseApiResponse = async (response: Response, fallbackMessage: string) => {
@@ -134,6 +135,13 @@ export const getTransactions = async (token: string) => {
     headers: { Authorization: `Bearer ${token}` },
   });
   return parseApiResponse(response, 'Không thể tải lịch sử điểm');
+};
+
+export const getVouchers = async (token: string) => {
+  const response = await fetch(`${API_BASE}/vouchers`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return parseApiResponse(response, 'Không thể tải voucher');
 };
 
 export const getNotificationSettings = async (token: string) => {
@@ -269,6 +277,15 @@ export const useTransactions = () => {
   return useQuery({
     queryKey: userKeys.transactions(),
     queryFn: () => getTransactions(token!),
+    enabled: !!token,
+  });
+};
+
+export const useVouchers = () => {
+  const token = useAuthStore((state) => state.token);
+  return useQuery({
+    queryKey: userKeys.vouchers(),
+    queryFn: () => getVouchers(token!),
     enabled: !!token,
   });
 };

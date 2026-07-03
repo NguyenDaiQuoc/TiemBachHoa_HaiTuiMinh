@@ -61,6 +61,7 @@ export const ProfileForm: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPreparingAvatar, setIsPreparingAvatar] = useState(false);
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
+  const hasLockedBirthDate = Boolean(user?.birthDate);
 
   const joinedDate = useMemo(() => {
     if (!user?.createdAt) return '...';
@@ -111,6 +112,11 @@ export const ProfileForm: React.FC = () => {
 
   const onSubmit = async (data: ProfileFormValues) => {
     const profilePayload: Record<string, unknown> = {};
+
+    if (dirtyFields.birthDate && hasLockedBirthDate) {
+      toast.warning('Ngày sinh chỉ được thiết lập một lần để bảo vệ ưu đãi sinh nhật.');
+      return;
+    }
 
     if (dirtyFields.name) profilePayload.name = data.name.trim();
     if (dirtyFields.username) profilePayload.username = data.username || null;
@@ -248,9 +254,15 @@ export const ProfileForm: React.FC = () => {
               <Input
                 type="date"
                 {...register('birthDate')}
-                className="pl-12 h-14 rounded-2xl bg-muted/30 border-none font-bold text-sm focus:ring-2 focus:ring-primary/20"
+                disabled={hasLockedBirthDate}
+                className="pl-12 h-14 rounded-2xl bg-muted/30 border-none font-bold text-sm focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70"
               />
             </div>
+            <p className="ml-1 text-[10px] font-bold leading-relaxed text-muted-foreground">
+              {hasLockedBirthDate
+                ? 'Ngày sinh đã được khóa để bảo vệ ưu đãi sinh nhật, không thể đổi tháng sinh nhiều lần.'
+                : 'Ngày sinh chỉ được nhập một lần. Sau khi lưu sẽ dùng để xét ưu đãi sinh nhật theo hạng thành viên.'}
+            </p>
           </div>
 
           <div className="space-y-2">

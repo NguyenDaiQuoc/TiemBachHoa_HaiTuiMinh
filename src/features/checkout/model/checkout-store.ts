@@ -6,6 +6,7 @@ import { PaymentMethod } from '@/src/entities/payment/model/types';
 import { ShippingMethodId } from '@/src/entities/shipping/model/types';
 import { generateOrderId } from '@/src/entities/order/lib/order-utils';
 import { calculateShippingPrice, estimateArrival } from '@/src/entities/shipping/lib/shipping-engine';
+import { useAuthStore } from '@/src/shared/model/auth-store';
 
 interface CheckoutState {
   shippingInfo: ShippingInfo | null;
@@ -61,7 +62,7 @@ export const useCheckoutStore = create<CheckoutState>()(
 
         const response = await fetch('/api/orders/checkout', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(useAuthStore.getState().token ? { Authorization: 'Bearer ' + useAuthStore.getState().token } : {}) },
           body: JSON.stringify({
             items,
             shippingInfo,

@@ -151,6 +151,14 @@ const getNotificationLabel = (item: AppNotificationItem) => {
 
 const isPriorityNotification = (item: AppNotificationItem) => ['order', 'stock', 'voucher', 'customer'].includes(getNotificationCategory(item) || '');
 
+const resolveNotificationLink = (scope: NotificationScope, item: AppNotificationItem) => {
+  if (scope === 'user' && (item.type === 'VOUCHER' || item.type === 'PROMOTION' || getNotificationCategory(item) === 'voucher')) {
+    return '/profile/vouchers';
+  }
+
+  return item.link || null;
+};
+
 const NotificationCard = ({
   item,
   onOpen,
@@ -228,7 +236,8 @@ export const NotificationCenterPanel = ({ scope }: { scope: NotificationScope })
       if (!item.isRead) {
         await markOneMutation.mutateAsync(item.id);
       }
-      if (item.link) navigate(item.link);
+      const link = resolveNotificationLink(scope, item);
+      if (link) navigate(link);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t.openError);
     }

@@ -12,7 +12,6 @@ export const OrderTrackingPage = () => {
   const queryCode = useMemo(() => new URLSearchParams(window.location.search).get('code') || '', []);
   const initialCode = queryCode || currentOrder?.trackingId || currentOrder?.orderNumber || '';
   const [searchId, setSearchId] = useState(initialCode);
-  const [activeTrackingId, setActiveTrackingId] = useState(initialCode);
   const [shipment, setShipment] = useState<ShipmentDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +32,6 @@ export const OrderTrackingPage = () => {
       }
 
       setShipment(payload.data as ShipmentDetails);
-      setActiveTrackingId(normalizedCode);
     } catch (err) {
       setShipment(null);
       setError(err instanceof Error ? err.message : 'Không thể tải thông tin vận chuyển. Vui lòng thử lại sau.');
@@ -45,12 +43,6 @@ export const OrderTrackingPage = () => {
   useEffect(() => {
     if (initialCode) fetchTracking(initialCode, true);
   }, [fetchTracking, initialCode]);
-
-  useEffect(() => {
-    if (!activeTrackingId || !shipment) return;
-    const interval = window.setInterval(() => fetchTracking(activeTrackingId, true), 30000);
-    return () => window.clearInterval(interval);
-  }, [activeTrackingId, fetchTracking, shipment]);
 
   const handleSearch = () => {
     if (!searchId.trim()) return;

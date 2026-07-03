@@ -358,7 +358,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }: P
                     .toLowerCase()
                     .normalize('NFD')
                     .replace(/[\u0300-\u036f]/g, '')
-                    .replace(/Ä'/g, 'd')
+                    .replace(/đ/g, 'd')
                     .replace(/[^a-z0-9]+/g, '-')
                     .replace(/-+/g, '-')
                     .replace(/^-|-$/g, '');

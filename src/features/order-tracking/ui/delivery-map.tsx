@@ -1,9 +1,8 @@
-
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MapPin, Truck, Warehouse, Home, Navigation2, Maximize2, Minimize2 } from 'lucide-react';
+import { MapPin, Maximize2, Minimize2, Navigation2, Route } from 'lucide-react';
 import { cn } from '@/src/shared/lib/utils';
-import { ShipmentDetails, TrackingLocation } from '@/src/entities/shipping/model/types';
+import { ShipmentDetails } from '@/src/entities/shipping/model/types';
 
 type MapLibreRuntime = {
   workerUrl?: string;
@@ -50,11 +49,7 @@ const loadMapLibre = () => {
     script.async = true;
     script.dataset.maplibre = 'true';
     script.onload = () => {
-      if (!window.maplibregl) {
-        reject(new Error('MapLibre did not initialize'));
-        return;
-      }
-
+      if (!window.maplibregl) return reject(new Error('MapLibre did not initialize'));
       window.maplibregl.workerUrl = MAPLIBRE_WORKER_URL;
       resolve(window.maplibregl);
     };
@@ -70,98 +65,43 @@ interface DeliveryMapProps {
   className?: string;
 }
 
+const isGeoLocation = (location: any) =>
+  location?.lat !== null &&
+  location?.lat !== undefined &&
+  location?.lng !== null &&
+  location?.lng !== undefined &&
+  Number.isFinite(Number(location.lat)) &&
+  Number.isFinite(Number(location.lng));
+
+const statusLabel = (status: string) => status.replace(/_/g, ' ');
+
 export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const maplibreRef = useRef<MapLibreRuntime | null>(null);
   const map = useRef<any>(null);
-  const courierMarker = useRef<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { progress, origin, destination, currentLocation, status, events, estimatedArrival } = shipment;
-
-  // Calculate interpolation through the actual event path for a realistic "following the route" feel
-  const { coords: courierCoords, heading } = useMemo(() => {
-    const toRadians = (deg: number) => deg * (Math.PI / 180);
-    const toDegrees = (rad: number) => rad * (180 / Math.PI);
-
-    if (progress === 1) return { coords: [destination.lng, destination.lat] as [number, number], heading: 0 };
-    if (progress === 0) return { coords: [origin.lng, origin.lat] as [number, number], heading: 0 };
-    
-    const path = [origin, ...events.map(e => e.location), destination];
-    const segmentCount = path.length - 1;
-    const exactSegment = progress * segmentCount;
-    const idx = Math.min(Math.floor(exactSegment), segmentCount - 1);
-    const subProgress = exactSegment - idx;
-    
-    const p1 = path[idx];
-    const p2 = path[idx + 1];
-    
-    const lng = p1.lng + (p2.lng - p1.lng) * subProgress;
-    const lat = p1.lat + (p2.lat - p1.lat) * subProgress;
-
-    // Calculate heading (bearing)
-    const y = Math.sin(toRadians(p2.lng - p1.lng)) * Math.cos(toRadians(p2.lat));
-    const x = Math.cos(toRadians(p1.lat)) * Math.sin(toRadians(p2.lat)) -
-              Math.sin(toRadians(p1.lat)) * Math.cos(toRadians(p2.lat)) * Math.cos(toRadians(p2.lng - p1.lng));
-    const brng = toDegrees(Math.atan2(y, x));
-    const heading = (brng + 360) % 360;
-
-    return { coords: [lng, lat] as [number, number], heading };
-  }, [progress, origin, destination, events]);
-
-  // Camera framing constants
-  const PADDING = {
-    top: 100,
-    bottom: 120, // Account for bottom status card
-    left: 60,
-    right: 60
-  };
-
-  const updateCamera = () => {
-    const maplibre = maplibreRef.current;
-    if (!map.current || !isMapLoaded || !maplibre) return;
-
-    if (status === 'OUT_FOR_DELIVERY') {
-      // Focus on courier and destination for tight neighborhood context - Flat view
-      const bounds = new maplibre.LngLatBounds()
-        .extend(courierCoords as [number, number])
-        .extend([destination.lng, destination.lat] as [number, number]);
-
-      map.current.fitBounds(bounds, {
-        padding: { top: 60, bottom: 80, left: 60, right: 60 },
-        duration: 2000,
-        pitch: 0, // Flat top-down
-        bearing: 0
-      });
-    } else {
-      // Regional view showing the full context - Flat
-      const bounds = new maplibre.LngLatBounds()
-        .extend([origin.lng, origin.lat])
-        .extend([destination.lng, destination.lat]);
-
-      map.current.fitBounds(bounds, {
-        padding: PADDING,
-        duration: 2000,
-        pitch: 0 // Flat top-down
-      });
-    }
-  };
+  const geoEvents = useMemo(
+    () => shipment.events.filter((event) => isGeoLocation(event.location)),
+    [shipment.events]
+  );
+  const latestGeoEvent = geoEvents[geoEvents.length - 1];
 
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || geoEvents.length === 0) return;
     let cancelled = false;
+    const markers: any[] = [];
 
     loadMapLibre()
       .then((maplibre) => {
         if (cancelled || !mapContainer.current) return;
-        maplibreRef.current = maplibre;
+        const coordinates = geoEvents.map((event) => [Number(event.location.lng), Number(event.location.lat)] as [number, number]);
 
         map.current = new maplibre.Map({
           container: mapContainer.current,
           style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-          center: courierCoords as [number, number],
-          zoom: 11,
+          center: coordinates[coordinates.length - 1],
+          zoom: coordinates.length > 1 ? 12 : 15,
           attributionControl: false,
         });
 
@@ -169,307 +109,155 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
           setIsMapLoaded(true);
           if (!map.current) return;
 
-          const fullRoute: [number, number][] = [
-            [origin.lng, origin.lat],
-            ...events.map(e => [e.location.lng, e.location.lat] as [number, number]),
-            [destination.lng, destination.lat]
-          ];
-
-      // Add full route source
-      map.current.addSource('full-route', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: fullRoute
+          if (coordinates.length > 1) {
+            map.current.addSource('real-tracking-route', {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: { type: 'LineString', coordinates },
+              },
+            });
+            map.current.addLayer({
+              id: 'real-tracking-route-line',
+              type: 'line',
+              source: 'real-tracking-route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: { 'line-color': '#C75F4B', 'line-width': 5, 'line-opacity': 0.9 },
+            });
           }
-        }
-      });
 
-      // Add active route source (dynamic)
-      map.current.addSource('active-route', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-             type: 'LineString',
-             coordinates: [fullRoute[0]] // Start with just origin
+          geoEvents.forEach((event, index) => {
+            const el = document.createElement('div');
+            el.className = index === geoEvents.length - 1 ? 'real-marker real-marker-current' : 'real-marker';
+            el.title = event.description;
+            markers.push(new maplibre.Marker({ element: el, anchor: 'center' }).setLngLat(coordinates[index]).addTo(map.current));
+          });
+
+          if (coordinates.length > 1) {
+            const bounds = new maplibre.LngLatBounds();
+            coordinates.forEach((coord) => bounds.extend(coord));
+            map.current.fitBounds(bounds, { padding: 70, duration: 800, pitch: 0, bearing: 0 });
           }
-        }
-      });
-
-      // Layer 1: Background shadow/trail (Full Route)
-      map.current.addLayer({
-        id: 'route-shadow',
-        type: 'line',
-        source: 'full-route',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: {
-          'line-color': '#000',
-          'line-width': 10,
-          'line-opacity': 0.03,
-          'line-blur': 4
-        }
-      });
-
-      // Layer 2: Pending/Full Route Base
-      map.current.addLayer({
-        id: 'route-base',
-        type: 'line',
-        source: 'full-route',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: {
-          'line-color': '#E5D3BD',
-          'line-width': 4,
-          'line-opacity': 0.5
-        }
-      });
-
-      // Layer 3: Completed/Active Route
-      map.current.addLayer({
-        id: 'route-progress',
-        type: 'line',
-        source: 'active-route',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: {
-          'line-color': '#C75F4B',
-          'line-width': 5,
-          'line-opacity': 1,
-        }
-      });
-
-      // Markers for Origin and Destination
-      const elOrigin = document.createElement('div');
-      elOrigin.className = 'marker-origin';
-      new maplibre.Marker({ element: elOrigin, anchor: 'bottom' })
-        .setLngLat([origin.lng, origin.lat] as [number, number])
-        .addTo(map.current);
-
-      const elDest = document.createElement('div');
-      elDest.className = 'marker-destination';
-      new maplibre.Marker({ element: elDest, anchor: 'bottom' })
-        .setLngLat([destination.lng, destination.lat] as [number, number])
-        .addTo(map.current);
-
-      // Courier Marker
-      const elCourier = document.createElement('div');
-      elCourier.className = 'marker-courier';
-      elCourier.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18h14c.6 0 1-.4 1-1V6c0-.6-.4-1-1-1H5c-.6 0-1 .4-1 1v11c0 .6.4 1 1 1z"/><path d="M7 5H5v3h2V5z"/><path d="M19 5h-2v3h2V5z"/><path d="M11 18H9v3h2v-3z"/><path d="M15 18h-2v3h2v-3z"/><path d="M10 8h4"/></svg>`;
-      
-      courierMarker.current = new maplibre.Marker({ element: elCourier, rotationAlignment: 'map' })
-        .setLngLat(courierCoords as [number, number])
-        .addTo(map.current);
-
-      // Initial camera fit
-          updateCamera();
         });
       })
-      .catch(() => {
-        setIsMapLoaded(true);
-      });
+      .catch(() => setIsMapLoaded(true));
 
     return () => {
       cancelled = true;
+      markers.forEach((marker) => marker.remove?.());
       map.current?.remove();
+      map.current = null;
+      setIsMapLoaded(false);
     };
-  }, []);
+  }, [geoEvents]);
 
-  // Sync courier position and camera when state changes
   useEffect(() => {
-    if (map.current && courierMarker.current && isMapLoaded) {
-      // Smoothly update marker
-      courierMarker.current.setLngLat(courierCoords as [number, number]);
-      courierMarker.current.setRotation(heading);
-      
-      // Update active route line
-      const source = map.current.getSource('active-route') as any;
-      if (source) {
-        const fullPath = [origin, ...events.map(e => e.location), destination];
-        const segmentCount = fullPath.length - 1;
-        const exactSegment = progress * segmentCount;
-        const currentIdx = Math.floor(exactSegment);
-        
-        const partialRoute = fullPath.slice(0, currentIdx + 1).map(p => [p.lng, p.lat]);
-        partialRoute.push([courierCoords[0], courierCoords[1]]);
-
-        source.setData({
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: partialRoute as [number, number][]
-          }
-        });
-      }
-      
-      // Debounced or threshold based camera updates to avoid jerky movement
-      if (status === 'OUT_FOR_DELIVERY') {
-        map.current.easeTo({
-          center: courierCoords as [number, number],
-          duration: 1200,
-          zoom: 15.5,
-          pitch: 50,
-          bearing: heading
-        });
-      }
-    }
-  }, [courierCoords, heading, isMapLoaded, status, progress, origin, destination, events]);
-
-  // Handle Fullscreen Toggle Camera Update
-  useEffect(() => {
-    if (isMapLoaded) {
-      setTimeout(() => {
-        map.current?.resize();
-        updateCamera();
-      }, 500); 
-    }
+    if (!map.current) return;
+    window.setTimeout(() => map.current?.resize(), 250);
   }, [isFullscreen]);
 
-  return (
-    <div className={cn(
-      "relative w-full bg-muted/20 rounded-[32px] overflow-hidden border border-border/50 shadow-lg transition-all duration-500",
-      isFullscreen ? "fixed inset-4 z-[9999] h-[calc(100vh-32px)]" : "h-64 md:h-[350px]",
-      className
-    )}>
-      {/* Map Container */}
-      <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
+  if (geoEvents.length === 0) {
+    return (
+      <div className={cn('relative flex h-64 w-full flex-col justify-between overflow-hidden rounded-[32px] border border-border/50 bg-surface-default p-6 shadow-lg md:h-[350px]', className)}>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(74,109,86,0.14),transparent_35%),linear-gradient(135deg,rgba(229,211,189,0.35),transparent)]" />
+        <div className="relative flex items-center gap-3 rounded-full bg-muted/40 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground self-start">
+          <MapPin className="h-3.5 w-3.5" /> Chưa có tọa độ thật
+        </div>
+        <div className="relative space-y-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Route className="h-7 w-7" />
+          </div>
+          <h3 className="text-xl font-black uppercase tracking-tight">Bản đồ sẽ hiện khi người giao cập nhật GPS</h3>
+          <p className="max-w-md text-sm leading-6 text-muted-foreground">
+            Hệ thống chỉ hiển thị vị trí lấy từ cập nhật thật của admin/người giao. Không dùng vị trí mô phỏng hoặc tuyến đường tự sinh.
+          </p>
+          <p className="text-xs font-bold text-muted-foreground">Trạng thái hiện tại: {statusLabel(shipment.status)}</p>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Overlay: Custom Marker Styles (Inline for simplicity in this turn) */}
+  return (
+    <div
+      className={cn(
+        'relative w-full overflow-hidden rounded-[32px] border border-border/50 bg-muted/20 shadow-lg transition-all duration-500',
+        isFullscreen ? 'fixed inset-4 z-[9999] h-[calc(100vh-32px)]' : 'h-64 md:h-[350px]',
+        className
+      )}
+    >
+      <div ref={mapContainer} className="absolute inset-0 h-full w-full" />
+
       <style>{`
-        .marker-origin {
-          background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3Z"/><path d="M9 17h1"/><path d="M10 13h4"/><path d="M14 17h1"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg>');
-          background-size: cover;
-          width: 32px;
-          height: 32px;
-          background-color: var(--background);
-          border-radius: 8px;
-          border: 2px solid var(--border);
-          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .marker-destination {
-          background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23FF3B30" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>');
-          background-size: 70% 70%;
-          background-repeat: no-repeat;
-          background-position: center;
-          width: 32px;
-          height: 32px;
-          background-color: var(--background);
-          border-radius: 8px;
-          border: 2px solid #FF3B30;
-          box-shadow: 0 4px 10px rgba(255,59,48,0.2);
-        }
-        .marker-courier {
-          background-color: #FF3B30;
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          box-shadow: 0 8px 16px rgba(255, 59, 48, 0.4);
-          border: 2px solid white;
-          transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          z-index: 100 !important;
-        }
-        .marker-courier::after {
-          content: '';
-          position: absolute;
-          width: 50px;
-          height: 50px;
-          border-radius: 16px;
-          border: 2px solid rgba(255, 59, 48, 0.3);
-          animation: marker-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-        @keyframes marker-pulse {
-          0% { transform: scale(0.9); opacity: 0.8; }
-          100% { transform: scale(1.4); opacity: 0; }
-        }
-        .marker-courier svg {
+        .real-marker {
           width: 22px;
           height: 22px;
+          border-radius: 999px;
+          background: #4A6D56;
+          border: 3px solid white;
+          box-shadow: 0 8px 18px rgba(0,0,0,0.22);
+        }
+        .real-marker-current {
+          width: 36px;
+          height: 36px;
+          background: #C75F4B;
+          position: relative;
+        }
+        .real-marker-current::after {
+          content: '';
+          position: absolute;
+          inset: -10px;
+          border-radius: 999px;
+          border: 2px solid rgba(199,95,75,0.35);
+          animation: real-marker-pulse 1.8s ease-out infinite;
+        }
+        @keyframes real-marker-pulse {
+          from { transform: scale(0.8); opacity: 0.9; }
+          to { transform: scale(1.5); opacity: 0; }
         }
       `}</style>
 
-      {/* Floating UI: Live Tracking Tag */}
-      <div className="absolute top-6 left-6 flex items-center gap-4 ptr-events-none">
-        <motion.div 
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          className="flex items-center gap-3 px-5 py-2.5 bg-foreground text-background rounded-full shadow-2xl"
-        >
-          <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">LIVE TRACKING</span>
-        </motion.div>
+      <div className="absolute left-6 top-6 flex items-center gap-3 rounded-full bg-surface-elevated/95 px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] shadow-xl backdrop-blur">
+        <span className="h-2 w-2 rounded-full bg-primary" /> Tracking thật
       </div>
 
-      {/* ETA Sticky Highlight */}
-      <div className="absolute top-6 right-6 flex flex-col gap-3">
-         <motion.div 
-           initial={{ y: -20, opacity: 0 }}
-           animate={{ y: 0, opacity: 1 }}
-           className="px-6 py-3 bg-surface-elevated/90 backdrop-blur-xl rounded-[24px] border border-border/50 shadow-2xl flex flex-col items-center"
-         >
-            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">DỰ KIẾN</p>
-            <p className="text-sm font-black tracking-tight">
-               {new Date(estimatedArrival).toLocaleDateString('vi', { day: '2-digit', month: '2-digit' })}
-            </p>
-         </motion.div>
-         
-         <button 
-           onClick={() => setIsFullscreen(!isFullscreen)}
-           className="h-10 w-10 bg-surface-elevated/90 backdrop-blur-xl rounded-full border border-border/50 shadow-xl flex items-center justify-center hover:bg-surface-elevated transition-colors"
-         >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-         </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setIsFullscreen(!isFullscreen)}
+        className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-surface-elevated/95 shadow-xl backdrop-blur transition hover:bg-surface-elevated"
+        aria-label={isFullscreen ? 'Thu nhỏ bản đồ' : 'Phóng to bản đồ'}
+      >
+        {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+      </button>
 
-      {/* Bottom Status Card */}
       <div className="absolute bottom-6 left-6 right-6">
-        <motion.div 
-           initial={{ y: 50, opacity: 0 }}
-           animate={{ y: 0, opacity: 1 }}
-           className="bg-surface-elevated/95 backdrop-blur-2xl p-6 rounded-[32px] border border-border/50 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex items-center justify-between"
+        <motion.div
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex items-center justify-between gap-4 rounded-[28px] border border-border/50 bg-surface-elevated/95 p-5 shadow-2xl backdrop-blur-2xl"
         >
-           <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-foreground flex items-center justify-center text-background">
-                 <Navigation2 className={cn("h-6 w-6 transition-transform", status === 'DELIVERED' ? "rotate-0" : "rotate-45")} />
-              </div>
-              <div className="space-y-1">
-                 <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none">VỊ TRÍ HIỆN TẠI</p>
-                 <p className="text-sm font-black truncate max-w-[200px] md:max-w-md">{currentLocation?.name || 'Đang vận chuyển'}</p>
-                 <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-1.5">
-                       <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                       <span className="text-[10px] font-bold text-muted-foreground uppercase">{status.replace(/_/g, ' ')}</span>
-                    </div>
-                    <div className="text-[10px] font-bold text-muted-foreground uppercase">
-                       {(progress * 100).toFixed(0)}% HOÀN THÀNH
-                    </div>
-                 </div>
-              </div>
-           </div>
-           
-           <div className="hidden md:flex flex-col items-end">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">MÃ VẬN ĐƠN</p>
-              <p className="font-black text-lg tracking-tight">{shipment.trackingId}</p>
-           </div>
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-foreground text-background">
+              <Navigation2 className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Vị trí cập nhật gần nhất</p>
+              <p className="truncate text-sm font-black">{latestGeoEvent.location.name}</p>
+              <p className="text-[10px] font-bold uppercase text-muted-foreground">{statusLabel(latestGeoEvent.status)} - {new Date(latestGeoEvent.timestamp).toLocaleString('vi-VN')}</p>
+            </div>
+          </div>
+          <div className="hidden text-right md:block">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Số điểm GPS</p>
+            <p className="text-lg font-black">{geoEvents.length}</p>
+          </div>
         </motion.div>
       </div>
 
-      {/* Loading State Overlay */}
       <AnimatePresence>
         {!isMapLoaded && (
-          <motion.div 
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-muted/10 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-50"
-          >
-            <div className="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Khởi tạo bản đồ...</p>
+          <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-muted/10 backdrop-blur-sm">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Đang tải bản đồ thật...</p>
           </motion.div>
         )}
       </AnimatePresence>

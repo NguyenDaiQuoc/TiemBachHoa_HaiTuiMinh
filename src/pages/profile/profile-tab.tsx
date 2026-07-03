@@ -59,7 +59,7 @@ export const ProfileTab: React.FC = () => {
             </div>
             <div className="space-y-1">
               <h3 className="text-3xl font-black uppercase tracking-tighter">
-                BẠN ĐÃ TIẾT KIỆM ĐƯỢC {formatCurrencyVND(loyalty.estimatedSavings)}
+                Bạn đã tiết kiệm được {formatCurrencyVND(loyalty.estimatedSavings)}
               </h3>
               <p className="max-w-md text-sm font-medium text-muted-foreground">
                 Tiếp tục mua sắm để lên hạng {loyalty.nextTier?.name || loyalty.currentTier.name} và mở thêm ưu đãi riêng theo KPI thành viên.

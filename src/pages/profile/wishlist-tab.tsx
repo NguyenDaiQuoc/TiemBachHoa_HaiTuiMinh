@@ -98,7 +98,7 @@ export const WishlistTab: React.FC = () => {
                         </div>
                       </div>
                       <h4 className="line-clamp-1 text-sm font-black uppercase italic tracking-tight leading-snug transition-colors group-hover:text-primary">{item.name}</h4>
-                      <p className="mt-2 text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString('vi-VN')}Ä'</p>
+                      <p className="mt-2 text-xl font-black italic tracking-tighter text-primary">{item.price.toLocaleString('vi-VN')}₫</p>
                     </div>
 
                     <div className="flex gap-2">

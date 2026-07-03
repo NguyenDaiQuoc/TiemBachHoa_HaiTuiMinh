@@ -25,6 +25,19 @@ const serverEnvSchema = z.object({
   // Logistics
   GHN_TOKEN: z.string().optional(),
   GHTK_TOKEN: z.string().optional(),
+  VIETTELPOST_TOKEN: z.string().optional(),
+  VIETTEL_POST_TOKEN: z.string().optional(),
+  VIETTELPOST_TRACKING_URL: z.string().optional(),
+  SPX_TRACKING_URL: z.string().optional(),
+  SPX_TOKEN: z.string().optional(),
+  SPX_API_TOKEN: z.string().optional(),
+  AFTERSHIP_API_KEY: z.string().optional(),
+  AFTERSHIP_TRACKING_API_KEY: z.string().optional(),
+  AFTERSHIP_BASE_URL: z.string().optional(),
+  AFTERSHIP_GHN_SLUG: z.string().optional(),
+  AFTERSHIP_GHTK_SLUG: z.string().optional(),
+  AFTERSHIP_VIETTELPOST_SLUG: z.string().optional(),
+  AFTERSHIP_SPX_SLUG: z.string().optional(),
 
   // AI Support
   GEMINI_API_KEY: z.string().optional(),
@@ -53,26 +66,26 @@ function validateEnv() {
     const isServer = typeof process !== 'undefined' && process.env;
     
     if (isServer) {
-       console.log('🛡️ Validating Server Environment...');
+       console.log('Validating Server Environment...');
        
        // In Next.js/Full-stack, we validate both
        const serverParsed = serverEnvSchema.safeParse(process.env);
        const clientParsed = clientEnvSchema.safeParse(process.env);
        
        if (!serverParsed.success) {
-         console.error('❌ Invalid Server Environment Variables:');
+         console.error('Invalid Server Environment Variables:');
          console.error(JSON.stringify(serverParsed.error.format(), null, 2));
          
          throw new Error('Invalid server environment variables.');
        }
 
        if (!clientParsed.success) {
-         console.error('❌ Invalid Client Environment Variables:');
+         console.error('Invalid Client Environment Variables:');
          console.error(JSON.stringify(clientParsed.error.format(), null, 2));
        }
 
        if (serverParsed.success) {
-         console.log('✅ Environment Validated');
+         console.log('Environment Validated');
          return { ...serverParsed.data, ...clientParsed.data };
        }
     }
