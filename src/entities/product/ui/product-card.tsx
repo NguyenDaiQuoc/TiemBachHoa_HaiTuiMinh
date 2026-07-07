@@ -28,10 +28,12 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
   const categoryLabel = typeof product.category === 'object' ? product.category?.name || 'Danh mục' : product.category || 'Danh mục';
   const warrantyLabel = getWarrantyLabel(product.tags);
   const productTestId = `product-card-${product.slug || product.id}`;
+  const isSoldOut = typeof product.stock === 'number' && product.stock <= 0;
+  const soldCount = typeof product.soldCount === 'number' ? product.soldCount : 0;
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isAdding || showSuccess) return;
+    if (isSoldOut || isAdding || showSuccess) return;
     
     setIsAdding(true);
     
@@ -51,6 +53,14 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
     setTimeout(() => setShowSuccess(false), 2000);
   };
 
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isSoldOut || isAdding) return;
+
+    addItem(product);
+    navigate('/checkout');
+  };
+
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleItem(product.id);
@@ -58,7 +68,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
 
   return (
     <motion.div
-      whileHover={{ y: -8 }}
+      whileHover={{ y: -6 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       layout
       className="relative"
@@ -66,19 +76,31 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
       data-testid={productTestId}
     >
       <Card className={cn(
-        "overflow-hidden border-border/50 shadow-soft group cursor-pointer transition-all duration-500",
-        showSuccess ? "ring-2 ring-primary/50 bg-primary/10" : "bg-card hover:bg-surface-elevated"
+        "group cursor-pointer overflow-hidden border-border/60 bg-card/90 shadow-soft transition-all duration-500 hover:border-primary/25 hover:shadow-[0_24px_60px_-36px_hsl(var(--primary))]",
+        showSuccess && "ring-2 ring-primary/50 bg-primary/10"
       )}>
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden bg-muted/50">
           <AspectRatio ratio={4 / 5}>
             <img
               src={product.image}
               alt={product.name}
               loading="lazy"
-              className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+              className={cn(
+                'h-full w-full object-cover transition-transform duration-700 group-hover:scale-105',
+                isSoldOut && 'grayscale'
+              )}
               referrerPolicy="no-referrer"
             />
           </AspectRatio>
+
+          {isSoldOut && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-[1px]">
+              <div className="rounded-2xl border border-border/70 bg-card/95 px-4 py-3 text-center shadow-xl">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">Sản phẩm</p>
+                <p className="mt-1 text-base font-black uppercase text-foreground">Đã bán hết</p>
+              </div>
+            </div>
+          )}
           
           <AnimatePresence>
             {showSuccess && (
@@ -113,16 +135,16 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
           </AnimatePresence>
           
           {product.isNew && (
-            <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground font-black uppercase text-[9px] tracking-[0.2em] px-2.5 py-1 z-20 rounded-lg">
+            <Badge className="absolute left-3 top-3 z-20 rounded-full bg-primary px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-primary-foreground">
               NEW
             </Badge>
           )}
 
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-20">
+          <div className="absolute right-3 top-3 z-20 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
             <Button 
               size="icon-sm" 
               variant="secondary" 
-              className="rounded-full shadow-lg bg-surface-elevated/90 backdrop-blur-md border border-border/50 hover:bg-surface-elevated"
+              className="rounded-full border border-border/50 bg-card/90 shadow-lg backdrop-blur-md hover:bg-surface-elevated"
               onClick={handleToggleWishlist}
               aria-label={`${isWishlisted ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích'} ${product.name}`}
             >
@@ -130,53 +152,72 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
             </Button>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-20">
-            <Button 
-              className={cn(
-                "w-full rounded-2xl transition-all duration-300 font-black tracking-widest h-11 text-[10px] uppercase",
-                showSuccess ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"
-              )}
-              onClick={handleAddToCart}
-              data-testid={`add-to-cart-${product.slug || product.id}`}
-              aria-label={`Thêm ${product.name} vào giỏ hàng`}
-              loading={isAdding}
-              success={showSuccess}
-            >
-              <ShoppingBag className="h-4 w-4" />
-              THÊM VÀO GIỎ
-            </Button>
+          <div className="absolute inset-x-0 bottom-0 z-20 translate-y-full bg-gradient-to-t from-black/75 via-black/30 to-transparent p-4 transition-transform duration-500 group-hover:translate-y-0">
+            {isSoldOut ? (
+              <Button
+                className="h-11 w-full rounded-xl bg-muted text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground"
+                disabled
+              >
+                Đã bán hết
+              </Button>
+            ) : (
+              <div className="grid gap-2">
+                <Button
+                  className="h-10 w-full rounded-xl bg-foreground text-[10px] font-black uppercase tracking-[0.12em] text-background hover:bg-foreground/90"
+                  onClick={handleBuyNow}
+                  data-testid={`buy-now-${product.slug || product.id}`}
+                  aria-label={`Mua ngay ${product.name}`}
+                >
+                  Mua ngay
+                </Button>
+                <Button
+                  className={cn(
+                    "h-10 w-full rounded-xl text-[10px] font-black uppercase tracking-[0.12em] transition-all duration-300",
+                    showSuccess ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  )}
+                  onClick={handleAddToCart}
+                  data-testid={`add-to-cart-${product.slug || product.id}`}
+                  aria-label={`Thêm ${product.name} vào giỏ hàng`}
+                  loading={isAdding}
+                  success={showSuccess}
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  THÊM VÀO GIỎ
+                </Button>
+              </div>
+            )}
           </div>
         </div>
         
-        <CardContent className="p-4 space-y-2 bg-card group-hover:bg-surface-elevated transition-colors">
+        <CardContent className="space-y-3 bg-card p-4 transition-colors group-hover:bg-surface-default">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.2em] font-black">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
               {categoryLabel}
             </p>
-            {product.soldCount && product.soldCount > 0 && (
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/5 border border-primary/10">
+            {typeof product.soldCount === 'number' && (
+              <div className="flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/10 px-2 py-0.5">
                 <span className="size-1 bg-primary rounded-full animate-pulse" />
-                <span className="text-[9px] font-black text-primary italic uppercase tracking-tighter">Đã bán {product.soldCount >= 1000 ? `${(product.soldCount / 1000).toFixed(1)}k` : product.soldCount}</span>
+                <span className="text-[9px] font-black uppercase text-primary">Đã bán {soldCount >= 1000 ? `${(soldCount / 1000).toFixed(1)}k` : soldCount}</span>
               </div>
             )}
           </div>
           <motion.h3 
-            className="font-heading font-black text-sm line-clamp-1 group-hover:text-primary transition-colors text-foreground"
+            className="line-clamp-2 min-h-[2.65rem] text-sm font-extrabold leading-snug text-foreground transition-colors group-hover:text-primary"
           >
             {product.name}
           </motion.h3>
           
           <div className="flex items-center justify-between pt-0.5">
             <div className="flex items-center gap-1.5">
-               <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                 <Check className="h-2.5 w-2.5 text-emerald-500" />
-                 <span className="text-[8px] font-black text-emerald-600 uppercase tracking-tighter">Chính hãng</span>
+               <div className="flex items-center gap-1 rounded-full border border-accent/20 bg-accent/10 px-1.5 py-0.5">
+                 <Check className="h-2.5 w-2.5 text-accent" />
+                 <span className="text-[8px] font-black uppercase text-accent">Chính hãng</span>
                </div>
-               {product.stock && product.stock <= 5 && (
-                  <span className="text-[8px] font-black text-rose-500 uppercase italic">Sắp hết!</span>
+               {!isSoldOut && product.stock && product.stock <= 5 && (
+                  <span className="text-[8px] font-black uppercase text-rose-500">Sắp hết</span>
                )}
                {warrantyLabel && (
-                 <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/15">
+                 <div className="flex items-center gap-1 rounded-full border border-primary/15 bg-primary/10 px-1.5 py-0.5">
                    <ShieldCheck className="h-2.5 w-2.5 text-primary" />
                    <span className="text-[8px] font-black text-primary uppercase tracking-tighter">BH {warrantyLabel}</span>
                  </div>
@@ -185,20 +226,24 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
             {product.reviewCount && product.reviewCount > 0 && (
               <div className="flex items-center gap-1">
                 <span className="text-[10px] font-black text-amber-500">★</span>
-                <span className="text-[9px] font-bold text-muted-foreground/80">{product.rating || '4.9'}</span>
+                <span className="text-[9px] font-bold text-muted-foreground">{product.rating || '4.9'}</span>
               </div>
             )}
           </div>
         </CardContent>
         
-        <CardFooter className="px-4 pb-5 pt-0 bg-card group-hover:bg-surface-elevated transition-colors">
-          <p className="font-heading font-black text-base text-accent italic">
-            {product.price.toLocaleString('vi-VN')} <span className="text-[10px] not-italic opacity-55">VND</span>
-          </p>
+        <CardFooter className="bg-card px-4 pb-5 pt-0 transition-colors group-hover:bg-surface-default">
+          {isSoldOut ? (
+            <p className="text-sm font-black uppercase tracking-[0.12em] text-muted-foreground">Tạm hết hàng</p>
+          ) : (
+            <p className="text-base font-black text-accent">
+              {product.price.toLocaleString('vi-VN')} <span className="text-[10px] opacity-55">đ</span>
+            </p>
+          )}
         </CardFooter>
       </Card>
       
-      <div className="absolute -inset-0.5 bg-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <div className="pointer-events-none absolute -inset-0.5 rounded-2xl bg-primary/10 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
     </motion.div>
   );
 });

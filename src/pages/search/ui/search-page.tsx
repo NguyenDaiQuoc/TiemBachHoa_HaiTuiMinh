@@ -442,7 +442,7 @@ export const SearchPage = () => {
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-12">
+        <div className="grid min-w-0 gap-8 lg:grid-cols-12">
           <aside className="hidden lg:col-span-3 lg:block">
             <div className="sticky top-24 space-y-6">
               <div className="overflow-hidden rounded-[28px] border border-border/50 bg-card shadow-soft">
@@ -465,10 +465,10 @@ export const SearchPage = () => {
             </div>
           </aside>
 
-          <div className="space-y-8 lg:col-span-9">
-            <div className="flex items-center justify-between overflow-x-auto rounded-2xl border border-border/50 bg-card p-1.5 shadow-sm no-scrollbar">
-              <div className="flex min-w-max items-center gap-1.5">
-                <span className="mr-2 border-r border-border/50 px-4 text-[10px] font-black uppercase text-muted-foreground/60">
+          <div className="min-w-0 space-y-8 lg:col-span-9">
+            <div className="flex max-w-full flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/50 bg-card p-1.5 shadow-sm">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <span className="mr-1 border-r border-border/50 px-3 py-2 text-[10px] font-black uppercase text-muted-foreground/60 sm:mr-2 sm:px-4">
                   Sắp xếp
                 </span>
                 {SORT_OPTIONS.map((option) => (
@@ -476,7 +476,7 @@ export const SearchPage = () => {
                     key={option.id}
                     onClick={() => updateFilters({ sortBy: option.id })}
                     className={cn(
-                      'rounded-xl px-6 py-2.5 text-[10px] font-black tracking-widest transition-all',
+                      'rounded-xl px-3 py-2.5 text-[10px] font-black tracking-widest transition-all sm:px-6',
                       sortBy === option.id ? 'bg-foreground text-background shadow-lg' : 'text-muted-foreground hover:bg-muted'
                     )}
                   >
@@ -501,7 +501,7 @@ export const SearchPage = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="grid grid-cols-2 gap-6 md:grid-cols-3"
+                  className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3"
                 >
                   {[1, 2, 3, 4, 5, 6].map((item) => (
                     <div key={item} className="aspect-[3/4] rounded-[32px] bg-muted/20 animate-pulse" />
@@ -512,7 +512,7 @@ export const SearchPage = () => {
                   key="results"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={cn('grid gap-6', viewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-1')}
+                  className={cn('grid min-w-0 gap-6', viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' : 'grid-cols-1')}
                 >
                   {products.map((product: Product) => (
                     <ProductCard key={product.id} product={product as any} />

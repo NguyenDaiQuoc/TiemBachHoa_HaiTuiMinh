@@ -253,7 +253,7 @@ export const AdminOrders = () => {
       </div>
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[32px] border-none bg-surface-default p-8 shadow-2xl sm:max-w-5xl">
+        <DialogContent className="max-h-[90vh] w-[calc(100vw-1rem)] overflow-y-auto overflow-x-hidden rounded-[24px] border-none bg-surface-default p-4 shadow-2xl sm:max-w-5xl sm:rounded-[32px] sm:p-8">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">
               Chi tiết <span className="text-primary italic">đơn hàng</span>

@@ -88,6 +88,7 @@ Yêu cầu thiết kế:
 - Phong cách hiện đại, bắt mắt, có không khí mùa vụ nếu prompt có nhắc đến ngày lễ, mùa hè, sự kiện hoặc giảm giá.
 - Nếu có chữ trong ảnh, dùng tiếng Việt tự nhiên, ngắn, rõ, dễ đọc; ưu tiên headline lớn và CTA gọn.
 - Nếu prompt có ngày, phần trăm giảm giá hoặc ưu đãi, thể hiện các thông tin đó nổi bật và chính xác.
+- Thêm watermark thương hiệu nhỏ, tinh tế: "Tiệm bách hoá Hai Tụi Mình". Watermark phải dễ đọc nhưng không che nội dung chính.
 - Bố cục có điểm nhấn rõ, màu sắc thương mại, ánh sáng đẹp, không rối mắt.
 - Không bịa logo thương hiệu, chứng nhận, số điện thoại, QR code, URL hoặc cam kết pháp lý.
 - Không để chữ bị méo, sai chính tả, quá nhỏ hoặc quá nhiều.
@@ -645,4 +646,3 @@ export const AdminMarketing = () => {
     </div>
   );
 };
-

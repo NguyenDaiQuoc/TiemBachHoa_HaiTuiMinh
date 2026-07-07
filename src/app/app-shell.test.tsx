@@ -56,7 +56,7 @@ describe('App shell and profile inheritance', () => {
   it('keeps the shared header and footer visible on /profile', async () => {
     renderShell();
 
-    expect(screen.getByRole('link', { name: /hai tui minh home/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /hai tụi mình home/i })).toBeInTheDocument();
     expect(screen.getByText(/profile overview/i)).toBeInTheDocument();
     expect(screen.getByText(/powered by antigravity engine/i)).toBeInTheDocument();
   });

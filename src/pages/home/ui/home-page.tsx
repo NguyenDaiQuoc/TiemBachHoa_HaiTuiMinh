@@ -138,6 +138,7 @@ const isCampaignCurrentlyRunning = (campaign?: ActiveCampaignResponse['campaign'
 };
 
 export const HomePage = () => {
+  const [activeCampaigns, setActiveCampaigns] = useState<ActiveCampaignResponse[]>([]);
   const [activeDeals, setActiveDeals] = useState<ActiveCampaignResponse[]>([]);
   const [activeDealIndex, setActiveDealIndex] = useState(0);
   const [isCampaignOverlayOpen, setIsCampaignOverlayOpen] = useState(true);
@@ -162,10 +163,12 @@ export const HomePage = () => {
           : payload?.data?.campaign
             ? [payload.data]
             : [];
-        setActiveDeals(campaigns);
+        const dealCampaigns = campaigns.filter((item) => ['DEAL', 'FLASH_SALE'].includes(item.campaign.type));
+        setActiveCampaigns(campaigns);
+        setActiveDeals(dealCampaigns);
         setActiveDealIndex(0);
         setIsCampaignOverlayOpen(true);
-        setTimeLeft(getTimeLeft(campaigns[0]?.campaign?.endsAt));
+        setTimeLeft(getTimeLeft(dealCampaigns[0]?.campaign?.endsAt));
       })
       .catch(() => {
         if (active) setActiveDeals([]);
@@ -177,7 +180,7 @@ export const HomePage = () => {
   }, []);
 
   const activeDeal = activeDeals[activeDealIndex] || null;
-  const activeOverlayCampaign = activeDeals.find((item) => Boolean(item.campaign.bannerImage) && isCampaignCurrentlyRunning(item.campaign)) || null;
+  const activeOverlayCampaign = activeCampaigns.find((item) => item.campaign.type === 'PROMOTION' && Boolean(item.campaign.bannerImage) && isCampaignCurrentlyRunning(item.campaign)) || null;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -215,14 +218,15 @@ export const HomePage = () => {
   const dealLink = activeDeal?.campaign?.slug ? `/${activeDeal.campaign.slug}` : '/flash-sale';
   const showActiveDeal = Boolean(activeDeal && isCampaignCurrentlyRunning(activeDeal.campaign) && (!activeDeal.campaign.endsAt || timeLeft.totalMs > 0));
   return (
-      <div className="container mx-auto px-4 py-12 space-y-20">
+      <div className="warm-page">
+      <div className="container mx-auto space-y-20 px-4 py-10 md:py-14">
         <AnimatePresence>
           {activeOverlayCampaign && isCampaignOverlayOpen && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm"
+                className="fixed inset-0 z-[80] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-black/70 px-4 py-4 backdrop-blur-sm"
             >
               <motion.div
                 initial={{ opacity: 0, y: 24, scale: 0.96 }}
@@ -233,58 +237,77 @@ export const HomePage = () => {
                 <button
                   type="button"
                   onClick={() => setIsCampaignOverlayOpen(false)}
-                  className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background/90 text-foreground shadow-lg transition-colors hover:bg-primary hover:text-primary-foreground"
+                  className="absolute right-3 top-3 z-10 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-background/95 text-2xl font-black leading-none text-foreground shadow-lg transition-colors hover:bg-primary hover:text-primary-foreground"
                   aria-label="Đóng banner khuyến mãi"
                 >
                   ×
                 </button>
                 <Link to={`/${activeOverlayCampaign.campaign.slug}`} onClick={() => setIsCampaignOverlayOpen(false)} className="block">
-                  <img src={activeOverlayCampaign.campaign.bannerImage || ''} alt={activeOverlayCampaign.campaign.name} className="h-auto max-h-[72vh] w-full object-cover" />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 to-transparent p-5 text-white">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/80">Đang khuyến mãi</p>
-                    <h2 className="mt-1 text-2xl font-black uppercase italic tracking-tight md:text-4xl">{activeOverlayCampaign.campaign.name}</h2>
-                    {activeOverlayCampaign.campaign.endsAt && (
-                      <p className="mt-2 text-sm font-bold text-white/85">Kết thúc: {new Date(activeOverlayCampaign.campaign.endsAt).toLocaleString('vi-VN')}</p>
-                    )}
-                  </div>
+                  <img src={activeOverlayCampaign.campaign.bannerImage || ''} alt={activeOverlayCampaign.campaign.name} className="h-auto max-h-[calc(100dvh-2rem)] w-full object-cover" />
                 </Link>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
-        <section className="space-y-6 text-center py-10 md:py-20 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-          <span className="text-primary font-bold tracking-[0.3em] text-xs uppercase">Chính hãng • Giá tốt • Hiện đại</span>
-          <h1 className="text-5xl md:text-8xl font-heading font-black text-foreground uppercase italic tracking-tighter leading-none">
-            Tiệm Bách Hoá<br/><span className="text-primary">Hai Tụi Mình</span>
+        <section className="grid min-h-[calc(100dvh-7rem)] items-center gap-10 py-6 md:grid-cols-[1.02fr_.98fr] md:py-10">
+          <div className="max-w-2xl space-y-7 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <span className="inline-flex w-fit rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-primary">Chính hãng / Giá rõ / Giao nhanh</span>
+          <h1 className="text-4xl font-black leading-[1.02] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
+            Mua đồ đẹp, đồ tiện và đồ công nghệ đáng dùng.
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-medium">
-            Điểm đến tin cậy cho Mỹ phẩm, Đồ gia dụng & Công nghệ. 
-            Chúng mình mang đến những sản phẩm chất lượng nhất với giá thành cạnh tranh nhất thị trường.
+          <p className="max-w-xl text-base font-medium leading-8 text-muted-foreground md:text-lg">
+            Hai Tụi Mình chọn lọc mỹ phẩm, gia dụng và gadget có nguồn gốc rõ, bảo hành minh bạch, giá dễ kiểm tra.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-8">
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <Link to="/products">
-              <button className="w-full sm:w-auto bg-primary text-primary-foreground px-10 py-4 rounded-full font-black uppercase tracking-widest italic hover:opacity-90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20">
-                MUA SẮM NGAY
+              <button className="w-full rounded-full bg-primary px-8 py-4 text-sm font-black uppercase tracking-[0.14em] text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-95 sm:w-auto">
+                Mua sắm ngay
               </button>
             </Link>
             <Link to="/products">
-              <button className="w-full sm:w-auto bg-background border-2 border-primary/20 text-foreground px-10 py-4 rounded-full font-black uppercase tracking-widest italic hover:border-primary/50 transition-all hover:bg-muted/50">
-                KHÁM PHÁ BỘ SƯU TẬP
+              <button className="w-full rounded-full border border-border/70 bg-card/90 px-8 py-4 text-sm font-black uppercase tracking-[0.14em] text-foreground transition-all hover:border-primary/40 hover:bg-muted/60 sm:w-auto">
+                Xem danh mục
               </button>
             </Link>
+          </div>
+          <div className="grid max-w-xl grid-cols-3 gap-3 pt-3">
+            {[
+              ['500K+', 'Miễn phí vận chuyển'],
+              ['24H', 'Xử lý đơn nhanh'],
+              ['1 đổi 1', 'Theo chính sách'],
+            ].map(([value, label]) => (
+              <div key={value} className="rounded-2xl border border-border/60 bg-card/100 p-4 shadow-soft">
+                <p className="text-lg font-black text-accent">{value}</p>
+                <p className="mt-1 text-[11px] font-bold leading-5 text-muted-foreground">{label}</p>
+              </div>
+            ))}
+          </div>
+          </div>
+          <div className="relative min-h-[420px] overflow-hidden rounded-[32px] border border-border/60 bg-card shadow-soft md:min-h-[560px]">
+            <img
+              src="https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=1400&auto=format&fit=crop"
+              alt="Sản phẩm chọn lọc tại Hai Tụi Mình"
+              className="absolute inset-0 h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/100 via-black/10 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 text-white md:p-8">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/100">Bộ chọn lọc tuần này</p>
+              <h2 className="mt-3 max-w-md text-2xl font-black leading-tight md:text-4xl">Mỹ phẩm, đồ gia dụng và gadget có sẵn trong kho.</h2>
+            </div>
           </div>
         </section>
 
         {/* Trust Row */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-6 py-10 border-y border-border/50">
+        <section className="grid grid-cols-2 gap-4 rounded-[28px] border border-border/60 bg-card/90 p-4 shadow-soft md:grid-cols-4 md:p-6">
           {[
             { icon: <ShieldCheck className="w-5 h-5" />, label: "Chính Hãng 100%", sub: "Cam kết nguồn gốc" },
             { icon: <Truck className="w-5 h-5" />, label: "Giao Hàng Nhanh", sub: "Xử lý trong 24h" },
             { icon: <RotateCcw className="w-5 h-5" />, label: "Đổi Trả Dễ Dàng", sub: "Trong vòng 7 ngày" },
             { icon: <BadgeCheck className="w-5 h-5" />, label: "Bảo Hành Tận Tâm", sub: "Hỗ trợ 24/7" },
           ].map((item, i) => (
-            <div key={i} className="flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left p-4 rounded-2xl hover:bg-muted/30 transition-colors">
-              <div className="p-3 rounded-xl bg-primary/10 text-primary">
+            <div key={i} className="flex flex-col items-center gap-3 rounded-2xl p-4 text-center transition-colors hover:bg-muted/50 md:flex-row md:items-start md:text-left">
+              <div className="rounded-2xl bg-primary/10 p-3 text-primary">
                 {item.icon}
               </div>
               <div className="space-y-0.5">
@@ -297,8 +320,8 @@ export const HomePage = () => {
 
         {/* Flash Sale */}
         {showActiveDeal && activeDeal && (
-        <section className="bg-foreground text-background rounded-[3rem] p-8 md:p-12 overflow-hidden relative group">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[100px] -mr-48 -mt-48 group-hover:bg-primary/30 transition-colors duration-1000" />
+        <section className="group relative overflow-hidden rounded-[32px] border border-primary/15 bg-card p-7 text-foreground shadow-soft md:p-12">
+          <div className="absolute right-0 top-0 -mr-48 -mt-48 h-96 w-96 bg-primary/12 blur-[100px] transition-colors duration-1000 group-hover:bg-primary/18" />
           
           <motion.div
             key={activeDeal.campaign.id}
@@ -311,25 +334,25 @@ export const HomePage = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded-full w-fit">
                   <Zap className="w-4 h-4 fill-current" />
-                  <span className="text-[10px] font-black uppercase tracking-widest italic">Deal Cháy Giờ Vàng</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Deal giờ vàng</span>
                 </div>
-                <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter leading-none">
+                <h2 className="text-3xl font-black uppercase leading-tight tracking-tight text-foreground md:text-5xl">
                   {activeDeal.campaign.name}<br/><span className="text-primary">Săn Deal Giờ Vàng</span>
                 </h2>
                 {activeDeal.campaign.description && (
-                  <p className="max-w-xl text-sm font-semibold leading-relaxed text-background/70 md:text-base">
+                  <p className="max-w-xl text-sm font-semibold leading-relaxed text-muted-foreground md:text-base">
                     {activeDeal.campaign.description}
                   </p>
                 )}
                 <div className="flex items-center gap-4 pt-4">
                   <div className="flex items-center gap-2 font-mono text-2xl md:text-4xl font-black italic">
-                    <span className="bg-background/10 backdrop-blur-md px-3 py-1 rounded-xl">{formatNum(timeLeft.h)}</span>
+                    <span className="rounded-xl bg-primary/10 px-3 py-1 text-foreground backdrop-blur-md">{formatNum(timeLeft.h)}</span>
                     <span className="text-primary">:</span>
-                    <span className="bg-background/10 backdrop-blur-md px-3 py-1 rounded-xl">{formatNum(timeLeft.m)}</span>
+                    <span className="rounded-xl bg-primary/10 px-3 py-1 text-foreground backdrop-blur-md">{formatNum(timeLeft.m)}</span>
                     <span className="text-primary">:</span>
-                    <span className="bg-background/10 backdrop-blur-md px-3 py-1 rounded-xl">{formatNum(timeLeft.s)}</span>
+                    <span className="rounded-xl bg-primary/10 px-3 py-1 text-foreground backdrop-blur-md">{formatNum(timeLeft.s)}</span>
                   </div>
-                  <div className="text-[10px] font-black uppercase tracking-widest opacity-40">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     Kết thúc sau
                   </div>
                 </div>
@@ -350,7 +373,7 @@ export const HomePage = () => {
                         onClick={() => setActiveDealIndex(index)}
                         className={cn(
                           'h-2.5 rounded-full transition-all',
-                          index === activeDealIndex ? 'w-8 bg-primary' : 'w-2.5 bg-background/25 hover:bg-background/50'
+                          index === activeDealIndex ? 'w-8 bg-primary' : 'w-2.5 bg-muted hover:bg-primary/30'
                         )}
                         aria-label={`Chuyển sang deal ${index + 1}`}
                         aria-current={index === activeDealIndex}
@@ -365,18 +388,18 @@ export const HomePage = () => {
             <div className="flex-1 w-full grid grid-cols-2 gap-4">
               {dealProducts.slice(0, 2).map((product, i) => (
                 <Link key={product.id || i} to={getProductUrl(product)} className="block group/item">
-                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-4 space-y-4 transition-all hover:bg-white/10">
+                  <div className="space-y-4 rounded-3xl border border-border/60 bg-background p-4 shadow-sm transition-all hover:border-primary/25 hover:bg-surface-default">
                     <div className="aspect-square rounded-2xl overflow-hidden relative">
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-700" />
                       <div className="absolute top-2 left-2 bg-red-600 text-white text-[9px] font-black px-2 py-1 rounded-lg italic">
                         -50%
                       </div>
                     </div>
-                    <div className="space-y-1 text-background">
+                    <div className="space-y-1 text-foreground">
                       <h3 className="text-xs font-black uppercase tracking-tight line-clamp-1 group-hover/item:text-primary transition-colors">{product.name}</h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-primary italic">{(product.promotionalPrice || product.price / 2).toLocaleString('vi-VN')} ?</span>
-                        <span className="text-[10px] line-through opacity-40 font-bold">{product.price.toLocaleString('vi-VN')} ?</span>
+                        <span className="text-sm font-black text-primary">{(product.promotionalPrice || product.price / 2).toLocaleString('vi-VN')} đ</span>
+                        <span className="text-[10px] font-bold text-muted-foreground line-through">{product.price.toLocaleString('vi-VN')} đ</span>
                       </div>
                     </div>
                   </div>
@@ -387,11 +410,11 @@ export const HomePage = () => {
           </motion.div>
         </section>
         )}
-        <section className="space-y-12 relative">
+        <section className="relative space-y-10">
           <div className="flex items-end justify-between px-2">
             <div className="space-y-2">
-              <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px]">Lựa chọn tinh tuyển</span>
-              <h2 className="text-3xl font-black uppercase tracking-tight italic">Danh mục nổi bật</h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">Lựa chọn tinh tuyển</span>
+              <h2 className="text-3xl font-black tracking-tight">Danh mục nổi bật</h2>
             </div>
             <Link to="/products" className="text-xs font-black uppercase tracking-widest text-primary hover:underline underline-offset-4 flex items-center gap-2 group">
               Xem tất cả <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -431,7 +454,7 @@ export const HomePage = () => {
                    onBlur={() => setHoveredCategory(null)}
                    tabIndex={0}
                    className={cn(
-                     "group rounded-[40px] overflow-hidden border border-border/50 transition-all hover:border-primary/20 cursor-pointer shadow-soft hover:shadow-2xl hover:shadow-primary/5 bg-background/80 backdrop-blur-xl outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                     "group cursor-pointer overflow-hidden rounded-[28px] border border-border/60 bg-card/100 shadow-soft outline-none backdrop-blur-xl transition-all hover:border-primary/25 hover:shadow-2xl hover:shadow-primary/5 focus-visible:ring-2 focus-visible:ring-primary",
                      hoveredCategory && hoveredCategory !== col.id ? "opacity-40 grayscale-[0.5]" : "opacity-100"
                    )}
                  >
@@ -456,7 +479,7 @@ export const HomePage = () => {
                         <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{col.tag}</span>
                         <TrendingUp className="size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                      </div>
-                     <h3 className="text-xl font-black uppercase tracking-tight italic leading-tight group-hover:text-primary transition-colors">{col.title}</h3>
+                     <h3 className="text-xl font-black leading-tight tracking-tight transition-colors group-hover:text-primary">{col.title}</h3>
                    </div>
                   </motion.div>
                   </Link>
@@ -471,8 +494,8 @@ export const HomePage = () => {
         <section className="space-y-12">
           <div className="flex items-end justify-between px-2">
             <div className="space-y-2">
-              <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px]">Thứ hạng thực tế</span>
-              <h2 className="text-3xl font-black uppercase tracking-tight italic">Bảng Xếp Hạng Bán Chạy</h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">Thứ hạng thực tế</span>
+              <h2 className="text-3xl font-black tracking-tight">Bảng xếp hạng bán chạy</h2>
             </div>
           </div>
           
@@ -482,7 +505,7 @@ export const HomePage = () => {
               { category: "CÔNG NGHỆ", items: productsByCategory('cong-nghe', [SAMPLE_PRODUCTS[2], SAMPLE_PRODUCTS[0], SAMPLE_PRODUCTS[4]]) },
               { category: "GIA DỤNG", items: productsByCategory('gia-dung', [SAMPLE_PRODUCTS[1], SAMPLE_PRODUCTS[4], SAMPLE_PRODUCTS[2]]) },
             ].map((rank, i) => (
-              <div key={i} className="p-8 rounded-[40px] border border-border/50 bg-surface-default hover:bg-surface-elevated transition-colors shadow-soft">
+              <div key={i} className="rounded-[28px] border border-border/60 bg-card/100 p-6 shadow-soft transition-colors hover:bg-surface-default md:p-8">
                 <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-8 pb-4 border-b border-primary/10">{rank.category}</h3>
                 <div className="space-y-6">
                   {rank.items.map((item, idx) => (
@@ -493,7 +516,7 @@ export const HomePage = () => {
                       </div>
                       <div className="flex-1 space-y-0.5">
                         <p className="text-xs font-black uppercase tracking-tight line-clamp-1 group-hover/rank:text-primary transition-colors text-foreground">{item.name}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground italic uppercase">{(item.soldCount || 800) + (10 - idx * 2)} đã bán</p>
+                        <p className="text-[10px] font-bold text-muted-foreground italic uppercase">Đã bán {Number(item.soldCount ?? 0).toLocaleString('vi-VN')}</p>
                       </div>
                     </Link>
                   ))}
@@ -503,16 +526,16 @@ export const HomePage = () => {
           </div>
         </section>
         
-        <section className="bg-primary/5 rounded-[2.5rem] p-8 md:p-16 flex flex-col md:flex-row items-center gap-12">
+        <section className="flex flex-col items-center gap-12 rounded-[32px] border border-primary/15 bg-primary/10 p-8 md:flex-row md:p-14">
           <div className="flex-1 space-y-6">
-            <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-tight">Chất lượng thật,<br/>Giá trị thật.</h2>
+            <h2 className="text-4xl font-black leading-tight tracking-tight">Chất lượng thật,<br/>giá trị thật.</h2>
             <p className="text-muted-foreground text-lg font-medium">
               "Tại Tiệm Bách Hoá Hai Tụi Mình, chúng mình cam kết mọi sản phẩm đều được kiểm tra kỹ lưỡng về nguồn gốc. Chúng mình không chỉ bán hàng, chúng mình trao gửi sự tin cậy."
             </p>
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center font-black italic text-primary">TM</div>
               <div>
-                <p className="font-bold uppercase text-xs tracking-widest">Tiệm Bách Hoá Hai Tụi Mình</p>
+                <p className="text-xs font-bold uppercase tracking-widest">Tiệm Bách Hoá Hai Tụi Mình</p>
                 <p className="text-[10px] text-muted-foreground uppercase font-black">Chính hãng • Hiện đại • Tận tâm</p>
               </div>
             </div>
@@ -528,29 +551,30 @@ export const HomePage = () => {
         </section>
 
         {/* Seasonal Promo */}
-        <section className="relative h-[400px] md:h-[500px] rounded-[3rem] overflow-hidden group">
+        <section className="group relative h-[400px] overflow-hidden rounded-[32px] md:h-[500px]">
           <img 
             src="https://images.unsplash.com/photo-1542037104857-ffbb0b9155fb?q=80&w=1954&auto=format&fit=crop" 
             alt="Promotion" 
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/100 via-black/40 to-transparent" />
           <div className="absolute inset-0 p-8 md:p-20 flex flex-col justify-center space-y-6">
             <span className="text-primary font-black uppercase tracking-[0.4em] text-xs">Phụ nữ là để yêu thương</span>
             <h2 className="text-4xl md:text-7xl font-black text-white uppercase italic tracking-tighter leading-[0.85]">
               Mùa Yêu <br />
-              <span className="text-primary italic">Ưu đãi đến 40%</span>
+              <span className="text-primary">Ưu đãi đến 40%</span>
             </h2>
             <p className="text-white/60 max-w-md font-medium text-lg leading-relaxed">
               Dành riêng cho những đóa hồng rạng rỡ nhất. Miễn phí vận chuyển và quà tặng kèm mọi đơn hàng mỹ phẩm.
             </p>
             <Link to="/products?category=my-pham" className="inline-block pt-4">
-              <button className="bg-white text-black px-10 py-5 rounded-full font-black uppercase tracking-widest italic hover:bg-primary hover:text-white transition-all transform hover:scale-105">
-                SĂN DEAL NGAY
+              <button className="rounded-full bg-white px-10 py-5 font-black uppercase tracking-widest text-black transition-all hover:scale-105 hover:bg-primary hover:text-white">
+                Săn deal ngay
               </button>
             </Link>
           </div>
         </section>
+      </div>
       </div>
   );
 };

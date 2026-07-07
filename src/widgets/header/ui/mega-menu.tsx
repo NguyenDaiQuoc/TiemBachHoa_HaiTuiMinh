@@ -91,7 +91,7 @@ export const MegaMenu = ({ isOpen, type, onClose, onMouseEnter, onMouseLeave }: 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 top-16 z-40 bg-black/10 backdrop-blur-[2px]"
+            className="fixed inset-0 top-20 z-40 bg-black/10 backdrop-blur-[2px] sm:top-24 lg:top-28"
           />
 
           <motion.div
@@ -101,7 +101,7 @@ export const MegaMenu = ({ isOpen, type, onClose, onMouseEnter, onMouseLeave }: 
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
-            className="fixed left-0 right-0 top-16 z-50 overflow-hidden border-b border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl"
+            className="fixed left-0 right-0 top-20 z-50 overflow-hidden border-b border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl sm:top-24 lg:top-28"
           >
             <div className="container mx-auto px-6 py-12">
               {type === 'shop' ? (

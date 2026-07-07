@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Playwrite+VN:wght@100..400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Playwrite+VN:wght@100..400&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -6,8 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: "Cormorant Garamond", serif;
-    --font-sans: "Lora", serif;
+    --font-heading: "Be Vietnam Pro", sans-serif;
+    --font-sans: "Be Vietnam Pro", sans-serif;
     --font-accent: "Playwrite VN", cursive;
     
     --color-background: hsl(var(--background));
@@ -46,42 +46,42 @@
 }
 
 :root {
-    --primary-bg: #E5D3BD;
-    --secondary-bg: #FBF8F5;
-    --accent-orange: #C75F4B;
-    --accent-green: #4A6D56;
+    --primary-bg: #EAF3FF;
+    --secondary-bg: #F8FBFF;
+    --accent-orange: #2563EB;
+    --accent-green: #0F4C81;
     --text-primary: #3C3C3C;
-    --bg-main: #FBF8F5;
-    --bg-box: #E5D3BD;
+    --bg-main: #F8FBFF;
+    --bg-box: #EAF3FF;
     --text-main: #3C3C3C;
     --text-green: #4A6D56;
-    --background: 30 42.86% 97.25%;
+    --background: 210 100% 98.5%;
     --foreground: 0 0% 24%;
 
-    --card: 33 43.48% 81.96%;
+    --card: 210 100% 99%;
     --card-foreground: 0 0% 24%;
 
-    --popover: 30 42.86% 97.25%;
+    --popover: 210 100% 99%;
     --popover-foreground: 0 0% 24%;
 
-    --primary: 9.68 52.99% 53.73%;
-    --primary-foreground: 30 42.86% 97.25%;
+    --primary: 217 82% 54%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 33 43.48% 81.96%;
+    --secondary: 211 78% 93%;
     --secondary-foreground: 0 0% 24%;
 
-    --muted: 33 43% 88%;
-    --muted-foreground: 141 13% 32%;
+    --muted: 212 55% 93%;
+    --muted-foreground: 0 0% 32%;
 
-    --accent: 140.57 19.13% 35.88%;
-    --accent-foreground: 30 42.86% 97.25%;
+    --accent: 208 79% 28%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 33 30% 78%;
-    --input: 33 30% 78%;
-    --ring: 10 53% 54%;
+    --border: 212 36% 84%;
+    --input: 212 36% 84%;
+    --ring: 217 82% 54%;
 
     --radius: 0.75rem;
 
@@ -90,9 +90,9 @@
     --info: 199 89% 48%;
 
     /* Surface Hierarchy (Light) */
-    --surface-sunken: 30 42.86% 97.25%;
-    --surface-default: 33 43.48% 81.96%;
-    --surface-elevated: 32 38% 78%;
+    --surface-sunken: 210 100% 98.5%;
+    --surface-default: 210 100% 99%;
+    --surface-elevated: 211 78% 93%;
 
     /* Glassmorphism Tokens */
     --glass-subtle: rgba(255, 255, 255, 0.05);
@@ -103,39 +103,39 @@
 }
 
 .dark {
-    --background: 24 18% 8%;
-    --foreground: 30 43% 94%;
+    --background: 220 28% 9%;
+    --foreground: 210 45% 96%;
 
     /* Deep layered surfaces for dark mode - Premium OLED blacks */
-    --card: 24 16% 11%;
-    --card-foreground: 30 43% 94%;
+    --card: 221 28% 13%;
+    --card-foreground: 210 45% 96%;
 
-    --popover: 24 16% 12%;
-    --popover-foreground: 30 43% 94%;
+    --popover: 221 28% 13%;
+    --popover-foreground: 210 45% 96%;
 
-    --primary: 141 19% 54%;
-    --primary-foreground: 24 18% 8%;
+    --primary: 213 94% 68%;
+    --primary-foreground: 220 28% 9%;
 
-    --secondary: 29 22% 18%;
-    --secondary-foreground: 30 43% 94%;
+    --secondary: 218 28% 19%;
+    --secondary-foreground: 210 45% 96%;
 
-    --muted: 25 16% 16%;
-    --muted-foreground: 33 34% 82%;
+    --muted: 218 26% 18%;
+    --muted-foreground: 211 38% 82%;
 
-    --accent: 10 53% 54%;
-    --accent-foreground: 30 43% 97%;
+    --accent: 199 89% 64%;
+    --accent-foreground: 220 28% 9%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 29 18% 20%;
-    --input: 29 18% 20%;
-    --ring: 141 19% 54%;
+    --border: 218 24% 25%;
+    --input: 218 24% 25%;
+    --ring: 213 94% 68%;
 
     /* Surface Hierarchy (Dark) - Increased contrast for elevated surfaces */
-    --surface-sunken: 24 18% 8%;
-    --surface-default: 24 16% 11%;
-    --surface-elevated: 29 18% 16%;
+    --surface-sunken: 220 28% 9%;
+    --surface-default: 221 28% 13%;
+    --surface-elevated: 218 26% 18%;
 
     /* Glassmorphism Tokens Dark */
     --glass-subtle: rgba(0, 0, 0, 0.4);
@@ -175,18 +175,21 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20;
+    background-image:
+      radial-gradient(circle at 12% 4%, hsl(var(--secondary) / 0.8), transparent 25rem),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-optical-sizing: auto;
     font-feature-settings: "liga" 1, "kern" 1;
-    letter-spacing: 0.005em;
+    letter-spacing: 0;
     line-height: 1.65;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading text-foreground;
-    font-weight: 600;
-    letter-spacing: -0.025em;
+    font-weight: 800;
+    letter-spacing: -0.01em;
     line-height: 1.1;
   }
   button, input, textarea, select {
@@ -199,6 +202,8 @@
   html.dark textarea,
   html.dark select {
     color: hsl(var(--foreground));
+    background-color: hsl(var(--surface-elevated));
+    border-color: hsl(var(--border));
   }
   html.dark input::placeholder,
   html.dark textarea::placeholder {
@@ -217,6 +222,24 @@
     @apply bg-glass-medium backdrop-blur-[var(--glass-blur)] border border-glass-border;
   }
   .shadow-soft {
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 18px 50px -28px rgba(60, 60, 60, 0.42);
+  }
+  .surface-panel {
+    border: 1px solid hsl(var(--border) / 0.6);
+    background: hsl(var(--card) / 0.9);
+    box-shadow: 0 18px 50px -28px rgba(60, 60, 60, 0.42);
+    backdrop-filter: blur(24px);
+  }
+  .warm-page {
+    background:
+      radial-gradient(circle at 15% 0%, hsl(var(--secondary) / 0.9), transparent 22rem),
+      radial-gradient(circle at 100% 12%, hsl(var(--primary) / 0.12), transparent 24rem),
+      hsl(var(--background));
+  }
+  .dark .warm-page,
+  .dark body {
+    background-image:
+      radial-gradient(circle at 10% 0%, hsl(var(--primary) / 0.16), transparent 24rem),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
   }
 }

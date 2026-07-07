@@ -6,6 +6,21 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, Package, MapPin, Calendar, Clock, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/src/shared/ui/button';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING_PICKUP: 'Chờ lấy hàng',
+  PICKED_UP: 'Đã lấy hàng',
+  IN_TRANSIT: 'Đang vận chuyển',
+  ARRIVED_HUB: 'Đã đến kho trung chuyển',
+  OUT_FOR_DELIVERY: 'Đang giao hàng',
+  DELIVERED: 'Đã giao hàng',
+  DELIVERY_FAILED: 'Giao hàng thất bại',
+  RETURNING: 'Đang hoàn hàng',
+  RETURNED: 'Đã hoàn hàng',
+};
+
+const statusLabel = (status: string) => STATUS_LABELS[status] || status.replace(/_/g, ' ');
 
 export const OrderTrackingPage = () => {
   const { currentOrder } = useCheckoutStore();
@@ -176,10 +191,17 @@ export const OrderTrackingPage = () => {
                       <p className="text-xs font-bold leading-relaxed text-foreground/80">{shipment.destination.name}</p>
                     </div>
 
-                    <Button variant="outline" className="w-full h-12 rounded-2xl group border-2 font-black text-xs hover:bg-black hover:text-white transition-all">
+                    <Button
+                      variant="outline"
+                      onClick={() => window.location.assign(`/profile/orders?order=${encodeURIComponent(shipment.orderId || shipment.trackingId)}`)}
+                      className="w-full h-12 rounded-2xl group border-2 font-black text-xs hover:bg-black hover:text-white transition-all"
+                    >
                       Chi tiết đơn hàng
                       <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Button>
+                    <Link to={`/profile/orders?order=${encodeURIComponent(shipment.orderId || shipment.trackingId)}`} className="sr-only">
+                      Mở chi tiết đơn hàng
+                    </Link>
                   </div>
 
                   <div className="hidden lg:block">
@@ -202,7 +224,7 @@ export const OrderTrackingPage = () => {
                         </span>
                       </h3>
                       <div className="px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 self-start sm:self-auto">
-                        <span className="text-[10px] font-black text-primary uppercase tracking-wider">{shipment.status.replace(/_/g, ' ')}</span>
+                        <span className="text-[10px] font-black text-primary uppercase tracking-wider">{statusLabel(shipment.status)}</span>
                       </div>
                     </div>
                     <TrackingTimeline events={shipment.events} currentStatus={shipment.status} />

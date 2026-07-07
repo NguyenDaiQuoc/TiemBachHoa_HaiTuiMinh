@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { cn } from '@/src/shared/lib/utils';
 import { Button } from '@/src/shared/ui/button';
@@ -25,110 +25,111 @@ export const ProductGallery = ({ images, productName }: ProductGalleryProps) => 
 
   return (
     <div className="space-y-4">
-      {/* Main Image */}
-      <div
-        className="relative aspect-square overflow-hidden rounded-[32px] bg-muted/20 border border-black/5 group cursor-zoom-in"
-        onMouseMove={(event) => {
-          const rect = event.currentTarget.getBoundingClientRect();
-          setZoomPoint({
-            x: ((event.clientX - rect.left) / rect.width) * 100,
-            y: ((event.clientY - rect.top) / rect.height) * 100,
-          });
-        }}
-        onMouseLeave={() => setZoomPoint(null)}
-      >
-        <AnimatePresence mode="wait">
-          <motion.img
-            key={safeImages[activeIndex]}
-            src={safeImages[activeIndex]}
-            alt={productName}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="h-full w-full object-contain p-8"
-          />
-        </AnimatePresence>
+      <div className="group relative aspect-[4/3] max-h-[560px] rounded-[32px] border border-border/60 bg-muted/20 px-11 py-6 shadow-soft sm:px-14 md:px-16 lg:aspect-[5/4]">
+        <div
+          className="relative mx-auto h-full max-w-[82%] cursor-zoom-in overflow-hidden rounded-[18px] bg-background shadow-[0_22px_55px_-44px_hsl(var(--foreground))] ring-1 ring-border/40 sm:max-w-[80%]"
+          onMouseMove={(event) => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            setZoomPoint({
+              x: ((event.clientX - rect.left) / rect.width) * 100,
+              y: ((event.clientY - rect.top) / rect.height) * 100,
+            });
+          }}
+          onMouseLeave={() => setZoomPoint(null)}
+        >
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={safeImages[activeIndex]}
+              src={safeImages[activeIndex]}
+              alt={productName}
+              initial={{ opacity: 0, scale: 1.04 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="h-full w-full object-contain"
+            />
+          </AnimatePresence>
 
-        {zoomPoint && (
-          <div
-            className="pointer-events-none absolute inset-0 z-20 hidden rounded-[32px] border border-primary/25 bg-background/90 shadow-2xl ring-1 ring-background/70 md:block"
-            style={{
-              backgroundImage: `url(${safeImages[activeIndex]})`,
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: '220%',
-              backgroundPosition: `${zoomPoint.x}% ${zoomPoint.y}%`,
-            }}
-            aria-hidden="true"
-          >
-            <div className="absolute bottom-4 left-4 rounded-full bg-foreground/70 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-background backdrop-blur">
-              Di chuột để xem cận cảnh
+          {zoomPoint && (
+            <div
+              className="pointer-events-none absolute inset-0 z-20 hidden rounded-[18px] border border-primary/25 bg-background/95 shadow-2xl ring-1 ring-background/70 md:block"
+              style={{
+                backgroundImage: `url(${safeImages[activeIndex]})`,
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '230%',
+                backgroundPosition: `${zoomPoint.x}% ${zoomPoint.y}%`,
+              }}
+              aria-hidden="true"
+            >
+              <div className="absolute bottom-4 left-4 rounded-full bg-foreground/75 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-background backdrop-blur">
+                Di chuột để xem cận cảnh
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Navigation Arrows */}
-        <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="pointer-events-none absolute inset-x-3 top-1/2 z-40 flex -translate-y-1/2 justify-between sm:inset-x-4">
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
             onClick={prev}
-            className="h-12 w-12 rounded-full bg-background/80 backdrop-blur-md shadow-xl border border-border/50 hover:bg-background"
+            className="pointer-events-auto h-12 w-9 rounded-none bg-transparent text-accent shadow-none hover:bg-transparent hover:text-accent/80 sm:h-16 sm:w-11"
+            aria-label="Ảnh trước"
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-12 w-12 stroke-[4px]" />
           </Button>
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
             onClick={next}
-            className="h-12 w-12 rounded-full bg-background/80 backdrop-blur-md shadow-xl border border-border/50 hover:bg-background"
+            className="pointer-events-auto h-12 w-9 rounded-none bg-transparent text-accent shadow-none hover:bg-transparent hover:text-accent/80 sm:h-16 sm:w-11"
+            aria-label="Ảnh tiếp theo"
           >
-            <ChevronRight className="h-6 w-6" />
+            <ChevronRight className="h-12 w-12 stroke-[4px]" />
           </Button>
         </div>
 
-        {/* Zoom Button */}
         <Button
           variant="secondary"
           size="icon"
           onClick={() => setIsFullscreen(true)}
-          className="absolute bottom-4 right-4 h-10 w-10 rounded-full bg-foreground/10 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity border border-border/50"
+          className="absolute bottom-4 right-4 z-40 h-10 w-10 rounded-full border border-border/50 bg-background/80 opacity-0 shadow-lg backdrop-blur-md transition-opacity group-hover:opacity-100"
+          aria-label="Phóng to ảnh"
         >
           <Maximize2 className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Thumbnails */}
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
         {safeImages.map((img, idx) => (
           <button
-            key={idx}
+            key={img + idx}
             onClick={() => setActiveIndex(idx)}
             className={cn(
-              "relative h-20 w-20 flex-shrink-0 rounded-2xl overflow-hidden border-2 transition-all",
-              activeIndex === idx ? "border-primary bg-primary/5" : "border-transparent bg-muted/20 hover:border-black/10"
+              'relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border-2 transition-all md:h-[72px] md:w-[72px]',
+              activeIndex === idx ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/20 hover:border-black/10'
             )}
+            aria-label={`Xem ảnh ${idx + 1}`}
           >
-            <img src={img} alt={`${productName} thumbnail ${idx}`} className="h-full w-full object-cover p-2" />
+            <img src={img} alt={`${productName} thumbnail ${idx + 1}`} className="h-full w-full object-cover p-1.5" />
           </button>
         ))}
       </div>
 
-      {/* Fullscreen Overlay */}
       <AnimatePresence>
         {isFullscreen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-background flex items-center justify-center p-8"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background p-8"
           >
             <Button
               variant="ghost"
-              className="absolute top-8 right-8 font-black text-xs tracking-widest uppercase"
+              className="absolute right-8 top-8 text-xs font-black uppercase tracking-widest"
               onClick={() => setIsFullscreen(false)}
             >
-              ĐÓNG
+              Đóng
             </Button>
             <img src={safeImages[activeIndex]} alt={productName} className="max-h-full max-w-full object-contain" />
           </motion.div>

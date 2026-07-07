@@ -35,10 +35,10 @@ export interface ShippingMethod {
 }
 
 export interface TrackingLocation {
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   name: string;
-  type: 'HUB' | 'COURIER' | 'ORIGIN' | 'DESTINATION';
+  type: 'HUB' | 'COURIER' | 'ORIGIN' | 'DESTINATION' | 'CARRIER';
 }
 
 export interface TrackingEvent {
@@ -54,7 +54,9 @@ export interface TrackingEvent {
 export interface ShipmentDetails {
   trackingId: string;
   orderId: string;
+  order?: any;
   provider: ShippingProvider;
+  trackingMode?: 'SELF' | 'CARRIER';
   status: ShippingStatus;
   estimatedArrival: string;
   events: TrackingEvent[];
@@ -62,4 +64,15 @@ export interface ShipmentDetails {
   origin: TrackingLocation;
   destination: TrackingLocation;
   progress: number; // 0 to 1
+  hasLiveLocation?: boolean;
+  source?: string;
+  carrier?: {
+    mode?: 'SELF' | 'CARRIER';
+    code?: string | null;
+    trackingCode?: string | null;
+    configured?: boolean;
+    lastSyncAt?: string | null;
+    error?: string | null;
+    publicTrackingUrl?: string | null;
+  };
 }

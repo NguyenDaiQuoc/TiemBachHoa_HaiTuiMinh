@@ -11,6 +11,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; d
   PENDING: { label: 'Chờ xác nhận', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20', icon: Clock, description: 'Đơn mới đang chờ quản trị viên xác nhận.' },
   PROCESSING: { label: 'Đang xử lý', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20', icon: Clock, description: 'Sản phẩm đang được đóng gói và chuẩn bị xuất kho.' },
   SHIPPED: { label: 'Đang giao', color: 'text-purple-600 bg-purple-500/10 border-purple-500/20', icon: Truck, description: 'Đơn đã được bàn giao cho người giao hoặc đơn vị vận chuyển.' },
+  OUT_FOR_DELIVERY: { label: 'Đang giao hàng', color: 'text-purple-600 bg-purple-500/10 border-purple-500/20', icon: Truck, description: 'Người giao đang trên đường hoặc vừa cập nhật checkpoint vận chuyển.' },
   DELIVERED: { label: 'Đã giao', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2, description: 'Khách đã nhận hàng và đơn đã hoàn tất.' },
   CANCELLED: { label: 'Đã hủy', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20', icon: XCircle, description: 'Đơn đã bị hủy bởi khách, quản trị viên hoặc hệ thống.' },
 };
@@ -341,9 +342,9 @@ export const OrderDetail = ({ order, onClose, onUpdated }: { order: any; onClose
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="space-y-8 lg:col-span-2">
-          <section className="space-y-4">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+        <div className="min-w-0 space-y-8">
+          <section className="min-w-0 space-y-4">
             <h4 className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Chi tiết kiện hàng</h4>
             <div className="overflow-hidden rounded-3xl border border-border/50 bg-surface-default">
               {(order.items || []).map((item: any) => (
@@ -367,7 +368,7 @@ export const OrderDetail = ({ order, onClose, onUpdated }: { order: any; onClose
             </div>
           </section>
 
-          <section className="space-y-4">
+          <section className="min-w-0 space-y-4">
             <h4 className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trạm điều hành</h4>
             <div className="grid grid-cols-2 gap-3 rounded-3xl border border-border/50 bg-surface-default p-6 sm:grid-cols-4">
               <Button variant="outline" onClick={() => handleStatusChange('PROCESSING')} disabled={order.status === 'PROCESSING'} className="h-12 rounded-xl text-[10px] font-black uppercase tracking-widest">Xác nhận</Button>
@@ -379,40 +380,40 @@ export const OrderDetail = ({ order, onClose, onUpdated }: { order: any; onClose
 
           <section className="space-y-4">
             <h4 className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tracking vận chuyển</h4>
-            <div className="space-y-4 rounded-3xl border border-border/50 bg-surface-default p-6">
-              <div className="grid gap-3 md:grid-cols-[220px_1fr_auto_auto]">
-                <select value={carrier} onChange={(event) => setCarrier(event.target.value as CarrierCode)} className="h-11 rounded-xl border border-border bg-background px-3 text-xs font-black outline-none focus:ring-2 focus:ring-primary/20">
+            <div className="min-w-0 max-w-full space-y-4 overflow-hidden rounded-3xl border border-border/50 bg-surface-default p-4 sm:p-6">
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                <select value={carrier} onChange={(event) => setCarrier(event.target.value as CarrierCode)} className="h-11 min-w-0 rounded-xl border border-border bg-background px-3 text-xs font-black outline-none focus:ring-2 focus:ring-primary/20">
                   {CARRIER_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                 </select>
-                <input value={trackingCode} onChange={(event) => setTrackingCode(event.target.value)} disabled={carrier === 'SELF'} placeholder="Mã vận đơn / scan / paste" className="h-11 rounded-xl border border-border bg-background px-3 text-xs font-semibold outline-none disabled:opacity-50 focus:ring-2 focus:ring-primary/20" />
-                <Button type="button" variant="outline" onClick={() => setIsScannerOpen(true)} disabled={carrier === 'SELF'} className="h-11 rounded-xl px-4 text-[10px] font-black uppercase tracking-widest">
+                <input value={trackingCode} onChange={(event) => setTrackingCode(event.target.value)} disabled={carrier === 'SELF'} placeholder="Mã vận đơn / scan / paste" className="h-11 min-w-0 rounded-xl border border-border bg-background px-3 text-xs font-semibold outline-none disabled:opacity-50 focus:ring-2 focus:ring-primary/20" />
+                <Button type="button" variant="outline" onClick={() => setIsScannerOpen(true)} disabled={carrier === 'SELF'} className="h-11 min-w-0 rounded-xl px-3 text-[10px] font-black uppercase tracking-widest whitespace-normal leading-4 sm:w-full">
                   <Camera className="mr-2 h-4 w-4" /> Scan
                 </Button>
-                <Button type="button" variant="outline" onClick={handleBindCarrier} disabled={carrierMutation.isPending} className="h-11 rounded-xl px-4 text-[10px] font-black uppercase tracking-widest">
+                <Button type="button" variant="outline" onClick={handleBindCarrier} disabled={carrierMutation.isPending} className="h-11 min-w-0 rounded-xl px-3 text-[10px] font-black uppercase tracking-widest whitespace-normal leading-4 sm:w-full">
                   {carrierMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PackageCheck className="mr-2 h-4 w-4" />} Lưu tracking
                 </Button>
               </div>
-              <p className="rounded-2xl bg-muted/30 p-3 text-[10px] font-bold leading-relaxed text-muted-foreground">{selectedCarrier.helper}</p>
-              <div className="flex flex-wrap gap-3">
-                <Button type="button" variant="outline" onClick={() => window.open(trackingUrl, '_blank', 'noopener,noreferrer')} className="h-11 rounded-xl text-[10px] font-black uppercase tracking-widest"><Navigation className="mr-2 h-4 w-4" /> Xem tracking khách</Button>
-                <Button type="button" variant="outline" onClick={() => window.open(shipperCheckpointUrl, '_blank', 'noopener,noreferrer')} className="h-11 rounded-xl text-[10px] font-black uppercase tracking-widest"><MapPin className="mr-2 h-4 w-4" /> Link checkpoint tự giao</Button>
+              <p className="min-w-0 break-words rounded-2xl bg-muted/30 p-3 text-[10px] font-bold leading-relaxed text-muted-foreground">{selectedCarrier.helper}</p>
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                <Button type="button" variant="outline" onClick={() => window.open(trackingUrl, '_blank', 'noopener,noreferrer')} className="h-11 min-w-0 rounded-xl px-3 text-[10px] font-black uppercase tracking-widest whitespace-normal leading-4 sm:w-full"><Navigation className="mr-2 h-4 w-4" /> Xem tracking khách</Button>
+                <Button type="button" variant="outline" onClick={() => window.open(shipperCheckpointUrl, '_blank', 'noopener,noreferrer')} className="h-11 min-w-0 rounded-xl px-3 text-[10px] font-black uppercase tracking-widest whitespace-normal leading-4 sm:w-full"><MapPin className="mr-2 h-4 w-4" /> Link checkpoint tự giao</Button>
               </div>
 
               {carrier === 'SELF' && (
                 <div className="space-y-4 border-t border-border/40 pt-4">
-                  <textarea value={deliveryNote} onChange={(event) => setDeliveryNote(event.target.value)} placeholder="VD: Đã đến cổng chung cư / đang liên hệ khách..." className="min-h-20 w-full rounded-2xl border border-border bg-background p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20" />
-                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                    <input value={manualLocation} onChange={(event) => setManualLocation(event.target.value)} placeholder="Tọa độ thủ công: 10.762622, 106.660172" className="h-11 rounded-xl border border-border bg-background px-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20" />
-                    <Button type="button" variant="outline" onClick={handleCaptureLocation} disabled={isLocating || deliveryMutation.isPending} className="h-11 rounded-xl px-4 text-[10px] font-black uppercase tracking-widest">
+                  <textarea value={deliveryNote} onChange={(event) => setDeliveryNote(event.target.value)} placeholder="VD: Đã đến cổng chung cư / đang liên hệ khách..." className="min-h-20 w-full min-w-0 rounded-2xl border border-border bg-background p-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20" />
+                  <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(150px,auto)]">
+                    <input value={manualLocation} onChange={(event) => setManualLocation(event.target.value)} placeholder="Tọa độ thủ công: 10.762622, 106.660172" className="h-11 min-w-0 rounded-xl border border-border bg-background px-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20" />
+                    <Button type="button" variant="outline" onClick={handleCaptureLocation} disabled={isLocating || deliveryMutation.isPending} className="h-11 min-w-0 rounded-xl px-3 text-[10px] font-black uppercase tracking-widest whitespace-normal leading-4">
                       {isLocating || deliveryMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />} Lưu checkpoint
                     </Button>
                   </div>
-                  <label className="flex h-12 cursor-pointer items-center justify-center rounded-xl border border-border bg-background text-[10px] font-black uppercase tracking-widest hover:bg-muted">
+                  <label className="flex h-12 min-w-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-background px-3 text-[10px] font-black uppercase tracking-widest hover:bg-muted">
                     <ImagePlus className="mr-2 h-4 w-4" /> Ảnh minh chứng
                     <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => handleProofFile(event.target.files?.[0])} />
                   </label>
-                  {locationDiagnostic && <p className="rounded-2xl border border-border/50 bg-muted/30 p-3 text-[10px] font-bold leading-relaxed">{locationDiagnostic}</p>}
-                  {lastLocation && <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-[10px] font-bold text-emerald-700 dark:text-emerald-300"><p>{lastLocation.lat.toFixed(6)}, {lastLocation.lng.toFixed(6)}</p><p className="mt-1 text-foreground">{lastLocationAddress}</p>{lastMapUrl && <a href={lastMapUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block underline">Mở Google Maps</a>}</div>}
+                  {locationDiagnostic && <p className="min-w-0 break-words rounded-2xl border border-border/50 bg-muted/30 p-3 text-[10px] font-bold leading-relaxed">{locationDiagnostic}</p>}
+                  {lastLocation && <div className="min-w-0 break-words rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-[10px] font-bold text-emerald-700 dark:text-emerald-300"><p>{lastLocation.lat.toFixed(6)}, {lastLocation.lng.toFixed(6)}</p><p className="mt-1 text-foreground">{lastLocationAddress}</p>{lastMapUrl && <a href={lastMapUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block break-all underline">Mở Google Maps</a>}</div>}
                   {proofImage && <img src={proofImage} alt="Ảnh minh chứng đã đóng dấu" className="max-h-56 w-full rounded-2xl border border-border object-cover" />}
                   <Button type="button" onClick={handleCompleteDelivery} disabled={deliveryMutation.isPending || order.status === 'DELIVERED'} className="h-12 w-full rounded-xl text-[10px] font-black uppercase tracking-widest"><CheckCircle2 className="mr-2 h-4 w-4" /> Hoàn thành đơn</Button>
                 </div>
@@ -420,14 +421,14 @@ export const OrderDetail = ({ order, onClose, onUpdated }: { order: any; onClose
 
               {deliveryEvents.length > 0 && (
                 <div className="space-y-2 border-t border-border/40 pt-4">
-                  {deliveryEvents.slice().reverse().map((event: any) => <div key={event.id} className="rounded-2xl bg-muted/30 p-3 text-[10px] font-bold"><p>{event.address || event.note || 'Đã cập nhật hành trình'}</p>{event.mapUrl && <a href={event.mapUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-primary underline">Mở Google Maps</a>}<p className="mt-1 text-muted-foreground">{formatDateTime(event.timestamp)}</p></div>)}
+                  {deliveryEvents.slice().reverse().map((event: any) => <div key={event.id} className="min-w-0 break-words rounded-2xl bg-muted/30 p-3 text-[10px] font-bold"><p>{event.address || event.note || 'Đã cập nhật hành trình'}</p>{event.mapUrl && <a href={event.mapUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block break-all text-primary underline">Mở Google Maps</a>}<p className="mt-1 text-muted-foreground">{formatDateTime(event.timestamp)}</p></div>)}
                 </div>
               )}
             </div>
           </section>
         </div>
 
-        <aside className="space-y-8">
+        <aside className="min-w-0 space-y-8">
           <section className="space-y-4">
             <h4 className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Khách hàng</h4>
             <div className="space-y-4 rounded-3xl border border-border/50 bg-surface-default p-6">

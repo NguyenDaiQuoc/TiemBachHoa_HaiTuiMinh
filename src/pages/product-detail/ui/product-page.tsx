@@ -59,6 +59,122 @@ const REVIEW_SORT_OPTIONS = [
 const formatCurrency = (value: number) => `${value.toLocaleString('vi-VN')}đ`;
 const getCategoryLabel = (product: Product) => (typeof product.category === 'string' ? product.category : product.category?.name || 'Danh mục');
 
+type MarketPlatform = 'shopee' | 'tiktok' | 'other';
+type MarketEntry = {
+  platform: MarketPlatform;
+  price?: number | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  mallPrice?: number | null;
+  soldCount?: number | null;
+  url?: string | null;
+  updatedAt?: string | null;
+  source?: string | null;
+  note?: string | null;
+};
+
+const PLATFORM_LABELS: Record<MarketPlatform, string> = {
+  shopee: 'Shopee',
+  tiktok: 'TikTok',
+  other: 'Sàn khác',
+};
+
+type MarketCell = {
+  price: number | null;
+  text: string;
+  meta?: string;
+  url: string | null;
+};
+
+const textMarketCell = (text: string, meta?: string): MarketCell => ({ price: null, text, meta, url: null });
+
+const normalizePlatform = (value: unknown): MarketPlatform | null => {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized.includes('shopee')) return 'shopee';
+  if (normalized.includes('tiktok') || normalized.includes('tik_tok')) return 'tiktok';
+  if (normalized.includes('other') || normalized.includes('khac') || normalized.includes('sàn') || normalized.includes('san')) return 'other';
+  return null;
+};
+
+const numericOrNull = (value: unknown) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : null;
+};
+
+const getEntryPrice = (entry?: MarketEntry | null) => numericOrNull(entry?.mallPrice) ?? numericOrNull(entry?.maxPrice) ?? numericOrNull(entry?.price) ?? numericOrNull(entry?.minPrice);
+
+const collectMarketEntries = (product: Product): MarketEntry[] => {
+  const sources = [(product as any).marketComparisons, (product as any).marketPrices, (product as any).marketplacePrices].filter(Boolean);
+  const entries: MarketEntry[] = [];
+
+  sources.forEach((source) => {
+    if (Array.isArray(source)) {
+      source.forEach((item) => {
+        const platform = normalizePlatform(item?.platform || item?.name || item?.source);
+        if (platform) entries.push({ ...item, platform });
+      });
+      return;
+    }
+
+    if (typeof source === 'object') {
+      Object.entries(source).forEach(([key, value]) => {
+        const platform = normalizePlatform(key);
+        if (!platform) return;
+        if (typeof value === 'number' || typeof value === 'string') {
+          entries.push({ platform, price: numericOrNull(value) });
+        } else if (value && typeof value === 'object') {
+          entries.push({ ...(value as any), platform });
+        }
+      });
+    }
+  });
+
+  return entries;
+};
+
+const pickBestMarketEntry = (entries: MarketEntry[], platform: MarketPlatform) => {
+  const candidates = entries.filter((entry) => entry.platform === platform);
+  if (!candidates.length) return null;
+
+  return [...candidates].sort((left, right) => {
+    const leftMall = numericOrNull(left.mallPrice) ? 1 : 0;
+    const rightMall = numericOrNull(right.mallPrice) ? 1 : 0;
+    if (leftMall !== rightMall) return rightMall - leftMall;
+
+    const soldDelta = (numericOrNull(right.soldCount) || 0) - (numericOrNull(left.soldCount) || 0);
+    if (soldDelta !== 0) return soldDelta;
+
+    return (getEntryPrice(right) || 0) - (getEntryPrice(left) || 0);
+  })[0];
+};
+
+const getMarketCell = (entry?: MarketEntry | null): MarketCell => {
+  const price = getEntryPrice(entry);
+  if (!entry || !price) return { price: null, text: 'Đang cập nhật giá', meta: 'Có thể dùng mức ước tính tham khảo trước khi admin gắn link sàn', url: null };
+  const priority = numericOrNull(entry.mallPrice)
+    ? 'Ưu tiên Mall'
+    : numericOrNull(entry.soldCount)
+      ? `Ưu tiên lượt bán: ${Number(entry.soldCount).toLocaleString('vi-VN')}`
+      : 'Ưu tiên giá cao nhất';
+  const updated = entry.updatedAt ? `Cập nhật ${new Date(entry.updatedAt).toLocaleDateString('vi-VN')}` : entry.source || 'Nguồn sàn';
+  return { price, text: formatCurrency(price), meta: `${priority} · ${updated}`, url: entry.url || null };
+};
+
+const estimateMarketplaceCell = (platform: MarketPlatform, currentPrice: number): MarketCell => {
+  const multiplier: Record<MarketPlatform, number> = {
+    shopee: 1.48,
+    tiktok: 1.55,
+    other: 1.62,
+  };
+  const estimatedPrice = Math.max(currentPrice + 1000, Math.ceil((currentPrice * multiplier[platform]) / 1000) * 1000);
+  return {
+    price: estimatedPrice,
+    text: formatCurrency(estimatedPrice),
+    meta: 'Ước tính tham khảo theo mặt bằng sàn, chờ cập nhật link đối chiếu',
+    url: null,
+  };
+};
+
 const readFileAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -273,13 +389,65 @@ export const ProductDetailPage = () => {
 
   const comparisonRows = useMemo(() => {
     if (!product) return [];
+    const marketEntries = collectMarketEntries(product);
+    const rawMarketCells = {
+      shopee: getMarketCell(pickBestMarketEntry(marketEntries, 'shopee')),
+      tiktok: getMarketCell(pickBestMarketEntry(marketEntries, 'tiktok')),
+      other: getMarketCell(pickBestMarketEntry(marketEntries, 'other')),
+    };
+    const marketCells = {
+      shopee: rawMarketCells.shopee.price ? rawMarketCells.shopee : estimateMarketplaceCell('shopee', activePrice),
+      tiktok: rawMarketCells.tiktok.price ? rawMarketCells.tiktok : estimateMarketplaceCell('tiktok', activePrice),
+      other: rawMarketCells.other.price ? rawMarketCells.other : estimateMarketplaceCell('other', activePrice),
+    };
+    const marketPrices = Object.values(marketCells).map((cell) => cell.price).filter((price): price is number => Boolean(price));
+    const estimatedSaving = marketPrices.length ? Math.max(0, Math.min(...marketPrices) - activePrice) : null;
+
     return [
-      { label: 'Giá bán', current: formatCurrency(activePrice), compare: similarProducts[0] ? formatCurrency(similarProducts[0].price) : 'Đang cập nhật' },
-      { label: 'Danh mục', current: getCategoryLabel(product), compare: similarProducts[0] ? getCategoryLabel(similarProducts[0]) : 'Đang cập nhật' },
-      { label: 'Bảo hành', current: warrantyLabel || 'Theo chính sách tiệm', compare: similarProducts[0] ? getWarrantyLabel(similarProducts[0].tags) || 'Theo chính sách tiệm' : 'Đang cập nhật' },
-      { label: 'Tồn kho', current: product.stock > 0 ? String(product.stock) : 'Tạm hết', compare: similarProducts[0] ? String(similarProducts[0].stock) : 'Đang cập nhật' },
+      {
+        label: 'Giá bán',
+        current: formatCurrency(activePrice),
+        shopee: marketCells.shopee,
+        tiktok: marketCells.tiktok,
+        other: marketCells.other,
+      },
+      {
+        label: 'Tiết kiệm ước tính',
+        current: estimatedSaving === null ? 'Chờ dữ liệu sàn' : estimatedSaving > 0 ? `Từ ${formatCurrency(estimatedSaving)}` : 'Giá tốt tại tiệm',
+        shopee: textMarketCell(rawMarketCells.shopee.price ? 'So với giá đã cập nhật' : 'Theo giá ước tính', marketCells.shopee.meta),
+        tiktok: textMarketCell(rawMarketCells.tiktok.price ? 'So với giá đã cập nhật' : 'Theo giá ước tính', marketCells.tiktok.meta),
+        other: textMarketCell(rawMarketCells.other.price ? 'So với giá đã cập nhật' : 'Theo giá ước tính', marketCells.other.meta),
+      },
+      {
+        label: 'Bảo hành',
+        current: warrantyLabel || 'Theo chính sách tiệm',
+        shopee: textMarketCell('Tùy shop trên sàn', 'Cần kiểm tra từng người bán'),
+        tiktok: textMarketCell('Tùy shop trên sàn', 'Cần kiểm tra từng người bán'),
+        other: textMarketCell('Tùy shop trên sàn', 'Cần kiểm tra từng người bán'),
+      },
+      {
+        label: 'Tư vấn',
+        current: 'Chat/Zalo trực tiếp với tiệm',
+        shopee: textMarketCell('Qua chat sàn', 'Phản hồi tùy shop'),
+        tiktok: textMarketCell('Qua chat sàn', 'Phản hồi tùy shop'),
+        other: textMarketCell('Qua kênh từng sàn', 'Phản hồi tùy shop'),
+      },
+      {
+        label: 'Giao hàng',
+        current: 'Miễn phí từ 500.000đ',
+        shopee: textMarketCell('Tùy mã vận chuyển', PLATFORM_LABELS.shopee),
+        tiktok: textMarketCell('Tùy mã vận chuyển', PLATFORM_LABELS.tiktok),
+        other: textMarketCell('Tùy mã vận chuyển', PLATFORM_LABELS.other),
+      },
     ];
-  }, [activePrice, product, similarProducts, warrantyLabel]);
+  }, [activePrice, product, warrantyLabel]);
+  const marketplaceSavingText = useMemo(() => {
+    const priceRow = comparisonRows.find((row) => row.label === 'Giá bán');
+    const platformPrices = [priceRow?.shopee?.price, priceRow?.tiktok?.price, priceRow?.other?.price].filter((price): price is number => Boolean(price));
+    if (!platformPrices.length) return 'Đang ước tính';
+    const saving = Math.max(0, Math.min(...platformPrices) - activePrice);
+    return saving > 0 ? `Từ ${formatCurrency(saving)}` : 'Giá tốt tại tiệm';
+  }, [activePrice, comparisonRows]);
 
   const handleVariantSelect = (type: string, variant: ProductVariant) => {
     setSelectedVariants((prev) => ({ ...prev, [type]: variant.id }));
@@ -461,7 +629,7 @@ export const ProductDetailPage = () => {
                   {socialProofQuery.data?.viewersNow || 0} người đang xem
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Đã bán {product.soldCount >= 1000 ? `${(product.soldCount / 1000).toFixed(1)}k` : product.soldCount}
+                  Đã bán {Number(product.soldCount ?? 0) >= 1000 ? `${(Number(product.soldCount ?? 0) / 1000).toFixed(1)}k` : Number(product.soldCount ?? 0)}
                 </span>
               </div>
             </div>
@@ -710,8 +878,10 @@ export const ProductDetailPage = () => {
                   </ul>
                 </div>
               </div>
-              <div className="rounded-[32px] border border-border/60 bg-card p-6 shadow-soft">
-                <img src={product.image} alt={product.name} className="w-full rounded-[28px] bg-background object-contain p-8" />
+              <div className="overflow-hidden rounded-[32px] border border-border/60 bg-card p-3 shadow-soft">
+                <div className="aspect-[4/3] overflow-hidden rounded-[28px] bg-background">
+                  <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                </div>
               </div>
             </motion.div>
           )}
@@ -973,17 +1143,28 @@ export const ProductDetailPage = () => {
 
         {comparisonRows.length > 0 && (
           <section className="mt-24 overflow-hidden rounded-[2rem] border border-border/60 bg-card shadow-soft">
-            <div className="border-b border-border/60 p-6 md:p-8">
-              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Comparison table</p>
-              <h2 className="mt-2 text-3xl font-black uppercase tracking-tight">So sánh nhanh</h2>
+            <div className="grid gap-5 border-b border-border/60 p-6 md:grid-cols-[1fr_auto] md:items-end md:p-8">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">So sánh giá trị</p>
+                <h2 className="mt-2 text-3xl font-black uppercase tracking-tight">Rẻ hơn khi mua tại tiệm</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                  Giá sàn bên dưới là mốc tham khảo để khách dễ đối chiếu Shopee, TikTok Shop và các shop tương tự. Giá thực tế có thể đổi theo mã giảm, phí vận chuyển và từng người bán.
+                </p>
+              </div>
+              <div className="rounded-[24px] border border-primary/20 bg-primary/10 px-5 py-4 text-primary">
+                <p className="text-[10px] font-black uppercase tracking-widest">Ước tính tiết kiệm</p>
+                <p className="mt-1 text-2xl font-black">{marketplaceSavingText}</p>
+              </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-[960px] text-left text-sm">
                 <thead className="bg-background text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   <tr>
                     <th className="px-6 py-4">Tiêu chí</th>
-                    <th className="px-6 py-4">Sản phẩm đang xem</th>
-                    <th className="px-6 py-4">Gợi ý tương tự</th>
+                    <th className="px-6 py-4">Hai Tụi Mình</th>
+                    <th className="px-6 py-4">Shopee</th>
+                    <th className="px-6 py-4">TikTok</th>
+                    <th className="px-6 py-4">Sàn khác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -991,7 +1172,24 @@ export const ProductDetailPage = () => {
                     <tr key={row.label}>
                       <td className="px-6 py-4 font-black uppercase tracking-tight text-muted-foreground">{row.label}</td>
                       <td className="px-6 py-4 font-bold text-foreground">{row.current}</td>
-                      <td className="px-6 py-4 font-bold text-foreground">{row.compare}</td>
+                      {(['shopee', 'tiktok', 'other'] as const).map((platform) => {
+                        const cell = row[platform];
+                        const content = (
+                          <div className="space-y-1">
+                            <p className={cn('font-black text-foreground', cell?.price ? 'text-primary' : '')}>{cell?.text || 'Đang cập nhật giá'}</p>
+                            {cell?.meta && <p className="text-[10px] font-bold leading-4 text-muted-foreground">{cell.meta}</p>}
+                          </div>
+                        );
+                        return (
+                          <td key={platform} className="px-6 py-4 align-top">
+                            {cell?.url ? (
+                              <a href={cell.url} target="_blank" rel="noreferrer" className="block rounded-xl transition hover:text-primary">
+                                {content}
+                              </a>
+                            ) : content}
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))}
                 </tbody>

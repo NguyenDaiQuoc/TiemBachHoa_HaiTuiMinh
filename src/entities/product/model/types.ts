@@ -26,6 +26,19 @@ export interface ProductReview {
   isVerified: boolean;
 }
 
+export interface ProductMarketComparison {
+  platform: 'shopee' | 'tiktok' | 'other' | string;
+  price?: number | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  mallPrice?: number | null;
+  soldCount?: number | null;
+  url?: string | null;
+  source?: string | null;
+  updatedAt?: string | null;
+  note?: string | null;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -70,6 +83,8 @@ export interface Product {
   specifications?: ProductSpecification[];
   reviews?: ProductReview[];
   features?: string[];
+  marketComparisons?: ProductMarketComparison[] | Record<string, ProductMarketComparison | number | string | null>;
+  marketPrices?: ProductMarketComparison[] | Record<string, ProductMarketComparison | number | string | null>;
+  marketplacePrices?: ProductMarketComparison[] | Record<string, ProductMarketComparison | number | string | null>;
 }
-
 

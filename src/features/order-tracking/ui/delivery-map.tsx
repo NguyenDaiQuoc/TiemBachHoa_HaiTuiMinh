@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { MapPin, Maximize2, Minimize2, Navigation2, Route } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { ExternalLink, Maximize2, Minimize2, Navigation2, Route, Truck } from 'lucide-react';
 import { cn } from '@/src/shared/lib/utils';
 import { ShipmentDetails } from '@/src/entities/shipping/model/types';
 
@@ -65,6 +65,18 @@ interface DeliveryMapProps {
   className?: string;
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  PENDING_PICKUP: 'Chờ lấy hàng',
+  PICKED_UP: 'Đã lấy hàng',
+  IN_TRANSIT: 'Đang vận chuyển',
+  ARRIVED_HUB: 'Đã đến kho trung chuyển',
+  OUT_FOR_DELIVERY: 'Đang giao hàng',
+  DELIVERED: 'Đã giao hàng',
+  DELIVERY_FAILED: 'Giao hàng thất bại',
+  RETURNING: 'Đang hoàn hàng',
+  RETURNED: 'Đã hoàn hàng',
+};
+
 const isGeoLocation = (location: any) =>
   location?.lat !== null &&
   location?.lat !== undefined &&
@@ -73,7 +85,17 @@ const isGeoLocation = (location: any) =>
   Number.isFinite(Number(location.lat)) &&
   Number.isFinite(Number(location.lng));
 
-const statusLabel = (status: string) => status.replace(/_/g, ' ');
+const statusLabel = (status: string) => STATUS_LABELS[status] || status.replace(/_/g, ' ');
+
+const directionsUrl = (origin: string, destination: string) => {
+  const params = new URLSearchParams({ api: '1', origin, destination, travelmode: 'driving' });
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+};
+
+const embedDirectionsUrl = (origin: string, destination: string) => {
+  const params = new URLSearchParams({ output: 'embed', saddr: origin, daddr: destination });
+  return `https://maps.google.com/maps?${params.toString()}`;
+};
 
 export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -81,11 +103,14 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const geoEvents = useMemo(
-    () => shipment.events.filter((event) => isGeoLocation(event.location)),
-    [shipment.events]
-  );
+  const geoEvents = useMemo(() => shipment.events.filter((event) => isGeoLocation(event.location)), [shipment.events]);
   const latestGeoEvent = geoEvents[geoEvents.length - 1];
+  const isCarrierTracking = shipment.trackingMode === 'CARRIER' || shipment.carrier?.mode === 'CARRIER';
+  const carrierTrackingUrl = shipment.carrier?.publicTrackingUrl || null;
+  const originName = shipment.origin?.name || 'Kho Hai Tụi Mình';
+  const destinationName = shipment.destination?.name || 'Địa chỉ nhận hàng';
+  const googleDirectionsUrl = directionsUrl(originName, destinationName);
+  const googleEmbedUrl = embedDirectionsUrl(originName, destinationName);
 
   useEffect(() => {
     if (!mapContainer.current || geoEvents.length === 0) return;
@@ -157,22 +182,55 @@ export const DeliveryMap = ({ shipment, className }: DeliveryMapProps) => {
     window.setTimeout(() => map.current?.resize(), 250);
   }, [isFullscreen]);
 
-  if (geoEvents.length === 0) {
+  if (isCarrierTracking && geoEvents.length === 0) {
     return (
       <div className={cn('relative flex h-64 w-full flex-col justify-between overflow-hidden rounded-[32px] border border-border/50 bg-surface-default p-6 shadow-lg md:h-[350px]', className)}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(74,109,86,0.14),transparent_35%),linear-gradient(135deg,rgba(229,211,189,0.35),transparent)]" />
-        <div className="relative flex items-center gap-3 rounded-full bg-muted/40 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground self-start">
-          <MapPin className="h-3.5 w-3.5" /> Chưa có tọa độ thật
+        <div className="relative flex items-center gap-3 self-start rounded-full bg-muted/45 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+          <Truck className="h-3.5 w-3.5" /> Theo dõi qua đơn vị vận chuyển
         </div>
-        <div className="relative space-y-3">
+        <div className="relative space-y-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Route className="h-7 w-7" />
+            <ExternalLink className="h-7 w-7" />
           </div>
-          <h3 className="text-xl font-black uppercase tracking-tight">Bản đồ sẽ hiện khi người giao cập nhật GPS</h3>
-          <p className="max-w-md text-sm leading-6 text-muted-foreground">
-            Hệ thống chỉ hiển thị vị trí lấy từ cập nhật thật của admin/người giao. Không dùng vị trí mô phỏng hoặc tuyến đường tự sinh.
-          </p>
+          <div>
+            <h3 className="text-xl font-black uppercase tracking-tight">Không giả lập live map cho ĐVVC</h3>
+            <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+              Đơn này đang theo {shipment.provider}. Web hiển thị timeline lấy từ API hoặc trang tra cứu chính thức của đơn vị vận chuyển.
+            </p>
+          </div>
+          {carrierTrackingUrl && (
+            <a href={carrierTrackingUrl} target="_blank" rel="noreferrer" className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[10px] font-black uppercase tracking-widest text-primary-foreground transition hover:bg-primary/90">
+              Mở tracking ĐVVC <ExternalLink className="h-4 w-4" />
+            </a>
+          )}
           <p className="text-xs font-bold text-muted-foreground">Trạng thái hiện tại: {statusLabel(shipment.status)}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (geoEvents.length === 0) {
+    return (
+      <div className={cn('relative h-64 w-full overflow-hidden rounded-[32px] border border-border/50 bg-surface-default shadow-lg md:h-[350px]', className)}>
+        <iframe
+          title="Tuyến giao hàng dự kiến"
+          src={googleEmbedUrl}
+          className="absolute inset-0 h-full w-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+        <div className="absolute inset-x-4 bottom-4 rounded-[28px] border border-border/50 bg-surface-elevated/95 p-4 shadow-2xl backdrop-blur-2xl">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Tuyến tự giao dự kiến</p>
+              <p className="mt-1 line-clamp-2 text-sm font-black">Kho Hai Tụi Mình → {destinationName}</p>
+              <p className="mt-1 text-[10px] font-bold text-muted-foreground">Checkpoint GPS thật sẽ hiện trong timeline khi shipper bấm cập nhật.</p>
+            </div>
+            <a href={googleDirectionsUrl} target="_blank" rel="noreferrer" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-label="Mở chỉ đường Google Maps">
+              <Route className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </div>
     );

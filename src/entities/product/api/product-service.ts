@@ -13,21 +13,21 @@ export const productService = {
     const response = await fetch(`/api/products/${id}`);
     if (!response.ok) return null;
     const payload = await parsePayload(response);
-    return payload.data;
+    return payload?.data || null;
   },
 
   getRelatedProducts: async (categoryId: string): Promise<Product[]> => {
     const response = await fetch(`/api/products?category=${categoryId}`);
     if (!response.ok) return [];
     const payload = await parsePayload(response);
-    return payload.data;
+    return Array.isArray(payload?.data) ? payload.data : [];
   },
 
   searchProducts: async (query: string, limit = 5): Promise<Product[]> => {
     const response = await fetch(`/api/products?query=${encodeURIComponent(query)}&limit=${limit}`);
     if (!response.ok) return [];
     const payload = await parsePayload(response);
-    return payload.data.slice(0, limit);
+    return Array.isArray(payload?.data) ? payload.data.slice(0, limit) : [];
   },
 
   getFilteredProducts: async (params: {
@@ -53,6 +53,6 @@ export const productService = {
     const response = await fetch(`/api/products?${searchParams.toString()}`);
     if (!response.ok) return [];
     const payload = await parsePayload(response);
-    return payload.data;
+    return Array.isArray(payload?.data) ? payload.data : [];
   },
 };

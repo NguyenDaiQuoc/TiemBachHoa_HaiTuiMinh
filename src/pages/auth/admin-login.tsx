@@ -78,21 +78,21 @@ export const AdminLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,#451a03_0%,#1c1917_45%,#09090b_100%)] px-6 py-10 text-stone-50">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,#451a03_0%,#1c1917_45%,#09090b_100%)] px-4 py-8 text-stone-50 sm:px-6 sm:py-10">
       <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(249,115,22,0.08),transparent_35%,rgba(245,158,11,0.12)_70%,transparent)]" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative grid w-full max-w-5xl overflow-hidden rounded-[40px] border border-white/10 bg-black/30 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl lg:grid-cols-[1.2fr_0.8fr]"
+        className="relative grid w-full max-w-[calc(100vw-2rem)] overflow-hidden rounded-[28px] border border-white/10 bg-black/30 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:max-w-5xl sm:rounded-[40px] lg:grid-cols-[1.2fr_0.8fr]"
       >
-        <div className="flex flex-col justify-between border-b border-white/10 p-8 lg:border-b-0 lg:border-r lg:p-12">
+        <div className="flex min-w-0 flex-col justify-between border-b border-white/10 p-5 sm:p-8 lg:border-b-0 lg:border-r lg:p-12">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-amber-200">
               <ShieldCheck className="h-4 w-4" />
               Admin Access
             </div>
             <div className="space-y-4">
-              <h1 className="max-w-xl text-4xl font-black uppercase tracking-tight text-white sm:text-5xl">
+              <h1 className="max-w-xl break-words text-3xl font-black uppercase tracking-tight text-white sm:text-5xl">
                 Trung tâm điều hành
                 <span className="block text-amber-300">Tiệm Bách Hoá Hai Tụi Mình</span>
               </h1>
@@ -116,8 +116,8 @@ export const AdminLoginPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-6 sm:p-8 lg:p-10">
-          <Card className="border-white/10 bg-white p-6 text-stone-950 shadow-none dark:bg-white dark:text-stone-950">
+        <div className="min-w-0 p-5 sm:p-8 lg:p-10">
+          <Card className="border-white/10 bg-white p-5 text-stone-950 shadow-none dark:bg-white dark:text-stone-950 sm:p-6">
             <div className="mb-6 space-y-2">
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">
                 <Sparkles className="h-3.5 w-3.5" />
