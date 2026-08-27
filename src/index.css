@@ -46,42 +46,42 @@
 }
 
 :root {
-    --primary-bg: #EAF3FF;
-    --secondary-bg: #F8FBFF;
-    --accent-orange: #2563EB;
-    --accent-green: #0F4C81;
-    --text-primary: #3C3C3C;
-    --bg-main: #F8FBFF;
-    --bg-box: #EAF3FF;
-    --text-main: #3C3C3C;
-    --text-green: #4A6D56;
-    --background: 210 100% 98.5%;
-    --foreground: 0 0% 24%;
+    --primary-bg: #F4F8F2;
+    --secondary-bg: #FFFFFF;
+    --accent-orange: #E8452E;
+    --accent-green: #08715F;
+    --text-primary: #222222;
+    --bg-main: #F4F8F2;
+    --bg-box: #FFFFFF;
+    --text-main: #222222;
+    --text-green: #08715F;
+    --background: 106 28% 96%;
+    --foreground: 0 0% 13%;
 
-    --card: 210 100% 99%;
-    --card-foreground: 0 0% 24%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 13%;
 
-    --popover: 210 100% 99%;
-    --popover-foreground: 0 0% 24%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 13%;
 
-    --primary: 217 82% 54%;
+    --primary: 170 87% 24%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 211 78% 93%;
-    --secondary-foreground: 0 0% 24%;
+    --secondary: 96 31% 91%;
+    --secondary-foreground: 0 0% 13%;
 
-    --muted: 212 55% 93%;
-    --muted-foreground: 0 0% 32%;
+    --muted: 100 20% 91%;
+    --muted-foreground: 0 0% 36%;
 
-    --accent: 208 79% 28%;
+    --accent: 8 80% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 212 36% 84%;
-    --input: 212 36% 84%;
-    --ring: 217 82% 54%;
+    --border: 103 18% 82%;
+    --input: 103 18% 82%;
+    --ring: 170 87% 24%;
 
     --radius: 0.75rem;
 
@@ -90,9 +90,9 @@
     --info: 199 89% 48%;
 
     /* Surface Hierarchy (Light) */
-    --surface-sunken: 210 100% 98.5%;
-    --surface-default: 210 100% 99%;
-    --surface-elevated: 211 78% 93%;
+    --surface-sunken: 106 28% 96%;
+    --surface-default: 0 0% 100%;
+    --surface-elevated: 96 31% 91%;
 
     /* Glassmorphism Tokens */
     --glass-subtle: rgba(255, 255, 255, 0.05);
@@ -176,7 +176,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20;
     background-image:
-      radial-gradient(circle at 12% 4%, hsl(var(--secondary) / 0.8), transparent 25rem),
+      radial-gradient(circle at 12% 4%, hsl(var(--secondary) / 0.9), transparent 25rem),
       linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -222,24 +222,71 @@
     @apply bg-glass-medium backdrop-blur-[var(--glass-blur)] border border-glass-border;
   }
   .shadow-soft {
-    box-shadow: 0 18px 50px -28px rgba(60, 60, 60, 0.42);
+    box-shadow: 0 14px 36px -28px rgba(0, 0, 0, 0.42);
   }
   .surface-panel {
     border: 1px solid hsl(var(--border) / 0.6);
     background: hsl(var(--card) / 0.9);
-    box-shadow: 0 18px 50px -28px rgba(60, 60, 60, 0.42);
+    box-shadow: 0 14px 36px -28px rgba(0, 0, 0, 0.42);
     backdrop-filter: blur(24px);
   }
   .warm-page {
     background:
       radial-gradient(circle at 15% 0%, hsl(var(--secondary) / 0.9), transparent 22rem),
-      radial-gradient(circle at 100% 12%, hsl(var(--primary) / 0.12), transparent 24rem),
+      radial-gradient(circle at 100% 12%, hsl(var(--accent) / 0.10), transparent 24rem),
       hsl(var(--background));
+  }
+
+  .market-section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 999px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 0.6rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
   }
   .dark .warm-page,
   .dark body {
     background-image:
       radial-gradient(circle at 10% 0%, hsl(var(--primary) / 0.16), transparent 24rem),
       linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+  }
+
+  .dark .bg-white,
+  .dark .bg-white\/30,
+  .dark .bg-white\/50,
+  .dark .bg-white\/80,
+  .dark .bg-white\/90,
+  .dark .bg-white\/95 {
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--foreground));
+  }
+
+  .dark .text-black,
+  .dark .text-neutral-900,
+  .dark .text-neutral-800,
+  .dark .text-stone-950,
+  .dark .text-slate-950 {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .dark .border-white,
+  .dark .border-white\/80 {
+    border-color: hsl(var(--border)) !important;
+  }
+
+  .dark .shadow-soft {
+    box-shadow: 0 18px 46px -30px rgba(0, 0, 0, 0.75);
+  }
+
+  .market-shell {
+    background:
+      radial-gradient(circle at 8% 0%, hsl(var(--secondary) / 0.72), transparent 22rem),
+      hsl(var(--background));
   }
 }

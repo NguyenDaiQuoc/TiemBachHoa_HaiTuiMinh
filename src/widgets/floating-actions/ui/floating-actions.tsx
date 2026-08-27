@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { Bot, CheckCheck, CircleDot, Headset, Loader2, MessageCircleMore, Send, Sparkles, UserRound, X } from 'lucide-react';
+import { Bot, CheckCheck, CircleDot, Headset, Loader2, MessageCircleMore, Phone, Send, Sparkles, UserRound, X } from 'lucide-react';
 import { communityKeys, SupportChannel, useSendSupportMessage, useSupportConversation } from '@/src/entities/community/api/community-api';
 import { queryClient } from '@/src/shared/lib/react-query';
 import { useAuthStore } from '@/src/shared/model/auth-store';
@@ -165,19 +165,20 @@ export const FloatingActions = () => {
 
   return (
     <>
-      <div className="fixed bottom-3 right-3 z-[70] flex flex-row-reverse items-end gap-2 md:bottom-6 md:right-6 md:flex-col md:gap-3">
+      <div className="fixed bottom-4 right-3 z-[80] flex flex-col items-end gap-2 md:bottom-8 md:right-5">
         <motion.button
           whileHover={reduceMotion ? undefined : { scale: 1.04 }}
           whileTap={reduceMotion ? undefined : { scale: 0.96 }}
           onClick={() => setIsChatOpen(true)}
-          className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200/80 bg-white p-1.5 shadow-xl shadow-emerald-500/20 transition-colors hover:bg-emerald-50 dark:border-emerald-400/20 dark:bg-slate-950 dark:hover:bg-slate-900 md:h-[4.75rem] md:w-[4.75rem] md:rounded-[1.7rem] md:p-2"
+          className="group relative flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-[#19b955] text-white shadow-[0_14px_30px_-16px_rgba(25,185,85,.9)] transition-transform md:h-14 md:w-14"
           aria-label="Mở trung tâm hỗ trợ"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#19b955] text-white shadow-lg shadow-emerald-500/30 md:h-[3.6rem] md:w-[3.6rem]">
-            <MessageCircleMore className="h-5 w-5 md:h-7 md:w-7" />
+          <span className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 hidden -translate-y-1/2 whitespace-nowrap rounded-full bg-card px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] text-foreground opacity-0 shadow-lg ring-1 ring-border transition-all group-hover:opacity-100 md:block">
+            Hỗ trợ
           </span>
+          <MessageCircleMore className="h-5 w-5 md:h-6 md:w-6" />
           {userUnreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex min-h-6 min-w-6 items-center justify-center rounded-full border-2 border-background bg-background px-1 text-[10px] font-black text-primary shadow-sm">
+            <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-card bg-accent px-1 text-[10px] font-black text-white shadow-sm">
               {userUnreadCount > 9 ? '9+' : userUnreadCount}
             </span>
           )}
@@ -186,13 +187,29 @@ export const FloatingActions = () => {
         <motion.a
           whileHover={reduceMotion ? undefined : { scale: 1.04 }}
           whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+          href="tel:0931454176"
+          className="group relative flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-accent text-white shadow-[0_14px_30px_-16px_rgba(232,69,46,.9)] md:h-14 md:w-14"
+          aria-label="Gọi mua hàng"
+        >
+          <span className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 hidden -translate-y-1/2 whitespace-nowrap rounded-full bg-card px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] text-foreground opacity-0 shadow-lg ring-1 ring-border transition-all group-hover:opacity-100 md:block">
+            Gọi ngay
+          </span>
+          <Phone className="h-5 w-5 md:h-6 md:w-6" />
+        </motion.a>
+
+        <motion.a
+          whileHover={reduceMotion ? undefined : { scale: 1.04 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.96 }}
           href="https://zalo.me/0931454176"
           target="_blank"
           rel="noreferrer"
-          className="flex h-14 w-14 items-center justify-center rounded-2xl border border-sky-200/80 bg-white p-1.5 shadow-xl shadow-sky-500/20 transition-transform hover:bg-sky-50 dark:border-sky-400/20 dark:bg-slate-950 dark:hover:bg-slate-900 md:h-[4.75rem] md:w-[4.75rem] md:rounded-[1.7rem] md:p-2"
+          className="group relative flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white p-1.5 shadow-[0_14px_30px_-16px_rgba(0,119,255,.75)] md:h-14 md:w-14"
           aria-label="Liên hệ Zalo"
         >
-          <img src="/zalo-logo.svg" alt="Zalo" className="h-10 w-10 object-contain md:h-[3.6rem] md:w-[3.6rem]" />
+          <span className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 hidden -translate-y-1/2 whitespace-nowrap rounded-full bg-card px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] text-foreground opacity-0 shadow-lg ring-1 ring-border transition-all group-hover:opacity-100 md:block">
+            Zalo
+          </span>
+          <img src="/zalo-logo.svg" alt="Zalo" className="h-9 w-9 object-contain md:h-10 md:w-10" />
         </motion.a>
 
         <motion.a
@@ -201,13 +218,16 @@ export const FloatingActions = () => {
           href="https://m.me/haituiminh"
           target="_blank"
           rel="noreferrer"
-          className="flex h-14 w-14 items-center justify-center rounded-2xl border border-sky-200/80 bg-white p-1 shadow-xl shadow-sky-500/20 transition-transform hover:bg-sky-50 dark:border-sky-400/20 dark:bg-slate-950 dark:hover:bg-slate-900 md:h-[4.75rem] md:w-[4.75rem] md:rounded-[1.7rem] md:p-1.5"
+          className="group relative hidden h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white p-1 shadow-[0_14px_30px_-16px_rgba(0,132,255,.75)] md:flex md:h-14 md:w-14"
           aria-label="Liên hệ Messenger"
         >
-          <img src="/messenger-logo.svg" alt="Messenger" className="h-11 w-11 object-contain md:h-[4rem] md:w-[4rem]" />
+          <span className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 hidden -translate-y-1/2 whitespace-nowrap rounded-full bg-card px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] text-foreground opacity-0 shadow-lg ring-1 ring-border transition-all group-hover:opacity-100 md:block">
+            Messenger
+          </span>
+          <img src="/messenger-logo.svg" alt="Messenger" className="h-10 w-10 object-contain md:h-11 md:w-11" />
         </motion.a>
 
-        <ScrollToTopButton className="h-14 w-14 rounded-2xl border-slate-200/80 bg-white text-foreground shadow-xl shadow-slate-500/15 hover:bg-slate-50 dark:border-slate-400/20 dark:bg-slate-950 dark:hover:bg-slate-900 md:h-[4.75rem] md:w-[4.75rem] md:rounded-[1.7rem] [&>svg]:h-5 [&>svg]:w-5 md:[&>svg]:h-6 md:[&>svg]:w-6" />
+        <ScrollToTopButton className="h-12 w-12 rounded-full border-2 border-white bg-card text-primary shadow-[0_14px_30px_-16px_rgba(0,0,0,.55)] hover:bg-secondary md:h-14 md:w-14 [&>svg]:h-5 [&>svg]:w-5" />
       </div>
 
       <Drawer open={isChatOpen} onOpenChange={setIsChatOpen} direction="right">

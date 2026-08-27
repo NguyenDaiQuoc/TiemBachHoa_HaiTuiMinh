@@ -9,6 +9,7 @@ import { Button } from '@/src/shared/ui/button';
 import { toast } from 'sonner';
 import { useCheckoutStore } from '../model/checkout-store';
 import { useCartStore } from '@/src/entities/cart/model/store';
+import { getAuthHeaders } from '@/src/shared/lib/auth-headers';
 
 interface PaymentVerificationProps {
   order: Order;
@@ -151,7 +152,7 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
     try {
       const response = await fetch('/api/orders/expire', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }, 'user'),
         body: JSON.stringify({ orderId: order.id, orderNumber: order.orderNumber, trackingId: trackingCode }),
       });
       const payload = await response.json().catch(() => null);
@@ -164,7 +165,7 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
       if (restoredItems.length) restoreItems(restoredItems);
       setStatus(PaymentStatus.FAILED);
       updateOrderStatus(OrderStatus.CANCELLED, PaymentStatus.FAILED);
-      toast.info('Don thanh toan da het han', {
+      toast.info('Đơn thanh toán đã hết hạn', {
         description: restoredItems.length ? 'Sản phẩm đã được hoàn tồn kho và đưa lại vào giỏ hàng.' : 'Đơn hàng đã được hủy tự động.',
       });
     } catch (error) {
@@ -182,7 +183,7 @@ export const PaymentVerification = ({ order }: PaymentVerificationProps) => {
     try {
       const response = await fetch('/api/orders/cancel', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }, 'user'),
         body: JSON.stringify({ orderId: order.id, orderNumber: order.orderNumber, trackingId: trackingCode }),
       });
       const payload = await response.json().catch(() => null);
