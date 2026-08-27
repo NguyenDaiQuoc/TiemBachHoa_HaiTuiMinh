@@ -58,7 +58,7 @@ describe('App shell and profile inheritance', () => {
 
     expect(screen.getByRole('link', { name: /hai tụi mình home/i })).toBeInTheDocument();
     expect(screen.getByText(/profile overview/i)).toBeInTheDocument();
-    expect(screen.getByText(/powered by antigravity engine/i)).toBeInTheDocument();
+    expect(screen.getByText(/2026/i)).toBeInTheDocument();
   });
 
   it('restores focus to the shared main landmark after route changes', async () => {

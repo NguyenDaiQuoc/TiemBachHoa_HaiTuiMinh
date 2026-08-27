@@ -26,7 +26,7 @@ export const AppShell = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-background pt-20 text-foreground sm:pt-24 lg:pt-28">
+    <div className="market-shell min-h-screen bg-background pt-20 text-foreground sm:pt-24 lg:pt-28">
       <a
         href="#app-main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-foreground focus:shadow-lg"
@@ -39,7 +39,7 @@ export const AppShell = () => {
         ref={mainRef}
         tabIndex={-1}
         className={cn(
-          'flex-1 outline-none bg-background text-foreground',
+          'flex-1 outline-none bg-transparent text-foreground',
           reduceMotion ? 'transition-none' : 'transition-colors duration-300'
         )}
       >

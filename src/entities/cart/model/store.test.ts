@@ -88,4 +88,69 @@ describe('cart store', () => {
     expect(useCartStore.getState().items).toHaveLength(1);
     expect(useCartStore.getState().items[0].quantity).toBe(3);
   });
+
+  it('removes a product from the cart using removeItem', () => {
+    const product1 = makeProduct({ id: 'product-1', stock: 5 });
+    const product2 = makeProduct({ id: 'product-2', slug: 'product-2', stock: 5 });
+
+    useCartStore.getState().addItem(product1);
+    useCartStore.getState().addItem(product2);
+    expect(useCartStore.getState().items).toHaveLength(2);
+
+    useCartStore.getState().removeItem('product-1');
+    expect(useCartStore.getState().items).toHaveLength(1);
+    expect(useCartStore.getState().items[0].id).toBe('product-2');
+  });
+
+  it('clears all items from the cart using clearCart', () => {
+    const product1 = makeProduct({ id: 'product-1', stock: 5 });
+    const product2 = makeProduct({ id: 'product-2', slug: 'product-2', stock: 5 });
+
+    useCartStore.getState().addItem(product1);
+    useCartStore.getState().addItem(product2);
+    expect(useCartStore.getState().items).toHaveLength(2);
+
+    useCartStore.getState().clearCart();
+    expect(useCartStore.getState().items).toEqual([]);
+    expect(useCartStore.getState().totalItems()).toBe(0);
+    expect(useCartStore.getState().totalPrice()).toBe(0);
+  });
+
+  it('persists cart items to localStorage', () => {
+    useCartStore.getState().addItem(makeProduct({ stock: 5 }));
+
+    const persisted = JSON.parse(window.localStorage.getItem('cart-storage') ?? '{}');
+    expect(persisted.state.items).toMatchObject([{ id: 'product-1', quantity: 1 }]);
+  });
+
+  it('hydrates dirty persisted items without exceeding stock', async () => {
+    window.localStorage.setItem(
+      'cart-storage',
+      JSON.stringify({
+        state: {
+          items: [
+            { ...makeProduct({ stock: 5 }), quantity: 99 },
+            { ...makeProduct({ id: 'out-of-stock', stock: 0 }), quantity: 2 },
+          ],
+        },
+        version: 0,
+      })
+    );
+
+    await useCartStore.persist.rehydrate();
+
+    expect(useCartStore.getState().items).toMatchObject([{ id: 'product-1', quantity: 5 }]);
+    expect(useCartStore.getState().items).toHaveLength(1);
+  });
+
+  it('calculates totalPrice across multiple cart lines', () => {
+    useCartStore.setState({
+      items: [
+        { ...makeProduct({ id: 'product-1', price: 120000 }), quantity: 2 },
+        { ...makeProduct({ id: 'product-2', price: 50000 }), quantity: 3 },
+      ],
+    });
+
+    expect(useCartStore.getState().totalPrice()).toBe(390000);
+  });
 });

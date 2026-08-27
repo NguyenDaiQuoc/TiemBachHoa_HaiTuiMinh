@@ -1,0 +1,21 @@
+﻿"Trường","Giá trị"
+"Tên dự án","Tiệm Bách Hóa Hai Tụi Mình"
+"Ngày kiểm thử","9/7/2026"
+"Tester","Antigravity AI - Strict QA Mode"
+"Phiên bản","0.0.0"
+"Tổng test cases","102"
+"PASS","11"
+"FAIL","1"
+"CHƯA KIỂM THỬ","90"
+"Pass Rate","10.8%"
+"Đánh giá độ phủ","THẤP - Chỉ có 7 unit tests và 2 E2E tests tồn tại. Thiếu hoàn toàn integration tests cho API."
+"Bugs nghiêm trọng cao","3"
+"Bugs nghiêm trọng trung bình","3"
+"Bugs nghiêm trọng thấp","2"
+"Đánh giá chất lượng tổng thể","CẦN CẢI THIỆN"
+"Khuyến nghị","1. Ưu tiên fix BUG-003 (oversell) ngay lập tức
+2. Fix BUG-001 (pagination sai) vì ảnh hưởng UX trực tiếp
+3. Thêm integration tests cho tất cả API endpoints
+4. Thêm unit tests cho removeItem, clearCart trong cart store
+5. Cấu hình CSP đúng thay vì disable
+6. Cân nhắc tính rating từ DB thay vì hardcode"

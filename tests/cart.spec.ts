@@ -50,8 +50,9 @@ test.describe('Cart Flow', () => {
     const addToCartButton = page.getByTestId('add-to-cart-tai-nghe-bluetooth-fitgo');
     await addToCartButton.scrollIntoViewIfNeeded();
     await addToCartButton.click();
+    await expect(page.locator('header').getByText('1')).toBeVisible();
 
-    await page.getByTestId('cart-trigger').click();
+    await page.getByTestId('cart-trigger').evaluate((button) => (button as HTMLButtonElement).click());
 
     await expect(page.getByRole('heading', { name: /GIỎ HÀNG/i })).toBeVisible();
     await expect(page.locator('h4').getByText('Tai nghe Bluetooth FitGo')).toBeVisible();

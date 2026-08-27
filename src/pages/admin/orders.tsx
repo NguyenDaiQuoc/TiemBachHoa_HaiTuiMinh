@@ -1,21 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Clock, Download, Eye, Loader2, Search, ShoppingCart, Truck, XCircle } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAdminOrders, useUpdateBatchOrderStatus, useUpdateOrderStatus } from '@/src/entities/order/api/order-api';
 import type { AdminOutletContext } from '@/src/app/layouts/admin-layout';
 import { Button } from '@/src/shared/ui/button';
 import { cn } from '@/src/shared/lib/utils';
-import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
 import { OrderDetail } from './components/order-detail';
 import { downloadExcelTable } from '@/src/shared/lib/excel';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  PENDING: { label: 'Chờ xác nhận', color: 'text-amber-500 bg-amber-500/10', icon: Clock },
-  PROCESSING: { label: 'Đang xử lý', color: 'text-blue-500 bg-blue-500/10', icon: Clock },
-  SHIPPED: { label: 'Đang giao', color: 'text-purple-500 bg-purple-500/10', icon: Truck },
-  DELIVERED: { label: 'Đã giao', color: 'text-emerald-500 bg-emerald-500/10', icon: CheckCircle2 },
-  CANCELLED: { label: 'Đã huỷ', color: 'text-rose-500 bg-rose-500/10', icon: XCircle },
+  PENDING: { label: 'Chờ xác nhận', color: 'bg-amber-500/10 text-amber-600', icon: Clock },
+  PROCESSING: { label: 'Đang xử lý', color: 'bg-blue-500/10 text-blue-600', icon: Clock },
+  SHIPPED: { label: 'Đang giao', color: 'bg-purple-500/10 text-purple-600', icon: Truck },
+  DELIVERED: { label: 'Đã giao', color: 'bg-emerald-500/10 text-emerald-600', icon: CheckCircle2 },
+  CANCELLED: { label: 'Đã hủy', color: 'bg-rose-500/10 text-rose-600', icon: XCircle },
+};
+
+const PAYMENT_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+  PAID: { label: 'Đã thanh toán', color: 'bg-emerald-500/10 text-emerald-600', icon: CheckCircle2 },
+  UNPAID: { label: 'Chưa thanh toán', color: 'bg-amber-500/10 text-amber-600', icon: Clock },
+  PENDING: { label: 'Chờ thanh toán', color: 'bg-amber-500/10 text-amber-600', icon: Clock },
+  FAILED: { label: 'Thanh toán lỗi', color: 'bg-rose-500/10 text-rose-600', icon: XCircle },
+  REFUNDED: { label: 'Đã hoàn tiền', color: 'bg-slate-500/10 text-slate-600', icon: XCircle },
 };
 
 const STATUS_FILTERS = [
@@ -24,8 +32,12 @@ const STATUS_FILTERS = [
   { value: 'PROCESSING', label: 'Đang xử lý' },
   { value: 'SHIPPED', label: 'Đang giao' },
   { value: 'DELIVERED', label: 'Đã giao' },
-  { value: 'CANCELLED', label: 'Đã huỷ' },
+  { value: 'CANCELLED', label: 'Đã hủy' },
 ] as const;
+
+const money = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
+const customerNameOf = (order: any) => order.customerName || order.user?.name || order.user?.email || 'Khách vãng lai';
+const customerEmailOf = (order: any) => order.customerEmail || order.user?.email || '';
 
 export const AdminOrders = () => {
   const { refreshTick } = useOutletContext<AdminOutletContext>();
@@ -43,18 +55,16 @@ export const AdminOrders = () => {
   }, [refreshTick, refetch]);
 
   const filteredOrders = useMemo(() => {
+    const keyword = globalFilter.toLowerCase();
     return orders.filter((order: any) => {
-      const matchSearch = `${order.orderNumber} ${order.user?.name || ''} ${order.user?.email || ''}`.toLowerCase().includes(globalFilter.toLowerCase());
+      const matchSearch = `${order.orderNumber} ${customerNameOf(order)} ${customerEmailOf(order)}`.toLowerCase().includes(keyword);
       const matchStatus = statusFilter === 'ALL' || order.status === statusFilter;
       return matchSearch && matchStatus;
     });
   }, [globalFilter, orders, statusFilter]);
 
-  const toggleSelection = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
-  };
-
   const allVisibleSelected = filteredOrders.length > 0 && filteredOrders.every((order: any) => selectedIds.includes(order.id));
+  const toggleSelection = (id: string) => setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
 
   const handleBatchUpdate = async (status: 'SHIPPED' | 'CANCELLED' | 'DELIVERED') => {
     if (!selectedIds.length) return;
@@ -81,14 +91,14 @@ export const AdminOrders = () => {
 
   const handleExport = () => {
     downloadExcelTable(`admin-orders-${Date.now()}.xls`, 'Orders', [
-      ['Mã đơn', 'Khách hàng', 'Email', 'Tổng tiền', 'Trạng thái', 'Thanh toán', 'Ngày tạo'],
+      ['Mã đơn', 'Khách hàng', 'Email', 'Tổng tiền', 'Trạng thái đơn', 'Thanh toán', 'Ngày tạo'],
       ...filteredOrders.map((order: any) => [
         order.orderNumber,
-        order.user?.name || 'Khách vãng lai',
-        order.user?.email || '',
-        new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalAmount),
+        customerNameOf(order),
+        customerEmailOf(order),
+        money(order.totalAmount),
         STATUS_CONFIG[order.status]?.label || order.status,
-        order.paymentStatus,
+        PAYMENT_CONFIG[order.paymentStatus]?.label || order.paymentStatus,
         new Date(order.createdAt).toLocaleString('vi-VN'),
       ]),
     ]);
@@ -123,12 +133,7 @@ export const AdminOrders = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             {STATUS_FILTERS.map((filter) => (
-              <Button
-                key={filter.value}
-                variant={statusFilter === filter.value ? 'default' : 'outline'}
-                onClick={() => setStatusFilter(filter.value)}
-                className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest"
-              >
+              <Button key={filter.value} variant={statusFilter === filter.value ? 'default' : 'outline'} onClick={() => setStatusFilter(filter.value)} className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest">
                 {filter.label}
               </Button>
             ))}
@@ -146,7 +151,7 @@ export const AdminOrders = () => {
             Đã giao
           </Button>
           <Button variant="ghost" className="h-10 rounded-2xl bg-white/10 px-4 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/20" onClick={() => handleBatchUpdate('CANCELLED')}>
-            Huỷ đơn
+            Hủy đơn
           </Button>
         </div>
       )}
@@ -157,30 +162,27 @@ export const AdminOrders = () => {
             <thead>
               <tr className="border-b border-border/50 bg-muted/20">
                 <th className="p-5">
-                  <input
-                    type="checkbox"
-                    checked={allVisibleSelected}
-                    onChange={() => setSelectedIds(allVisibleSelected ? [] : filteredOrders.map((order: any) => order.id))}
-                  />
+                  <input type="checkbox" checked={allVisibleSelected} onChange={() => setSelectedIds(allVisibleSelected ? [] : filteredOrders.map((order: any) => order.id))} />
                 </th>
                 <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mã đơn</th>
                 <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Khách hàng</th>
                 <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Tổng tiền</th>
-                <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Trạng thái</th>
+                <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Trạng thái đơn</th>
+                <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Thanh toán</th>
                 <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Ngày tạo</th>
-                <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground text-right">Thao tác</th>
+                <th className="p-5 text-right text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-20 text-center">
+                  <td colSpan={8} className="p-20 text-center">
                     <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
                   </td>
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-20 text-center">
+                  <td colSpan={8} className="p-20 text-center">
                     <div className="flex flex-col items-center gap-4">
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-muted-foreground/30">
                         <ShoppingCart className="h-8 w-8" />
@@ -191,8 +193,11 @@ export const AdminOrders = () => {
                 </tr>
               ) : (
                 filteredOrders.map((order: any) => {
-                  const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
-                  const Icon = config.icon;
+                  const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
+                  const StatusIcon = statusConfig.icon;
+                  const paymentConfig = PAYMENT_CONFIG[order.paymentStatus] || PAYMENT_CONFIG.UNPAID;
+                  const PaymentIcon = paymentConfig.icon;
+
                   return (
                     <tr key={order.id} className="border-b border-border/30 transition-colors hover:bg-muted/10">
                       <td className="p-5">
@@ -201,15 +206,21 @@ export const AdminOrders = () => {
                       <td className="p-5 text-xs font-black uppercase tracking-wider">{order.orderNumber}</td>
                       <td className="p-5">
                         <div className="flex flex-col">
-                          <span className="text-xs font-black">{order.user?.name || 'Khách vãng lai'}</span>
-                          <span className="text-[11px] text-muted-foreground">{order.user?.email || ''}</span>
+                          <span className="text-xs font-black">{customerNameOf(order)}</span>
+                          <span className="text-[11px] text-muted-foreground">{customerEmailOf(order)}</span>
                         </div>
                       </td>
-                      <td className="p-5 text-xs font-black">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalAmount)}</td>
+                      <td className="p-5 text-xs font-black">{money(order.totalAmount)}</td>
                       <td className="p-5">
-                        <div className={cn('inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-[10px] font-black', config.color)}>
-                          <Icon className="h-3.5 w-3.5" />
-                          {config.label}
+                        <div className={cn('inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-[10px] font-black', statusConfig.color)}>
+                          <StatusIcon className="h-3.5 w-3.5" />
+                          {statusConfig.label}
+                        </div>
+                      </td>
+                      <td className="p-5">
+                        <div className={cn('inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-[10px] font-black', paymentConfig.color)}>
+                          <PaymentIcon className="h-3.5 w-3.5" />
+                          {paymentConfig.label}
                         </div>
                       </td>
                       <td className="p-5 text-[11px] font-semibold text-muted-foreground">{new Date(order.createdAt).toLocaleString('vi-VN')}</td>

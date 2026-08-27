@@ -2,7 +2,7 @@
 
 exports[`App shell and profile inheritance > matches the dark-mode profile shell snapshot 1`] = `
 <div
-  class="min-h-screen bg-background pt-20 text-foreground sm:pt-24 lg:pt-28"
+  class="market-shell min-h-screen bg-background pt-20 text-foreground sm:pt-24 lg:pt-28"
 >
   <a
     class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-foreground focus:shadow-lg"
@@ -11,21 +11,42 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
     Skip to content
   </a>
   <header
-    class="fixed left-0 right-0 top-0 z-[60] w-full border-b border-border/60 bg-background/96 px-3 py-2 shadow-[0_18px_60px_-42px_hsl(var(--primary))] backdrop-blur-2xl sm:px-5"
+    class="fixed left-0 right-0 top-0 z-[70] w-full border-b border-primary/20 bg-card text-foreground shadow-[0_12px_34px_-28px_rgba(0,0,0,.8)]"
   >
     <div
-      class="mx-auto grid h-14 w-full min-w-0 grid-cols-[1fr_auto] items-center gap-3 px-1 sm:h-16 sm:px-2 lg:h-[4.35rem] lg:grid-cols-[minmax(360px,1fr)_auto_minmax(360px,1fr)] lg:gap-8 xl:px-4"
+      class="bg-primary text-primary-foreground"
     >
       <div
-        class="flex min-w-0 items-center justify-start gap-2 sm:gap-4 lg:pl-1"
+        class="mx-auto flex h-8 max-w-[1500px] items-center justify-between px-3 text-[11px] font-bold sm:px-5"
+      >
+        <span
+          class="truncate"
+        >
+          Freeship từ 500.000đ, xử lý đơn nhanh trong ngày
+        </span>
+        <a
+          class="hidden whitespace-nowrap hover:underline sm:inline"
+          data-discover="true"
+          href="/tracking"
+        >
+          Tra cứu đơn hàng
+        </a>
+      </div>
+    </div>
+    <div
+      class="mx-auto flex h-16 max-w-[1500px] items-center gap-3 px-3 sm:px-5 lg:h-[4.8rem]"
+    >
+      <div
+        class="flex min-w-0 flex-1 items-center gap-3"
       >
         <button
           aria-expanded="false"
           aria-haspopup="dialog"
-          class="group/button relative inline-flex shrink-0 items-center justify-center bg-clip-padding text-sm font-bold whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/65 size-10 h-9 w-9 rounded-full border border-border/60 bg-background/80 transition-all hover:border-primary/35 hover:bg-primary/10 sm:h-10 sm:w-10 md:hidden"
+          aria-label="Mở menu"
+          class="group/button relative inline-flex shrink-0 items-center justify-center bg-clip-padding text-sm font-bold whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:bg-muted/80 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/65 size-10 h-10 w-10 rounded-xl border border-border bg-card md:hidden"
           data-base-ui-click-trigger=""
           data-slot="sheet-trigger"
-          id="base-ui-_r_1u_"
+          id="base-ui-_r_1o_"
           tabindex="0"
           type="button"
         >
@@ -60,34 +81,31 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
         </button>
         <a
           aria-label="Hai Tụi Mình home"
-          class="group flex min-w-0 items-center gap-2"
+          class="flex min-w-0 shrink flex-col justify-center gap-1 py-1"
           data-discover="true"
           href="/"
         >
           <span
-            class="flex min-w-0 items-center gap-x-2 text-primary"
+            class="hidden text-[9px] font-black uppercase leading-none tracking-[0.12em] text-primary 2xl:block 2xl:text-xs"
           >
-            <span
-              class="hidden font-heading text-xs font-black uppercase tracking-[0.14em] text-foreground transition-colors group-hover:text-primary sm:inline lg:text-[13px]"
-            >
-              Tiệm bách hoá
-            </span>
-            <span
-              class="shrink-0 whitespace-nowrap pb-1 font-accent text-[1.18rem] leading-none text-primary min-[380px]:text-[1.28rem] sm:text-[1.9rem] lg:text-[2.45rem]"
-            >
-              Hai Tụi Mình
-            </span>
+            Tiệm bách hóa
+          </span>
+          <span
+            class="block whitespace-nowrap font-accent text-[1.15rem] leading-[1.15] text-primary min-[390px]:text-[1.28rem] sm:text-[1.75rem] lg:text-[1.95rem] xl:text-[2.2rem]"
+          >
+            Hai Tụi Mình
           </span>
         </a>
       </div>
       <nav
-        class="hidden items-center justify-self-center rounded-full border border-border/60 bg-background/75 px-3 py-2 shadow-soft md:flex"
+        class="hidden items-center justify-center gap-1 lg:flex"
       >
         <div
-          class="group relative"
+          class="relative"
         >
           <button
-            class="relative flex items-center gap-2 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] transition-all xl:text-xs text-foreground hover:bg-muted/55 hover:text-foreground"
+            class="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[12px] font-black uppercase tracking-[0.08em] transition-colors text-foreground hover:bg-secondary hover:text-primary"
+            type="button"
           >
             Sản phẩm
             <svg
@@ -110,21 +128,21 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
           </button>
         </div>
         <div
-          class="group relative"
+          class="relative"
         >
           <a
-            class="group relative overflow-hidden rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-foreground transition-all hover:bg-muted/55 hover:text-foreground xl:text-xs"
+            class="block rounded-xl px-3 py-2.5 text-[12px] font-black uppercase tracking-[0.08em] text-foreground transition-colors hover:bg-secondary hover:text-primary"
             data-discover="true"
             href="/flash-sale"
           >
-            Ưu đãi
+            Deal hôm nay
           </a>
         </div>
         <div
-          class="group relative"
+          class="relative"
         >
           <a
-            class="group relative overflow-hidden rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-foreground transition-all hover:bg-muted/55 hover:text-foreground xl:text-xs"
+            class="block rounded-xl px-3 py-2.5 text-[12px] font-black uppercase tracking-[0.08em] text-foreground transition-colors hover:bg-secondary hover:text-primary"
             data-discover="true"
             href="/blog"
           >
@@ -132,21 +150,22 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
           </a>
         </div>
         <div
-          class="group relative"
+          class="relative"
         >
           <a
-            class="group relative overflow-hidden rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-foreground transition-all hover:bg-muted/55 hover:text-foreground xl:text-xs"
+            class="block rounded-xl px-3 py-2.5 text-[12px] font-black uppercase tracking-[0.08em] text-foreground transition-colors hover:bg-secondary hover:text-primary"
             data-discover="true"
             href="/tracking"
           >
-            Theo dõi
+            Tra cứu đơn
           </a>
         </div>
         <div
-          class="group relative"
+          class="relative"
         >
           <button
-            class="relative flex items-center gap-2 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] transition-all xl:text-xs text-foreground hover:bg-muted/55 hover:text-foreground"
+            class="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[12px] font-black uppercase tracking-[0.08em] transition-colors text-foreground hover:bg-secondary hover:text-primary"
+            type="button"
           >
             Bộ sưu tập
             <svg
@@ -170,10 +189,11 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
         </div>
       </nav>
       <div
-        class="flex shrink-0 items-center justify-end gap-1 sm:gap-3 lg:justify-self-end lg:pr-1"
+        class="flex flex-1 items-center justify-end gap-1.5 sm:gap-2"
       >
         <button
-          class="group/button relative shrink-0 items-center justify-center bg-clip-padding text-sm font-bold whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/65 size-10 hidden h-9 w-9 rounded-full border border-border/60 bg-background/80 transition-all hover:border-primary/35 hover:bg-primary/10 min-[380px]:inline-flex sm:h-11 sm:w-11"
+          aria-label="Tìm kiếm"
+          class="group/button relative inline-flex shrink-0 items-center justify-center bg-clip-padding text-sm font-bold whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/65 size-10 h-10 w-10 rounded-xl border border-border bg-card transition-colors hover:border-primary/35 hover:bg-secondary sm:h-11 sm:w-11"
           data-slot="button"
           tabindex="0"
           type="button"
@@ -182,188 +202,180 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
             class="flex items-center gap-2"
             style="opacity: 1; transform: none;"
           >
-            <div
-              style="opacity: 0; transform: scale(0.5) rotate(-90deg);"
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-search h-5 w-5"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              <svg
-                aria-hidden="true"
-                class="lucide lucide-sun h-5 w-5 text-primary"
-                fill="none"
-                height="24"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                width="24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="4"
-                />
-                <path
-                  d="M12 2v2"
-                />
-                <path
-                  d="M12 20v2"
-                />
-                <path
-                  d="m4.93 4.93 1.41 1.41"
-                />
-                <path
-                  d="m17.66 17.66 1.41 1.41"
-                />
-                <path
-                  d="M2 12h2"
-                />
-                <path
-                  d="M20 12h2"
-                />
-                <path
-                  d="m6.34 17.66-1.41 1.41"
-                />
-                <path
-                  d="m19.07 4.93-1.41 1.41"
-                />
-              </svg>
-            </div>
+              <path
+                d="m21 21-4.34-4.34"
+              />
+              <circle
+                cx="11"
+                cy="11"
+                r="8"
+              />
+            </svg>
+          </span>
+        </button>
+        <button
+          aria-label="Đổi giao diện sáng tối"
+          class="group/button relative shrink-0 items-center justify-center bg-clip-padding text-sm font-bold whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/65 size-10 hidden h-11 w-11 rounded-xl border border-border bg-card transition-colors hover:border-primary/35 hover:bg-secondary sm:inline-flex"
+          data-slot="button"
+          tabindex="0"
+          type="button"
+        >
+          <span
+            class="flex items-center gap-2"
+            style="opacity: 1; transform: none;"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-sun h-5 w-5 text-primary"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="4"
+              />
+              <path
+                d="M12 2v2"
+              />
+              <path
+                d="M12 20v2"
+              />
+              <path
+                d="m4.93 4.93 1.41 1.41"
+              />
+              <path
+                d="m17.66 17.66 1.41 1.41"
+              />
+              <path
+                d="M2 12h2"
+              />
+              <path
+                d="M20 12h2"
+              />
+              <path
+                d="m6.34 17.66-1.41 1.41"
+              />
+              <path
+                d="m19.07 4.93-1.41 1.41"
+              />
+            </svg>
           </span>
         </button>
         <div
-          class="flex items-center gap-1 rounded-full border border-border/60 bg-background/75 px-1.5 py-1 shadow-soft sm:gap-2"
+          class="hidden sm:block"
         >
           <button
-            aria-label="Tìm kiếm"
-            class="group/button relative shrink-0 items-center justify-center bg-clip-padding text-sm font-bold whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/65 size-10 flex h-9 w-9 rounded-full border border-border/60 bg-background/80 transition-all hover:border-primary/35 hover:bg-primary/10 sm:h-11 sm:w-11"
-            data-slot="button"
+            aria-expanded="false"
+            aria-haspopup="menu"
+            class="relative flex h-10 w-10 items-center justify-center rounded-full border border-transparent outline-none transition-all hover:border-border/50 hover:bg-primary/5"
+            data-slot="dropdown-menu-trigger"
+            id="base-ui-_r_23_"
             tabindex="0"
             type="button"
           >
-            <span
-              class="flex items-center gap-2"
-              style="opacity: 1; transform: none;"
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-bell h-5 w-5"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              <svg
-                aria-hidden="true"
-                class="lucide lucide-search h-5 w-5"
-                fill="none"
-                height="24"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                width="24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="m21 21-4.34-4.34"
-                />
-                <circle
-                  cx="11"
-                  cy="11"
-                  r="8"
-                />
-              </svg>
-            </span>
+              <path
+                d="M10.268 21a2 2 0 0 0 3.464 0"
+              />
+              <path
+                d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
+              />
+            </svg>
           </button>
-          <div
-            class="hidden min-[380px]:block"
-          >
-            <button
-              aria-expanded="false"
-              aria-haspopup="menu"
-              class="relative flex h-10 w-10 items-center justify-center rounded-full border border-transparent outline-none transition-all hover:border-border/50 hover:bg-primary/5"
-              data-slot="dropdown-menu-trigger"
-              id="base-ui-_r_2c_"
-              tabindex="0"
-              type="button"
-            >
-              <svg
-                aria-hidden="true"
-                class="lucide lucide-bell h-5 w-5"
-                fill="none"
-                height="24"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                width="24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M10.268 21a2 2 0 0 0 3.464 0"
-                />
-                <path
-                  d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
-                />
-              </svg>
-            </button>
-          </div>
-          <div
-            class="relative"
-          >
-            <button
-              aria-expanded="false"
-              aria-haspopup="menu"
-              class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-transparent outline-none transition-all hover:border-border/50 hover:bg-primary/5"
-              data-slot="dropdown-menu-trigger"
-              id="base-ui-_r_2i_"
-              tabindex="0"
-              type="button"
-            >
-              <div
-                class="flex h-full w-full items-center justify-center bg-primary/10 text-xs font-black uppercase italic text-primary"
-              >
-                T
-              </div>
-            </button>
-          </div>
+        </div>
+        <div
+          class="relative"
+        >
           <button
-            aria-label="Mở giỏ hàng"
-            class="group relative cursor-pointer"
-            data-cart-target="true"
-            data-testid="cart-trigger"
+            aria-expanded="false"
+            aria-haspopup="menu"
+            class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-transparent outline-none transition-all hover:border-border/50 hover:bg-primary/5"
+            data-slot="dropdown-menu-trigger"
+            id="base-ui-_r_29_"
             tabindex="0"
             type="button"
           >
             <div
-              class="rounded-full border border-border/60 bg-background/80 p-2 transition-all group-hover:border-primary/35 group-hover:bg-primary/10 sm:p-3"
+              class="flex h-full w-full items-center justify-center bg-primary/10 text-xs font-black uppercase italic text-primary"
             >
-              <svg
-                aria-hidden="true"
-                class="lucide lucide-shopping-bag h-4 w-4 transition-colors sm:h-5 sm:w-5"
-                fill="none"
-                height="24"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                width="24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M16 10a4 4 0 0 1-8 0"
-                />
-                <path
-                  d="M3.103 6.034h17.794"
-                />
-                <path
-                  d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"
-                />
-              </svg>
+              T
             </div>
           </button>
         </div>
+        <button
+          aria-label="Mở giỏ hàng"
+          class="group relative z-[90] cursor-pointer"
+          data-cart-target="true"
+          data-testid="cart-trigger"
+          tabindex="0"
+          type="button"
+        >
+          <div
+            class="rounded-xl bg-accent p-2.5 text-white shadow-sm transition-colors group-hover:bg-accent/90 sm:p-3"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-shopping-bag h-4 w-4 sm:h-5 sm:w-5"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 10a4 4 0 0 1-8 0"
+              />
+              <path
+                d="M3.103 6.034h17.794"
+              />
+              <path
+                d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"
+              />
+            </svg>
+          </div>
+        </button>
       </div>
     </div>
   </header>
   <main
-    class="flex-1 outline-none bg-background text-foreground transition-colors duration-300"
+    class="flex-1 outline-none bg-transparent text-foreground transition-colors duration-300"
     id="app-main-content"
     tabindex="-1"
   >
@@ -1123,39 +1135,46 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
     </div>
   </main>
   <footer
-    class="border-t bg-muted/30 pb-8 pt-16"
+    class="border-t border-border bg-secondary/55 pb-8 pt-12 text-foreground dark:bg-background"
   >
     <div
-      class="container mx-auto px-4"
+      class="mx-auto max-w-[1500px] px-4"
     >
       <div
-        class="mb-16 grid grid-cols-1 gap-12 lg:grid-cols-12"
+        class="mb-12 grid grid-cols-1 gap-10 lg:grid-cols-12"
       >
         <div
-          class="space-y-6 lg:col-span-4"
+          class="space-y-5 lg:col-span-4"
         >
           <a
             class="inline-block"
             data-discover="true"
             href="/"
           >
-            <h3
-              class="font-heading text-2xl font-black italic tracking-tighter text-primary"
+            <span
+              class="block text-[10px] font-black uppercase tracking-[0.14em] text-primary"
             >
-              HAI TỤI MÌNH
-            </h3>
+              Tiệm bách hóa
+            </span>
+            <span
+              class="font-accent text-3xl leading-none text-primary"
+            >
+              Hai Tụi Mình
+            </span>
           </a>
           <p
             class="max-w-sm text-sm font-medium leading-relaxed text-muted-foreground"
           >
-            Tiệm Bách Hoá Hai Tụi Mình chuyên mỹ phẩm chính hãng, đồ gia dụng tiện ích và sản phẩm công nghệ với mức giá cạnh tranh, minh bạch và đáng tin cậy.
+            Tiệm Bách Hóa Hai Tụi Mình chuyên mỹ phẩm chính hãng, đồ gia dụng tiện ích và sản phẩm công nghệ với mức giá cạnh tranh, minh bạch và đáng tin cậy.
           </p>
           <div
-            class="flex gap-4"
+            class="flex gap-3"
           >
             <a
-              class="flex size-10 items-center justify-center rounded-xl border border-border/50 bg-background text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-white"
+              class="flex size-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground"
               href="https://www.instagram.com/"
+              rel="noreferrer"
+              target="_blank"
             >
               <svg
                 aria-hidden="true"
@@ -1190,8 +1209,10 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="flex size-10 items-center justify-center rounded-xl border border-border/50 bg-background text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-white"
+              class="flex size-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground"
               href="https://www.facebook.com/"
+              rel="noreferrer"
+              target="_blank"
             >
               <svg
                 aria-hidden="true"
@@ -1212,8 +1233,10 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               </svg>
             </a>
             <a
-              class="flex size-10 items-center justify-center rounded-xl border border-border/50 bg-background text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-white"
+              class="flex size-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground"
               href="https://zalo.me/0931454176"
+              rel="noreferrer"
+              target="_blank"
             >
               <svg
                 aria-hidden="true"
@@ -1236,7 +1259,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
           </div>
         </div>
         <div
-          class="grid grid-cols-1 gap-8 md:grid-cols-3 lg:col-span-8"
+          class="grid grid-cols-1 gap-6 md:grid-cols-3 lg:col-span-8"
         >
           <div
             class="space-y-4"
@@ -1499,13 +1522,13 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
         </div>
       </div>
       <div
-        class="mb-16 grid grid-cols-1 gap-8 rounded-[3rem] border border-border/50 bg-background p-8 shadow-soft md:grid-cols-3 md:p-12"
+        class="mb-10 grid grid-cols-1 gap-5 rounded-3xl border border-border bg-card p-6 shadow-soft md:grid-cols-3 md:p-8"
       >
         <div
-          class="group flex items-center gap-6"
+          class="group flex items-start gap-4"
         >
           <div
-            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-white"
+            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground"
           >
             <svg
               aria-hidden="true"
@@ -1534,17 +1557,17 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               Mua hàng nhanh
             </p>
             <p
-              class="text-lg font-black italic tracking-tight"
+              class="text-base font-black leading-tight tracking-tight"
             >
               0931.454.176
             </p>
           </div>
         </div>
         <div
-          class="group flex items-center gap-6"
+          class="group flex items-start gap-4"
         >
           <div
-            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-white"
+            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground"
           >
             <svg
               aria-hidden="true"
@@ -1580,17 +1603,17 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               Phản hồi & Khiếu nại
             </p>
             <p
-              class="text-lg font-black italic tracking-tight"
+              class="text-base font-black leading-tight tracking-tight"
             >
               hello@haituiminh.vn
             </p>
           </div>
         </div>
         <div
-          class="group flex items-center gap-6"
+          class="group flex items-start gap-4"
         >
           <div
-            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-white"
+            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground"
           >
             <svg
               aria-hidden="true"
@@ -1624,7 +1647,7 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
               Địa chỉ cửa hàng
             </p>
             <p
-              class="text-lg font-black italic leading-tight tracking-tight"
+              class="text-base font-black leading-tight tracking-tight"
             >
               82/1E ấp Xuân Thới Đông 3, xã Xuân Thới Đông, Hóc Môn, TP.HCM
             </p>
@@ -1632,53 +1655,44 @@ exports[`App shell and profile inheritance > matches the dark-mode profile shell
         </div>
       </div>
       <div
-        class="flex flex-col items-center justify-between gap-6 border-t pt-8 md:flex-row"
+        class="flex flex-col items-center justify-between gap-5 border-t border-border pt-6 md:flex-row"
       >
         <div
-          class="flex flex-wrap justify-center gap-4"
+          class="flex flex-wrap justify-center gap-3"
         >
           <div
-            class="rounded-xl border border-border/50 bg-background px-3 py-1.5"
+            class="rounded-xl border border-border bg-card px-3 py-1.5"
           >
             <span
-              class="text-[10px] font-black uppercase italic tracking-tighter"
+              class="text-[10px] font-black uppercase tracking-tighter"
             >
               COD
             </span>
           </div>
           <div
-            class="rounded-xl border border-border/50 bg-background px-3 py-1.5"
+            class="rounded-xl border border-border bg-card px-3 py-1.5"
           >
             <span
-              class="text-[10px] font-black uppercase italic tracking-tighter"
+              class="text-[10px] font-black uppercase tracking-tighter"
             >
               Bảo hành 1 đổi 1
             </span>
           </div>
           <div
-            class="rounded-xl border border-border/50 bg-background px-3 py-1.5"
+            class="rounded-xl border border-border bg-card px-3 py-1.5"
           >
             <span
-              class="text-[10px] font-black uppercase italic tracking-tighter"
+              class="text-[10px] font-black uppercase tracking-tighter"
             >
               Gửi hàng toàn quốc
             </span>
           </div>
         </div>
-        <div
-          class="space-y-1 text-center md:text-right"
+        <p
+          class="text-center text-[10px] font-medium uppercase tracking-widest text-muted-foreground md:text-right"
         >
-          <p
-            class="text-[10px] font-medium uppercase tracking-widest text-muted-foreground"
-          >
-            © 2026 Tiệm Bách Hoá Hai Tụi Mình
-          </p>
-          <p
-            class="text-[9px] font-black uppercase text-muted-foreground/30"
-          >
-            Powered by Antigravity Engine
-          </p>
-        </div>
+          © 2026 Tiệm Bách Hóa Hai Tụi Mình
+        </p>
       </div>
     </div>
   </footer>
