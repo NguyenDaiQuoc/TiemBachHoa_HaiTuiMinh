@@ -1,12 +1,11 @@
-
-import { 
-  ShippingMethod, 
-  ShippingMethodId, 
-  ShippingStatus, 
-  TrackingEvent, 
+import {
+  ShippingMethod,
+  ShippingMethodId,
+  ShippingStatus,
+  TrackingEvent,
   ShippingProvider,
   ShipmentDetails,
-  TrackingLocation
+  TrackingLocation,
 } from '../model/types';
 
 export const SHIPPING_METHODS: ShippingMethod[] = [
@@ -45,12 +44,21 @@ export const SHIPPING_METHODS: ShippingMethod[] = [
  */
 export class ShippingAggregator {
   static async getTracking(trackingId: string, provider: ShippingProvider): Promise<ShipmentDetails> {
-    // In a real app, this would call specific provider API adapters
-    // For now, we simulate a realistic response
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // In a real app, this would call specific provider API adapters.
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const origin: TrackingLocation = { lat: 10.8953, lng: 106.5771, name: 'Tòa nhà văn phòng - 82/1E ấp Xuân Thới Đông 3, xã Xuân Thới Đông, Hóc Môn, TP.HCM', type: 'ORIGIN' };
-    const destination: TrackingLocation = { lat: 10.7963, lng: 106.6675, name: 'Căn hộ khách hàng - Phường 6, Quận 3, TP.HCM', type: 'DESTINATION' };
+    const origin: TrackingLocation = {
+      lat: 10.8953,
+      lng: 106.5771,
+      name: 'Tòa nhà văn phòng - 82/1E ấp Xuân Thới Đông 3, xã Xuân Thới Đông, Hóc Môn, TP.HCM',
+      type: 'ORIGIN',
+    };
+    const destination: TrackingLocation = {
+      lat: 10.7963,
+      lng: 106.6675,
+      name: 'Căn hộ khách hàng - Phường 6, Quận 3, TP.HCM',
+      type: 'DESTINATION',
+    };
 
     const mockEvents: TrackingEvent[] = [
       {
@@ -80,11 +88,11 @@ export class ShippingAggregator {
       {
         id: '4',
         status: ShippingStatus.OUT_FOR_DELIVERY,
-        location: { lat: 10.8000, lng: 106.6500, name: 'Đang giao hàng tại Quận 3', type: 'HUB' },
+        location: { lat: 10.8, lng: 106.65, name: 'Đang giao hàng tại Quận 3', type: 'HUB' },
         timestamp: new Date(Date.now() - 3600000).toISOString(),
         description: 'Nhân viên giao hàng đang trên đường đến với bạn.',
         isCompleted: true,
-      }
+      },
     ];
 
     return {
@@ -106,16 +114,16 @@ export class ShippingAggregator {
  * Calculates shipping price based on method and weight (mock)
  */
 export function calculateShippingPrice(methodId: ShippingMethodId, weightKg: number = 0.5): number {
-  const method = SHIPPING_METHODS.find(m => m.id === methodId);
+  const method = SHIPPING_METHODS.find((item) => item.id === methodId);
   if (!method) return 0;
-  return method.basePrice + (Math.max(0, weightKg - 1) * 5000);
+  return method.basePrice + Math.max(0, weightKg - 1) * 5000;
 }
 
 /**
  * Estimates arrival date string
  */
 export function estimateArrival(methodId: ShippingMethodId): string {
-  const method = SHIPPING_METHODS.find(m => m.id === methodId);
+  const method = SHIPPING_METHODS.find((item) => item.id === methodId);
   const days = method ? method.maxDays : 7;
   const date = new Date();
   date.setDate(date.getDate() + days);

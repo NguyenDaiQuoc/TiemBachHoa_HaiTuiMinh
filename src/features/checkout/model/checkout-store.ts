@@ -8,15 +8,22 @@ import { generateOrderId } from '@/src/entities/order/lib/order-utils';
 import { calculateShippingPrice, estimateArrival } from '@/src/entities/shipping/lib/shipping-engine';
 import { useAuthStore } from '@/src/shared/model/auth-store';
 
+const isTestCheckoutOnly = (items: Array<{ slug?: string; quantity?: number }>) =>
+  items.length === 1 && String(items[0]?.slug || '').trim().toLowerCase() === 'test';
+
 interface CheckoutState {
   shippingInfo: ShippingInfo | null;
   selectedPaymentMethod: PaymentMethod | null;
   selectedShippingMethod: ShippingMethodId | null;
   currentOrder: Order | null;
+  voucherCode: string;
+  appliedVoucher: { code: string; title: string; discount: number } | null;
   
   setShippingInfo: (info: ShippingInfo) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setShippingMethod: (methodId: ShippingMethodId) => void;
+  applyVoucher: (code: string, items: any[]) => Promise<void>;
+  removeVoucher: () => void;
   createOrder: (items: any[], totalAmount: number) => Promise<Order>;
   resetCheckout: () => void;
   updateOrderStatus: (status: OrderStatus, paymentStatus?: PaymentStatus) => void;
@@ -29,25 +36,54 @@ export const useCheckoutStore = create<CheckoutState>()(
       selectedPaymentMethod: null,
       selectedShippingMethod: ShippingMethodId.STANDARD,
       currentOrder: null,
+      voucherCode: '',
+      appliedVoucher: null,
 
       setShippingInfo: (info) => set({ shippingInfo: info }),
       setPaymentMethod: (method) => set({ selectedPaymentMethod: method }),
       setShippingMethod: (methodId) => set({ selectedShippingMethod: methodId }),
+      applyVoucher: async (code, items) => {
+        const normalizedCode = code.trim().toUpperCase();
+        if (!normalizedCode) throw new Error('Vui lòng nhập mã voucher');
+
+        const response = await fetch('/api/orders/voucher/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(useAuthStore.getState().token ? { Authorization: 'Bearer ' + useAuthStore.getState().token } : {}) },
+          body: JSON.stringify({ code: normalizedCode, items }),
+        });
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || payload?.message || 'Không thể áp dụng voucher');
+        }
+
+        set({
+          voucherCode: normalizedCode,
+          appliedVoucher: {
+            code: payload.data.code,
+            title: payload.data.title,
+            discount: Number(payload.data.discount || 0),
+          },
+        });
+      },
+      removeVoucher: () => set({ voucherCode: '', appliedVoucher: null }),
       
       createOrder: async (items, totalAmount) => {
-        const { shippingInfo, selectedPaymentMethod, selectedShippingMethod } = get();
+        const { shippingInfo, selectedPaymentMethod, selectedShippingMethod, voucherCode, appliedVoucher } = get();
         if (!shippingInfo || !selectedPaymentMethod || !selectedShippingMethod) {
           throw new Error('Missing shipping or payment info');
         }
 
-        const shippingFee = calculateShippingPrice(selectedShippingMethod);
+        const testCheckoutOnly = isTestCheckoutOnly(items);
+        const shippingFee = testCheckoutOnly ? 0 : calculateShippingPrice(selectedShippingMethod);
+        const voucherDiscount = testCheckoutOnly ? 0 : Math.max(0, Number(appliedVoucher?.discount || 0));
         const arrival = estimateArrival(selectedShippingMethod);
         const fallbackOrderId = generateOrderId();
 
         const draftOrder: Order = {
           id: fallbackOrderId,
           items,
-          totalAmount: totalAmount + shippingFee,
+          totalAmount: Math.max(0, totalAmount - voucherDiscount) + shippingFee,
           shippingInfo,
           paymentMethod: selectedPaymentMethod,
           shippingMethodId: selectedShippingMethod,
@@ -68,6 +104,7 @@ export const useCheckoutStore = create<CheckoutState>()(
             shippingInfo,
             paymentMethod: selectedPaymentMethod,
             shippingMethodId: selectedShippingMethod,
+            voucherCode: !testCheckoutOnly && appliedVoucher ? voucherCode : undefined,
           }),
         });
         const payload = await response.json().catch(() => null);
@@ -109,7 +146,9 @@ export const useCheckoutStore = create<CheckoutState>()(
         shippingInfo: null, 
         selectedPaymentMethod: null, 
         selectedShippingMethod: ShippingMethodId.STANDARD,
-        currentOrder: null 
+        currentOrder: null,
+        voucherCode: '',
+        appliedVoucher: null 
       }),
     }),
     {

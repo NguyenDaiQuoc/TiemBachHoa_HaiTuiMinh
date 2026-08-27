@@ -23,9 +23,19 @@ const ensureCoreCategories = async () => {
   await prisma.category.updateMany({ where: { slug: 'san-pham-nhap-kho' }, data: { isActive: false } }).catch(() => undefined);
 };
 
+let coreCategoriesReady: Promise<void> | null = null;
+
+const ensureCoreCategoriesOnce = () => {
+  coreCategoriesReady ??= ensureCoreCategories().catch((error) => {
+    coreCategoriesReady = null;
+    throw error;
+  });
+  return coreCategoriesReady;
+};
+
 router.get("/", async (_req, res, next) => {
   try {
-    await ensureCoreCategories();
+    await ensureCoreCategoriesOnce();
     const categories = await prisma.category.findMany({
       where: {
         slug: { in: coreCategories.map((category) => category.slug) },

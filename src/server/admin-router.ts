@@ -186,8 +186,9 @@ const percentGrowth = (current: number, previous: number) => {
 };
 
 const committedOrderStatuses = new Set(['PROCESSING', 'SHIPPED', 'DELIVERED', 'PACKING', 'SHIPPING', 'DELIVERING']);
-const shouldCommitInventory = (fromStatus: string, toStatus: string) => fromStatus === 'PENDING' && committedOrderStatuses.has(toStatus);
-const shouldRestoreInventory = (fromStatus: string, toStatus: string) => toStatus === 'CANCELLED' && committedOrderStatuses.has(fromStatus);
+const inventoryReservedOrderStatuses = new Set(['PENDING', ...committedOrderStatuses]);
+const shouldCommitInventory = (_fromStatus: string, _toStatus: string) => false;
+const shouldRestoreInventory = (fromStatus: string, toStatus: string) => toStatus === 'CANCELLED' && inventoryReservedOrderStatuses.has(fromStatus);
 
 const commitOrderInventory = async (tx: any, order: { items: Array<{ productId: string; quantity: number }> }) => {
   for (const item of order.items) {

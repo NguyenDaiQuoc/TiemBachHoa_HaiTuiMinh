@@ -66,6 +66,14 @@ const generateRefreshToken = async (userId: string) => {
   });
 };
 
+const logSideEffectFailures = (context: string, results: PromiseSettledResult<unknown>[]) => {
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      console.warn(`${context} side effect ${index + 1} failed:`, result.reason);
+    }
+  });
+};
+
 router.post('/register', async (req, res) => {
   try {
     const { email, password, name } = registerSchema.parse(req.body);
@@ -98,22 +106,24 @@ router.post('/register', async (req, res) => {
       maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
     });
 
-    res.status(201).json({
+    const sideEffects = await Promise.allSettled([
+      logAction({
+        userId: createdUser.id,
+        action: 'USER_REGISTER',
+        ip: req.ip,
+      }),
+      createUserNotification(createdUser.id, {
+        type: 'SUCCESS',
+        title: 'Chào mừng đến với Tiệm Bách Hóa Hai Tụi Mình',
+        message: 'Tài khoản của bạn đã sẵn sàng. Hãy theo dõi đơn hàng, lưu sản phẩm yêu thích và nhận ưu đãi mới nhất.',
+        link: '/profile',
+      }),
+    ]);
+    logSideEffectFailures('register', sideEffects);
+
+    return res.status(201).json({
       user: serializeAuthUser(createdUser),
       token: accessToken,
-    });
-
-    await logAction({
-      userId: createdUser.id,
-      action: 'USER_REGISTER',
-      ip: req.ip,
-    });
-
-    await createUserNotification(createdUser.id, {
-      type: 'SUCCESS',
-      title: 'Chào mừng đến với Tiệm Bách Hóa Hai Tụi Mình',
-      message: 'Tài khoản của bạn đã sẵn sàng. Hãy theo dõi đơn hàng, lưu sản phẩm yêu thích và nhận ưu đãi mới nhất.',
-      link: '/profile',
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -169,15 +179,18 @@ router.post('/login', async (req, res) => {
       maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
     });
 
-    res.json({
+    const sideEffects = await Promise.allSettled([
+      logAction({
+        userId: fullUser.id,
+        action: isAdminRole(fullUser.role) ? 'ADMIN_LOGIN' : 'USER_LOGIN',
+        ip: req.ip,
+      }),
+    ]);
+    logSideEffectFailures('login', sideEffects);
+
+    return res.json({
       user: serializeAuthUser(fullUser),
       token: accessToken,
-    });
-
-    await logAction({
-      userId: fullUser.id,
-      action: isAdminRole(fullUser.role) ? 'ADMIN_LOGIN' : 'USER_LOGIN',
-      ip: req.ip,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

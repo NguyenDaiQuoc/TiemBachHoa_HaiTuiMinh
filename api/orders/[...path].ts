@@ -23,6 +23,7 @@ const uniqueStrings = (values: Array<string | null | undefined>) => Array.from(n
 const numberOr = (value: unknown, fallback = 0) => (value === null || value === undefined || value === '' ? fallback : Number.isFinite(Number(value)) ? Number(value) : fallback);
 const intOr = (value: unknown, fallback = 0) => Math.trunc(numberOr(value, fallback));
 const textOrNull = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : null);
+const normalizeMoney = (value: number) => Math.round(value);
 
 const shippingFeeByMethod: Record<string, number> = {
   STANDARD: 20000,
@@ -61,7 +62,42 @@ const methodDays: Record<string, number> = {
 };
 
 const FREE_SHIPPING_MEMBER_MIN = 500_000;
+const TEST_CHECKOUT_SLUG = 'test';
 const birthdayDiscountByTier = [5, 8, 12, 15];
+
+const isTestCheckoutOnly = (items: Array<{ product: { slug?: string | null } }>) =>
+  items.length === 1 && String(items[0]?.product?.slug || '').trim().toLowerCase() === TEST_CHECKOUT_SLUG;
+
+const calculateVoucherDiscount = (voucher: any, subtotal: number) => {
+  if (!voucher) return 0;
+  const rawDiscount = voucher.type === 'PERCENT' ? Math.round((subtotal * numberOr(voucher.value)) / 100) : numberOr(voucher.value);
+  const cappedDiscount = voucher.maxDiscount ? Math.min(rawDiscount, numberOr(voucher.maxDiscount)) : rawDiscount;
+  return Math.max(0, Math.min(subtotal, cappedDiscount));
+};
+
+const findApplicableVoucher = async (client: any, code: string, subtotal: number, productIds: string[]) => {
+  const normalizedCode = String(code || '').trim().toUpperCase();
+  if (!normalizedCode) return { voucher: null, discount: 0, error: null };
+
+  const now = new Date();
+  const voucher = await client.voucher.findUnique({
+    where: { code: normalizedCode },
+    include: { products: { select: { productId: true } } },
+  });
+
+  if (!voucher || !voucher.isActive) return { voucher: null, discount: 0, error: 'Voucher không tồn tại hoặc đã tạm ngưng' };
+  if (voucher.startsAt && voucher.startsAt > now) return { voucher: null, discount: 0, error: 'Voucher chưa đến thời gian sử dụng' };
+  if (voucher.endsAt && voucher.endsAt < now) return { voucher: null, discount: 0, error: 'Voucher đã hết hạn' };
+  if (voucher.usageLimit && voucher.usedCount >= voucher.usageLimit) return { voucher: null, discount: 0, error: 'Voucher đã hết lượt sử dụng' };
+  if (subtotal < numberOr(voucher.minOrderValue)) return { voucher: null, discount: 0, error: 'Đơn hàng chưa đạt giá trị tối thiểu của voucher' };
+
+  const scopedProductIds = voucher.products.map((item: any) => item.productId);
+  if (scopedProductIds.length && !productIds.some((id) => scopedProductIds.includes(id))) {
+    return { voucher: null, discount: 0, error: 'Voucher không áp dụng cho sản phẩm trong giỏ hàng' };
+  }
+
+  return { voucher, discount: calculateVoucherDiscount(voucher, subtotal), error: null };
+};
 
 const getBirthdayDiscountPercent = (points = 0) => {
   if (points >= 500) return birthdayDiscountByTier[3];
@@ -109,7 +145,8 @@ const requireUser = async (req: IncomingMessage, res: ServerResponse) => {
 };
 
 const committedOrderStatuses = new Set(['PROCESSING', 'SHIPPED', 'DELIVERED', 'PACKING', 'SHIPPING', 'DELIVERING']);
-const shouldRestoreInventory = (status: string) => committedOrderStatuses.has(status);
+const inventoryReservedOrderStatuses = new Set(['PENDING', ...committedOrderStatuses]);
+const shouldRestoreInventory = (status: string) => inventoryReservedOrderStatuses.has(status);
 
 const commitOrderItems = async (tx: any, items: Array<{ product: { id: string; name: string; stock: number }; quantity: number }>) => {
   for (const item of items) {
@@ -130,6 +167,90 @@ const restoreOrderItems = async (tx: any, order: { items: Array<{ productId: str
       data: { stock: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
     });
   }
+};
+
+const stringFromPath = (input: Record<string, unknown>, paths: string[][]) => {
+  for (const path of paths) {
+    let value: unknown = input;
+    for (const key of path) {
+      value = typeof value === 'object' && value !== null ? (value as Record<string, unknown>)[key] : undefined;
+    }
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  }
+  return '';
+};
+
+const numberFromPath = (input: Record<string, unknown>, paths: string[][]) => {
+  for (const path of paths) {
+    let value: unknown = input;
+    for (const key of path) {
+      value = typeof value === 'object' && value !== null ? (value as Record<string, unknown>)[key] : undefined;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+      const parsed = Number(value.replace(/[^\d.-]/g, ''));
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return 0;
+};
+
+const extractBankTransfer = (body: Record<string, unknown>) => ({
+  amount: numberFromPath(body, [
+    ['amount'],
+    ['transferAmount'],
+    ['transfer_amount'],
+    ['creditAmount'],
+    ['credit_amount'],
+    ['amountIn'],
+    ['amount_in'],
+    ['data', 'amount'],
+    ['data', 'transferAmount'],
+    ['transaction', 'amount'],
+  ]),
+  content: stringFromPath(body, [
+    ['content'],
+    ['description'],
+    ['memo'],
+    ['note'],
+    ['transferContent'],
+    ['transactionContent'],
+    ['addInfo'],
+    ['data', 'content'],
+    ['data', 'description'],
+    ['transaction', 'content'],
+    ['transaction', 'description'],
+  ]),
+  orderNumber: stringFromPath(body, [
+    ['orderNumber'],
+    ['order_number'],
+    ['orderCode'],
+    ['order_code'],
+    ['data', 'orderNumber'],
+    ['transaction', 'orderNumber'],
+  ]),
+  transactionId: stringFromPath(body, [
+    ['transactionId'],
+    ['transaction_id'],
+    ['referenceCode'],
+    ['reference_code'],
+    ['id'],
+    ['data', 'id'],
+    ['transaction', 'id'],
+  ]),
+});
+
+const webhookSecretFromRequest = (req: IncomingMessage) => {
+  const auth = req.headers.authorization || '';
+  if (auth.startsWith('Bearer ')) return auth.slice('Bearer '.length).trim();
+  return String(req.headers['x-payment-webhook-secret'] || req.headers['x-webhook-secret'] || '');
+};
+
+const verifyPaymentWebhook = (req: IncomingMessage) => {
+  const expected = process.env.PAYMENT_WEBHOOK_SECRET || '';
+  if (!expected) return process.env.NODE_ENV !== 'production';
+  return webhookSecretFromRequest(req) === expected;
 };
 
 const parseShippingAddress = (raw: string) => {
@@ -254,6 +375,7 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
   const shippingInfo = body.shippingInfo || {};
   const shippingMethod = String(body.shippingMethodId || body.shippingMethod || 'STANDARD').toUpperCase();
   const paymentMethod = String(body.paymentMethod || 'BANK_TRANSFER').toUpperCase();
+  const voucherCode = textOrNull(body.voucherCode)?.toUpperCase() || '';
 
   if (!items.length) return fail(res, 'Giỏ hàng trống', 400);
   if (!textOrNull(shippingInfo.fullName) || !textOrNull(shippingInfo.phone) || !textOrNull(shippingInfo.address)) {
@@ -285,6 +407,7 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
 
   const baseShippingFee = shippingFeeByMethod[shippingMethod] ?? shippingFeeByMethod.STANDARD;
   const subtotal = normalizedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const testCheckoutOnly = isTestCheckoutOnly(normalizedItems);
   const authUser = await optionalUser(req);
   const customer = authUser
     ? await prisma.user.update({
@@ -297,15 +420,23 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
         },
       })
     : await ensureCustomer(shippingInfo);
-  const birthdayDiscountPercent = isBirthdayMonth(customer.birthDate) ? getBirthdayDiscountPercent(numberOr(customer.membershipPoints, 0)) : 0;
+  const birthdayDiscountPercent = !testCheckoutOnly && isBirthdayMonth(customer.birthDate) ? getBirthdayDiscountPercent(numberOr(customer.membershipPoints, 0)) : 0;
   const membershipDiscount = Math.round((subtotal * birthdayDiscountPercent) / 100);
-  const shippingFee = subtotal >= FREE_SHIPPING_MEMBER_MIN ? 0 : baseShippingFee;
-  const totalAmount = Math.max(0, subtotal - membershipDiscount) + shippingFee;
+  const voucherResult = testCheckoutOnly
+    ? { voucher: null, discount: 0, error: null }
+    : await findApplicableVoucher(prisma, voucherCode, Math.max(0, subtotal - membershipDiscount), ids);
+  if (voucherResult.error) return fail(res, voucherResult.error, 400);
+  const voucherDiscount = voucherResult.discount;
+  const shippingFee = testCheckoutOnly ? 0 : subtotal >= FREE_SHIPPING_MEMBER_MIN ? 0 : baseShippingFee;
+  const totalAmount = Math.max(0, subtotal - membershipDiscount - voucherDiscount) + shippingFee;
   const checkoutMeta = {
     subtotal,
     shippingFee,
     baseShippingFee,
+    testCheckoutOnly,
     membershipDiscount,
+    voucherCode: voucherResult.voucher?.code || null,
+    voucherDiscount,
     birthdayDiscountPercent,
     freeShippingApplied: shippingFee === 0 && baseShippingFee > 0,
     paymentMethod,
@@ -318,6 +449,7 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
         userId: customer.id,
         orderNumber,
         totalAmount,
+        voucherId: voucherResult.voucher?.id || null,
         shippingAddress: JSON.stringify({ ...shippingInfo, _checkout: checkoutMeta }),
         shippingMethod,
         status: paymentMethod === 'COD' ? 'PROCESSING' : 'PENDING',
@@ -335,9 +467,12 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
       include: { items: true },
     });
 
-
-    if (paymentMethod === 'COD') {
-      await commitOrderItems(tx, normalizedItems);
+    await commitOrderItems(tx, normalizedItems);
+    if (voucherResult.voucher) {
+      await tx.voucher.update({
+        where: { id: voucherResult.voucher.id },
+        data: { usedCount: { increment: 1 } },
+      });
     }
 
     await tx.appNotification.create({
@@ -360,6 +495,44 @@ const createCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
   });
 
   return ok(res, { ...serializeOrder(order), paymentMethod }, 'Đã tạo đơn hàng', 201);
+};
+
+const validateCheckoutVoucher = async (req: IncomingMessage, res: ServerResponse) => {
+  if (req.method !== 'POST') return fail(res, 'Method not allowed', 405);
+
+  const body = await readJsonBody<any>(req);
+  const code = textOrNull(body.code || body.voucherCode)?.toUpperCase() || '';
+  const items: any[] = Array.isArray(body.items) ? body.items : [];
+  if (!code) return fail(res, 'Vui lòng nhập mã voucher', 400);
+  if (!items.length) return fail(res, 'Giỏ hàng trống', 400);
+
+  const requestedByProduct = new Map<string, number>();
+  for (const item of items) {
+    const productId = String(item.id || item.productId || '');
+    if (!productId) continue;
+    requestedByProduct.set(productId, (requestedByProduct.get(productId) || 0) + Math.max(1, intOr(item.quantity, 1)));
+  }
+
+  const ids = [...requestedByProduct.keys()];
+  const products = await prisma.product.findMany({ where: { id: { in: ids }, isActive: true, deletedAt: null } });
+  const productMap = new Map<string, any>(products.map((product: any) => [product.id, product]));
+  const subtotal = ids.reduce((sum, productId) => {
+    const product = productMap.get(productId);
+    const quantity = requestedByProduct.get(productId) || 0;
+    return product ? sum + (product.promotionalPrice || product.price) * quantity : sum;
+  }, 0);
+
+  const voucherResult = await findApplicableVoucher(prisma, code, subtotal, ids);
+  if (voucherResult.error) return fail(res, voucherResult.error, 400);
+
+  return ok(res, {
+    code: voucherResult.voucher.code,
+    title: voucherResult.voucher.title,
+    type: voucherResult.voucher.type,
+    value: voucherResult.voucher.value,
+    discount: voucherResult.discount,
+    subtotal,
+  }, 'Đã áp dụng voucher');
 };
 
 const listUserOrders = async (req: IncomingMessage, res: ServerResponse) => {
@@ -463,6 +636,57 @@ const expireCheckoutOrder = async (req: IncomingMessage, res: ServerResponse) =>
   });
 
   return ok(res, { order: serializeOrder(expired), restoredItems }, 'Order cancelled and cart restored');
+};
+
+const confirmBankTransferWebhook = async (req: IncomingMessage, res: ServerResponse) => {
+  if (req.method !== 'POST') return fail(res, 'Method not allowed', 405);
+  if (!verifyPaymentWebhook(req)) return fail(res, 'Invalid payment webhook secret', 401);
+
+  const body = await readJsonBody<Record<string, unknown>>(req);
+  const transfer = extractBankTransfer(body || {});
+
+  if (!transfer.orderNumber && !transfer.content) return fail(res, 'Missing transfer content or order number', 400);
+  if (!Number.isFinite(transfer.amount) || transfer.amount <= 0) return fail(res, 'Invalid transfer amount', 400);
+
+  const result = await prisma.$transaction(async (tx) => {
+    const candidates = await tx.order.findMany({
+      where: {
+        status: 'PENDING',
+        paymentStatus: { in: ['UNPAID', 'PENDING'] },
+        ...(transfer.orderNumber ? { orderNumber: transfer.orderNumber } : { orderNumber: { not: '' } }),
+      },
+      include: { items: true },
+      orderBy: { createdAt: 'desc' },
+      take: transfer.orderNumber ? 1 : 50,
+    });
+
+    const normalizedContent = transfer.content.toUpperCase();
+    const matchedOrder = candidates.find((order: any) =>
+      transfer.orderNumber ? order.orderNumber === transfer.orderNumber : normalizedContent.includes(order.orderNumber.toUpperCase())
+    );
+
+    if (!matchedOrder) return { status: 'NOT_MATCHED' as const };
+    if (normalizeMoney(transfer.amount) < normalizeMoney(matchedOrder.totalAmount)) {
+      return { status: 'AMOUNT_TOO_LOW' as const };
+    }
+
+    const order = await tx.order.update({
+      where: { id: matchedOrder.id },
+      data: { status: 'PROCESSING', paymentStatus: 'PAID' },
+      include: { items: true },
+    });
+
+    return { status: 'CONFIRMED' as const, order };
+  });
+
+  if (result.status === 'NOT_MATCHED') return ok(res, { matched: false }, 'No pending order matched this transfer');
+  if (result.status === 'AMOUNT_TOO_LOW') return fail(res, 'Transfer amount is lower than order total', 409);
+
+  return ok(
+    res,
+    { matched: true, order: serializeOrder(result.order), transactionId: transfer.transactionId },
+    'Bank transfer payment confirmed'
+  );
 };
 
 const orderStage = (order: any) => {
@@ -672,7 +896,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const path = parsePath(req);
     if (!path) return listUserOrders(req, res);
     if (path === 'checkout') return createCheckoutOrder(req, res);
+    if (path === 'voucher/validate') return validateCheckoutVoucher(req, res);
     if (path === 'expire' || path === 'cancel') return expireCheckoutOrder(req, res);
+    if (path === 'bank-transfer/webhook') return confirmBankTransferWebhook(req, res);
     if (path === 'track') return trackOrder(req, res);
     if (path === 'live-location' || path === 'checkpoint-location') return appendCheckpointLocation(req, res);
     if (path) return getUserOrder(req, res, decodeURIComponent(path));

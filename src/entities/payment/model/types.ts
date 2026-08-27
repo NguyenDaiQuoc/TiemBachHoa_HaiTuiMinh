@@ -1,4 +1,3 @@
-
 export enum PaymentMethod {
   ZALOPAY = 'ZALOPAY',
   VNPAY = 'VNPAY',

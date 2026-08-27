@@ -59,6 +59,21 @@ router.post("/items", authenticate, async (req: any, res, next) => {
       cart = await prisma.cart.create({ data: { userId: req.user.id } });
     }
 
+    const existingCartItem = await prisma.cartItem.findUnique({
+      where: {
+        cartId_productId: {
+          cartId: cart.id,
+          productId,
+        },
+      },
+      select: { quantity: true },
+    });
+    const nextQuantity = (existingCartItem?.quantity || 0) + quantity;
+
+    if (product.stock < nextQuantity) {
+      return sendError(res, "Số lượng tồn kho không đủ", 400);
+    }
+
     const cartItem = await prisma.cartItem.upsert({
       where: {
         cartId_productId: {
@@ -67,7 +82,7 @@ router.post("/items", authenticate, async (req: any, res, next) => {
         }
       },
       update: {
-        quantity: { increment: quantity }
+        quantity: nextQuantity
       },
       create: {
         cartId: cart.id,

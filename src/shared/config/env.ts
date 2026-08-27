@@ -21,6 +21,7 @@ const serverEnvSchema = z.object({
   ZALOPAY_KEY: z.string().optional(),
   VNPAY_KEY: z.string().optional(),
   MOMO_KEY: z.string().optional(),
+  PAYMENT_WEBHOOK_SECRET: z.string().optional(),
   
   // Logistics
   GHN_TOKEN: z.string().optional(),

@@ -5,16 +5,27 @@ import { sendError, sendSuccess } from './utils/api-response.js';
 
 const router = express.Router();
 
-const CATEGORY_RATING_MAP: Record<string, number> = {
-  'my-pham': 4.8,
-  'gia-dung': 4.5,
-  'cong-nghe': 4.6,
+const productInclude = {
+  category: true,
+  reviews: {
+    select: { rating: true },
+  },
+} satisfies Prisma.ProductInclude;
+
+type ProductWithRelations = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
+
+const getReviewStats = (reviews: ProductWithRelations['reviews']) => {
+  if (!reviews.length) return { rating: 0, reviewCount: 0 };
+  const average = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+  return {
+    rating: Number(average.toFixed(1)),
+    reviewCount: reviews.length,
+  };
 };
 
-const serializeProduct = (product: Prisma.ProductGetPayload<{ include: { category: true } }>) => {
-  const categorySlug = product.category?.slug ?? '';
-  const rating = CATEGORY_RATING_MAP[categorySlug] ?? 4.5;
-  const reviewCount = Math.max(12, Math.round(product.soldCount * 0.18) || 24);
+const serializeProduct = (product: ProductWithRelations) => {
+  const { reviews, ...productData } = product;
+  const { rating, reviewCount } = getReviewStats(reviews);
   const variants =
     Array.isArray(product.variantsJson) && product.variantsJson.length
       ? [
@@ -26,7 +37,7 @@ const serializeProduct = (product: Prisma.ProductGetPayload<{ include: { categor
       : [];
 
   return {
-    ...product,
+    ...productData,
     image: product.images?.[0] || '',
     rating,
     reviewCount,
@@ -97,21 +108,25 @@ router.get('/', async (req, res, next) => {
             ? [{ soldCount: 'desc' }, { createdAt: 'desc' }]
             : { createdAt: 'desc' };
 
+    const requiredRating = minRating ? Number(minRating) : null;
+    const queryLimit = requiredRating ? undefined : parsedLimit;
+    const querySkip = requiredRating ? undefined : skip;
+
     const products = await prisma.product.findMany({
       where,
-      include: { category: true },
+      include: productInclude,
       orderBy,
-      skip,
-      take: parsedLimit,
+      skip: querySkip,
+      take: queryLimit,
     });
-    const total = await prisma.product.count({ where });
 
-    const requiredRating = minRating ? Number(minRating) : null;
     const enrichedProducts = products.map(serializeProduct).filter((product) => (requiredRating ? product.rating >= requiredRating : true));
+    const total = requiredRating ? enrichedProducts.length : await prisma.product.count({ where });
+    const paginatedProducts = requiredRating ? enrichedProducts.slice(skip, skip + parsedLimit) : enrichedProducts;
 
     return res.status(200).json({
       success: true,
-      data: enrichedProducts,
+      data: paginatedProducts,
       meta: {
         total,
         page: parsedPage,
@@ -251,7 +266,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const product = await prisma.product.findUnique({
       where: { id: req.params.id },
-      include: { category: true },
+      include: productInclude,
     });
 
     if (!product || !product.isActive || product.deletedAt) {

@@ -19,9 +19,26 @@ async function startServer() {
   // Trust proxy for rate limiting (behind Nginx/Cloud Run)
   app.set('trust proxy', 1);
 
-  app.use(helmet({
-    contentSecurityPolicy: false, // Disable CSP for now as it might break Vite dev server preview
-  }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          "default-src": ["'self'"],
+          "script-src": ["'self'", ...(isProduction ? [] : ["'unsafe-eval'", "'unsafe-inline'"])],
+          "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          "img-src": ["'self'", "data:", "blob:", "https:"],
+          "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
+          "connect-src": ["'self'", "ws:", "wss:", "http://localhost:*", "http://127.0.0.1:*"],
+          "media-src": ["'self'", "data:", "blob:", "https:"],
+          "object-src": ["'none'"],
+          "base-uri": ["'self'"],
+          "form-action": ["'self'"],
+          "upgrade-insecure-requests": isProduction ? [] : null,
+        },
+      },
+    })
+  );
   app.use(cors());
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
