@@ -11,3 +11,11 @@ coverage/
 public/generated/
 
 .vercel
+
+# Playwright artifacts (local)
+playwright-report/
+test-results/
+.audit-screens/
+
+# Local reference files
+9router-accounts-login-template.txt

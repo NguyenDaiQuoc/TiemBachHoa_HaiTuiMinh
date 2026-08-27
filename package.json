@@ -18,7 +18,11 @@
     "lint": "tsc --noEmit",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test": "pnpm test:unit"
+    "test": "pnpm test:unit",
+    "report:xlsx": "node scripts/generate-test-report-xlsx.mjs",
+    "report:csv": "node scripts/generate-test-report-csv.mjs",
+    "runtime:check": "node scripts/runtime-api-checks.mjs",
+    "runtime:clean": "node scripts/cleanup-runtime-data.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
