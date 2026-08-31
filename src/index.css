@@ -149,10 +149,27 @@
   --color-glass-medium: var(--glass-medium);
   --color-glass-strong: var(--glass-strong);
   --color-glass-border: var(--glass-border);
-  
+
   --color-surface-sunken: hsl(var(--surface-sunken));
   --color-surface-default: hsl(var(--surface-default));
   --color-surface-elevated: hsl(var(--surface-elevated));
+
+  --animate-marquee: marquee 32s linear infinite;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@layer utilities {
+  .animate-marquee {
+    animation: var(--animate-marquee);
+  }
+  .pause-on-hover:hover .animate-marquee,
+  .pause-on-hover:hover .animate-marquee * {
+    animation-play-state: paused;
+  }
 }
 
 @layer base {

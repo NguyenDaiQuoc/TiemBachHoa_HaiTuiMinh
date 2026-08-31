@@ -6,6 +6,8 @@ import type { AdminCategoryFormPayload, AdminCategoryPayload } from '@/src/entit
 import { Button } from '@/src/shared/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
 import { Input } from '@/src/shared/ui/input';
+import { EmptyState } from '@/src/shared/ui/empty-state';
+import { LoadingState } from '@/src/shared/ui/loading-state';
 
 const DEFAULT_FORM: AdminCategoryFormPayload = {
   name: '',
@@ -115,11 +117,9 @@ export const AdminCategories = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
+        <LoadingState size="md" label="Đang tải danh mục" />
       ) : filtered.length === 0 ? (
-        <div className="rounded-[28px] border border-dashed border-border bg-surface-default p-12 text-center text-sm text-muted-foreground">Chưa có danh mục phù hợp.</div>
+        <EmptyState icon={FolderTree} title="Chưa có danh mục phù hợp" description="Tạo danh mục mới để phân loại sản phẩm trong cửa hàng." />
       ) : (
         <div className="grid gap-4">
           {filtered.map((item) => (

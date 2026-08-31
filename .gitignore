@@ -19,3 +19,6 @@ test-results/
 
 # Local reference files
 9router-accounts-login-template.txt
+
+# Brand / mockup reference (local design assets, not shipped)
+nhandien_claude_design/

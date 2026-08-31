@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Calendar, Copy, Gift, Loader2, Percent, Plus, Save, Search, ShieldCheck, TicketPercent } from 'lucide-react';
+import { Calendar, Copy, Loader2, Percent, Plus, Save, Search, ShieldCheck, TicketPercent } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
 import { adminService } from '@/src/entities/admin/api/admin-service';
@@ -8,7 +8,9 @@ import type { AdminOutletContext } from '@/src/app/layouts/admin-layout';
 import type { VoucherFormPayload, VoucherPayload } from '@/src/entities/admin/model/types';
 import { Button } from '@/src/shared/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
+import { EmptyState } from '@/src/shared/ui/empty-state';
 import { Input } from '@/src/shared/ui/input';
+import { LoadingState } from '@/src/shared/ui/loading-state';
 
 const DEFAULT_FORM: VoucherFormPayload = {
   code: '',
@@ -226,14 +228,15 @@ export const AdminVouchers = () => {
 
       <div className="grid gap-5">
         {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
+          <LoadingState size="md" label="Đang tải voucher" />
         ) : filteredVouchers.length === 0 ? (
-          <div className="rounded-[32px] border border-dashed border-border/50 bg-surface-default p-12 text-center">
-            <Gift className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-4 text-sm font-bold text-muted-foreground">Chưa có voucher nào phù hợp với bộ lọc hiện tại.</p>
-          </div>
+          <EmptyState
+            icon={TicketPercent}
+            title="Chưa có voucher phù hợp"
+            description="Tạo mã giảm giá mới hoặc điều chỉnh bộ lọc để xem các chiến dịch hiện có."
+            size="md"
+            tone="default"
+          />
         ) : (
           filteredVouchers.map((voucher, index) => (
             <motion.div

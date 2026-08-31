@@ -35,7 +35,9 @@ import { downloadExcelTable } from '@/src/shared/lib/excel';
 import { exportReceiptPdf } from '@/src/shared/lib/receipt-pdf';
 import { Button } from '@/src/shared/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
+import { EmptyState } from '@/src/shared/ui/empty-state';
 import { Input } from '@/src/shared/ui/input';
+import { LoadingState } from '@/src/shared/ui/loading-state';
 import { cn, formatCurrencyVND } from '@/src/shared/lib/utils';
 import type { AdminOutletContext } from '@/src/app/layouts/admin-layout';
 import { ProductForm } from './components/product-form';
@@ -948,11 +950,14 @@ export const AdminProducts = () => {
             </div>
 
             {receiptsLoading ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              </div>
+              <LoadingState size="md" label="Đang tải phiếu nhập" />
             ) : receipts.length === 0 ? (
-              <div className="rounded-[32px] border border-dashed border-border bg-surface-default p-12 text-center text-sm text-muted-foreground">{t.noReceipts}</div>
+              <EmptyState
+                icon={ClipboardList}
+                title={t.noReceipts}
+                description="Tạo phiếu nhập kho đầu tiên để cập nhật tồn kho và liên kết với nhà cung cấp."
+                size="md"
+              />
             ) : (
               <div className="grid gap-4">
                 {receipts.map((receipt) => {
@@ -1061,7 +1066,12 @@ export const AdminProducts = () => {
 
             <div className="grid gap-4">
               {warehouseProducts.length === 0 ? (
-                <div className="rounded-[28px] border border-dashed border-border bg-surface-default p-10 text-center text-sm text-muted-foreground">{t.noProducts}</div>
+                <EmptyState
+                  icon={Warehouse}
+                  title={t.noProducts}
+                  description="Tồn kho đang trống. Nhập thêm hàng hoặc tạo phiếu nhập để cập nhật số lượng."
+                  size="md"
+                />
               ) : (
                 warehouseProducts.map((product) => {
                   const low = isLowStock(product);
@@ -1137,11 +1147,14 @@ export const AdminProducts = () => {
 
             <div className="grid gap-4">
               {isLoading ? (
-                <div className="flex justify-center py-20">
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                </div>
+                <LoadingState size="md" label="Đang tải sản phẩm" />
               ) : catalogProducts.length === 0 ? (
-                <div className="rounded-[28px] border border-dashed border-border bg-surface-default p-10 text-center text-sm text-muted-foreground">{t.noProducts}</div>
+                <EmptyState
+                  icon={Box}
+                  title={t.noProducts}
+                  description="Tạo sản phẩm mới để hiển thị trong cửa hàng và quản lý tồn kho."
+                  size="md"
+                />
               ) : (
                 catalogProducts.map((product) => (
                   <div key={product.id} className="rounded-[32px] border border-border/50 bg-surface-default p-5 shadow-sm transition-all hover:border-primary/30">

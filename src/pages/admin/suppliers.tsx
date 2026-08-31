@@ -5,7 +5,9 @@ import { adminService } from '@/src/entities/admin/api/admin-service';
 import type { SupplierFormPayload, SupplierPayload } from '@/src/entities/admin/model/types';
 import { Button } from '@/src/shared/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
+import { EmptyState } from '@/src/shared/ui/empty-state';
 import { Input } from '@/src/shared/ui/input';
+import { LoadingState } from '@/src/shared/ui/loading-state';
 
 const DEFAULT_FORM: SupplierFormPayload = {
   name: '',
@@ -119,11 +121,9 @@ export const AdminSuppliers = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
+        <LoadingState size="md" label="Đang tải nhà cung cấp" />
       ) : filtered.length === 0 ? (
-        <div className="rounded-[28px] border border-dashed border-border bg-surface-default p-12 text-center text-sm text-muted-foreground">Chưa có nhà cung cấp phù hợp.</div>
+        <EmptyState icon={Building2} title="Chưa có nhà cung cấp phù hợp" description="Thêm đối tác nhập hàng để liên kết với phiếu nhập kho và tra cứu nhanh." />
       ) : (
         <div className="grid gap-4">
           {filtered.map((item) => (

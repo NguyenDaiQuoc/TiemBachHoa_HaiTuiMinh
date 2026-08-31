@@ -9,7 +9,9 @@ import { useAdminUiStore } from '@/src/shared/store/admin-ui-store';
 import { cn } from '@/src/shared/lib/utils';
 import { useSupportUnreadStore } from '@/src/shared/model/support-unread-store';
 import { Button } from '@/src/shared/ui/button';
+import { EmptyState } from '@/src/shared/ui/empty-state';
 import { Input } from '@/src/shared/ui/input';
+import { LoadingState } from '@/src/shared/ui/loading-state';
 
 const copy = {
   vi: {
@@ -224,12 +226,17 @@ export const AdminSupport = () => {
         <section className="rounded-[30px] border border-border/60 bg-card/95 p-4 shadow-soft">
           {isLoadingList ? (
             <div className="flex min-h-[320px] items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <LoadingState size="md" label="Đang tải hội thoại" />
             </div>
           ) : conversations.length === 0 ? (
             <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-[24px] border border-dashed border-border/60 bg-background px-6 text-center">
-              <MessageCircleMore className="h-9 w-9 text-primary" />
-              <p className="max-w-xs text-sm leading-6 text-muted-foreground">{t.empty}</p>
+              <EmptyState
+                icon={MessageCircleMore}
+                title={t.empty}
+                description="Khi khách hàng gửi tin nhắn, các cuộc trò chuyện sẽ xuất hiện ở đây để bạn phản hồi."
+                tone="soft"
+                size="sm"
+              />
             </div>
           ) : (
             <div className="space-y-3">
@@ -304,7 +311,7 @@ export const AdminSupport = () => {
             </div>
           ) : isLoadingConversation || !activeConversation ? (
             <div className="flex flex-1 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <LoadingState size="md" label="Đang tải nội dung" />
             </div>
           ) : (
             <>

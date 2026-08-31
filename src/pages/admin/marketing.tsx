@@ -6,7 +6,9 @@ import type { MarketingCampaignFormPayload, MarketingCampaignPayload } from '@/s
 import { useProducts } from '@/src/entities/product/api/product-api';
 import { Button } from '@/src/shared/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
+import { EmptyState } from '@/src/shared/ui/empty-state';
 import { Input } from '@/src/shared/ui/input';
+import { LoadingState } from '@/src/shared/ui/loading-state';
 
 const DEFAULT_FORM: MarketingCampaignFormPayload = {
   name: '',
@@ -375,11 +377,9 @@ export const AdminMarketing = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
+        <LoadingState size="md" label="Đang tải chiến dịch" />
       ) : filtered.length === 0 ? (
-        <div className="rounded-[28px] border border-dashed border-border bg-surface-default p-12 text-center text-sm text-muted-foreground">Chưa có chiến dịch marketing phù hợp.</div>
+        <EmptyState icon={Megaphone} title="Chưa có chiến dịch phù hợp" description="Tạo flash sale, deal hoặc khuyến mãi đầu tiên để tiếp cận khách hàng nhanh hơn." />
       ) : (
         <div className="grid gap-4">
           {filtered.map((item) => {

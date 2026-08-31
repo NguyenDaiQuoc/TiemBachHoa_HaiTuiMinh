@@ -8,7 +8,6 @@ import {
   DollarSign,
   Download,
   Gift,
-  Loader2,
   MoreVertical,
   Package,
   Settings2,
@@ -23,6 +22,7 @@ import type { AdminOutletContext } from '@/src/app/layouts/admin-layout';
 import { cn } from '@/src/shared/lib/utils';
 import { useAdminUiStore } from '@/src/shared/store/admin-ui-store';
 import { Button } from '@/src/shared/ui/button';
+import { LoadingState } from '@/src/shared/ui/loading-state';
 
 const copy = {
   vi: {
@@ -125,7 +125,7 @@ export const AdminDashboard = () => {
   if (isLoading || !stats) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <LoadingState size="md" label="Đang tải dashboard" />
       </div>
     );
   }

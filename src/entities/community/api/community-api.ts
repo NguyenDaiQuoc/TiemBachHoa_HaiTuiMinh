@@ -158,14 +158,6 @@ export interface SupportConversation {
   messages: SupportMessage[];
 }
 
-export interface SocialProofPayload {
-  viewersNow: number;
-  soldLastHour: number;
-  reviewCount: number;
-  latestPurchaseCity?: string | null;
-  trustSignals: string[];
-}
-
 const authHeaders = () => {
   const token = useAuthStore.getState().token;
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -200,7 +192,6 @@ export const communityKeys = {
   feed: () => [...communityKeys.all, 'feed'] as const,
   reviews: (productId: string, filters: { sort: string; withMedia: boolean }) =>
     [...communityKeys.all, 'reviews', productId, filters] as const,
-  socialProof: (productId: string) => [...communityKeys.all, 'social-proof', productId] as const,
   checkIn: () => [...communityKeys.all, 'check-in'] as const,
   referral: () => [...communityKeys.all, 'referral'] as const,
   missions: () => [...communityKeys.all, 'missions'] as const,
@@ -266,7 +257,6 @@ export const useCreateProductReview = (productId: string) => {
       ).data,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...communityKeys.all, 'reviews', productId] });
-      queryClient.invalidateQueries({ queryKey: communityKeys.socialProof(productId) });
     },
   });
 };
@@ -286,14 +276,6 @@ export const useToggleReviewHelpful = (productId: string) => {
     },
   });
 };
-
-export const useProductSocialProof = (productId: string) =>
-  useQuery({
-    queryKey: communityKeys.socialProof(productId),
-    enabled: !!productId,
-    queryFn: async () => (await request<SocialProofPayload>(`/products/${productId}/social-proof`)).data,
-    refetchInterval: 30000,
-  });
 
 export const trackProductView = async (productId: string) => {
   const sessionId = window.localStorage.getItem('community-session-id') || crypto.randomUUID();

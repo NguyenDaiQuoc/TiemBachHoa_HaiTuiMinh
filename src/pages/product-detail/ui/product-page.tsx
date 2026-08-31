@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Minus,
   Plus,
-  Eye,
   Flame,
   Heart,
   ImagePlus,
@@ -18,10 +17,8 @@ import {
   Package,
   Share2,
   ShieldCheck,
-  Sparkles,
   Star,
   ThumbsUp,
-  Timer,
   Truck,
   Video,
 } from 'lucide-react';
@@ -40,11 +37,12 @@ import {
   trackProductView,
   useCreateProductReview,
   useProductReviews,
-  useProductSocialProof,
   useToggleReviewHelpful,
 } from '@/src/entities/community/api/community-api';
 import { useAuthStore } from '@/src/shared/model/auth-store';
 import { Button } from '@/src/shared/ui/button';
+import { EmptyState } from '@/src/shared/ui/empty-state';
+import { LoadingState } from '@/src/shared/ui/loading-state';
 import { Seo, SITE_URL, storeStructuredData } from '@/src/shared/lib/seo';
 import { cn } from '@/src/shared/lib/utils';
 import { toast } from 'sonner';
@@ -308,7 +306,6 @@ export const ProductDetailPage = () => {
   const isAuthenticated = useAuthStore((state) => !!state.token);
   const canonicalProductKey = product?.id || id || '';
 
-  const socialProofQuery = useProductSocialProof(canonicalProductKey);
   const reviewsQuery = useProductReviews(canonicalProductKey, { sort: reviewSort, withMedia: reviewOnlyMedia });
   const createReviewMutation = useCreateProductReview(canonicalProductKey);
   const helpfulMutation = useToggleReviewHelpful(canonicalProductKey);
@@ -549,7 +546,7 @@ export const ProductDetailPage = () => {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <LoadingState size="lg" label="Đang tải sản phẩm" />
       </div>
     );
   }
@@ -624,10 +621,6 @@ export const ProductDetailPage = () => {
                   <Star className="h-3 w-3 fill-current" />
                   {reviewsSummary?.average || product.rating || 0} ({reviewsSummary?.total || product.reviewCount || 0} đánh giá)
                 </div>
-                <div className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  <Eye className="h-3 w-3" />
-                  {socialProofQuery.data?.viewersNow || 0} người đang xem
-                </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   Đã bán {Number(product.soldCount ?? 0) >= 1000 ? `${(Number(product.soldCount ?? 0) / 1000).toFixed(1)}k` : Number(product.soldCount ?? 0)}
                 </span>
@@ -658,43 +651,16 @@ export const ProductDetailPage = () => {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[24px] border border-border/60 bg-card p-5 shadow-soft">
-                <div className="flex items-start gap-3">
-                  <Timer className="mt-1 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Tốc độ đơn hàng</p>
-                    <p className="mt-2 text-sm font-bold">
-                      {socialProofQuery.data?.soldLastHour || 0} sản phẩm bán trong giờ qua
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-[24px] border border-border/60 bg-card p-5 shadow-soft">
-                <div className="flex items-start gap-3">
-                  <Truck className="mt-1 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Tín hiệu gần đây</p>
-                    <p className="mt-2 text-sm font-bold">
-                      {socialProofQuery.data?.latestPurchaseCity
-                        ? `Vừa có đơn từ ${socialProofQuery.data.latestPurchaseCity}`
-                        : 'Đang cập nhật tín hiệu mua hàng gần đây'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div className="rounded-[28px] border border-border/60 bg-card p-6 shadow-soft">
               <p className="text-sm leading-relaxed text-muted-foreground">{product.description}</p>
-              {socialProofQuery.data?.trustSignals?.length ? (
+              {product.features?.length ? (
                 <div className="mt-5 flex flex-wrap gap-2">
-                  {socialProofQuery.data.trustSignals.map((signal) => (
+                  {product.features.map((feature) => (
                     <span
-                      key={signal}
+                      key={feature}
                       className="rounded-full border border-border/60 bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground"
                     >
-                      {signal}
+                      {feature}
                     </span>
                   ))}
                 </div>
@@ -777,59 +743,6 @@ export const ProductDetailPage = () => {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[24px] border border-border/60 bg-card p-5 shadow-soft">
-                <div className="flex items-start gap-3">
-                  <Truck className="mt-1 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Giao hàng dự kiến</p>
-                    <p className="mt-2 text-sm font-bold">Giao trong 2-3 ngày làm việc</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Miễn phí cho đơn từ 500.000đ</p>
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-[24px] border border-border/60 bg-card p-5 shadow-soft">
-                <div className="flex items-start gap-3">
-                  <ShieldCheck className="mt-1 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Đổi trả & bảo đảm</p>
-                    <p className="mt-2 text-sm font-bold">7 ngày đổi trả nếu lỗi từ nhà sản xuất</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Hỗ trợ tận tâm từ cửa hàng</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {false && (
-            <div className="rounded-[32px] border border-primary/15 bg-primary/5 p-6">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <h3 className="text-sm font-black uppercase tracking-widest text-primary">Mua cùng để nhận ưu đãi</h3>
-              </div>
-              <div className="mt-5 flex items-center gap-4">
-                <div className="overflow-hidden rounded-2xl border border-border/60 bg-background">
-                  <img src={product.image} alt={product.name} className="h-20 w-20 object-cover" />
-                </div>
-                <span className="text-xl font-black text-muted-foreground">+</span>
-                <div className="overflow-hidden rounded-2xl border border-border/60 bg-background">
-                  <img
-                    src={product.images[1] || product.image}
-                    alt={`${product.name} gợi ý mua cùng`}
-                    className="h-20 w-20 object-cover"
-                  />
-                </div>
-                <div className="ml-auto text-right">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Combo gợi ý</p>
-                  <p className="mt-1 text-2xl font-black text-primary">{formatCurrency(activePrice + 120000)}</p>
-                  <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">Tiết kiệm 25.000đ</p>
-                </div>
-              </div>
-              <Button className="mt-5 h-12 w-full rounded-2xl text-xs font-black uppercase tracking-widest">
-                Mua cả combo
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-            )}
           </div>
         </div>
 
@@ -1092,6 +1005,9 @@ export const ProductDetailPage = () => {
                       disabled={createReviewMutation.isPending}
                       className="rounded-2xl text-xs font-black uppercase tracking-widest"
                     >
+                      {createReviewMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : null}
                       {createReviewMutation.isPending ? 'Đang gửi...' : 'Gửi đánh giá'}
                     </Button>
                   </div>
@@ -1101,7 +1017,7 @@ export const ProductDetailPage = () => {
               <div className="space-y-5">
                 {reviewsQuery.isLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <LoadingState size="md" label="Đang tải đánh giá" />
                   </div>
                 ) : communityReviews.length > 0 ? (
                   communityReviews.map((review) => (
@@ -1113,10 +1029,13 @@ export const ProductDetailPage = () => {
                     />
                   ))
                 ) : (
-                  <div className="rounded-[32px] border border-dashed border-border/60 bg-card px-6 py-14 text-center">
-                    <p className="text-lg font-black">Chưa có đánh giá phù hợp với bộ lọc hiện tại.</p>
-                    <p className="mt-2 text-sm text-muted-foreground">Hãy thử đổi bộ lọc hoặc trở thành người đánh giá đầu tiên.</p>
-                  </div>
+                  <EmptyState
+                    icon={MessageCircle}
+                    title="Chưa có đánh giá phù hợp với bộ lọc hiện tại."
+                    description="Hãy thử đổi bộ lọc hoặc trở thành người đánh giá đầu tiên."
+                    size="md"
+                    tone="soft"
+                  />
                 )}
               </div>
             </motion.div>
@@ -1277,27 +1196,6 @@ export const ProductDetailPage = () => {
             onAnimationComplete={() => setCartFlyAnimation(null)}
             className="pointer-events-none fixed left-0 top-0 z-[120] rounded-2xl border-2 border-background object-cover shadow-2xl"
           />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {!!socialProofQuery.data?.latestPurchaseCity && (
-          <motion.div
-            initial={reduceMotion ? undefined : { x: -80, opacity: 0 }}
-            animate={reduceMotion ? undefined : { x: 0, opacity: 1 }}
-            exit={reduceMotion ? undefined : { x: -80, opacity: 0 }}
-            className="fixed bottom-24 left-4 z-50 md:left-6"
-          >
-            <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/90 p-3 shadow-xl backdrop-blur-xl">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Package className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Mua gần đây</p>
-                <p className="text-xs font-bold">Vừa có đơn từ {socialProofQuery.data.latestPurchaseCity}</p>
-              </div>
-            </div>
-          </motion.div>
         )}
       </AnimatePresence>
     </div>

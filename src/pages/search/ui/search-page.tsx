@@ -7,6 +7,7 @@ import { Product } from '@/src/entities/product/model/types';
 import { ProductCard } from '@/src/entities/product/ui/product-card';
 import { cn } from '@/src/shared/lib/utils';
 import { Button } from '@/src/shared/ui/button';
+import { EmptyState } from '@/src/shared/ui/empty-state';
 
 const RATING_OPTIONS = [
   { label: 'Từ 5 sao', value: 5 },
@@ -524,18 +525,19 @@ export const SearchPage = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex flex-col items-center justify-center rounded-[40px] border border-dashed border-border/50 bg-card py-24 text-center"
                 >
-                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                    <Filter className="h-8 w-8 text-muted-foreground/50" />
-                  </div>
-                  <h3 className="mb-2 text-xl font-black uppercase tracking-tight text-foreground">Không tìm thấy sản phẩm</h3>
-                  <p className="mb-6 max-w-md text-sm font-medium text-muted-foreground">
-                    Thử điều chỉnh bộ lọc hoặc xóa bớt điều kiện để xem thêm sản phẩm.
-                  </p>
-                  <Button onClick={clearAllFilters} className="h-12 rounded-2xl px-8 text-xs font-black uppercase tracking-widest">
-                    Xóa bộ lọc
-                  </Button>
+                  <EmptyState
+                    icon={Filter}
+                    title="Không tìm thấy sản phẩm"
+                    description="Thử điều chỉnh bộ lọc hoặc xóa bớt điều kiện để xem thêm sản phẩm."
+                    size="lg"
+                    tone="soft"
+                    action={
+                      <Button onClick={clearAllFilters} className="h-12 rounded-2xl px-8 text-xs font-black uppercase tracking-widest">
+                        Xóa bộ lọc
+                      </Button>
+                    }
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

@@ -6,6 +6,7 @@ import { AdminSettingsPayload } from '@/src/entities/admin/model/types';
 import type { AdminOutletContext } from '@/src/app/layouts/admin-layout';
 import { Button } from '@/src/shared/ui/button';
 import { Input } from '@/src/shared/ui/input';
+import { LoadingState } from '@/src/shared/ui/loading-state';
 import { toast } from 'sonner';
 
 const DEFAULT_SETTINGS: AdminSettingsPayload = {
@@ -61,7 +62,7 @@ export const AdminSettings = () => {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <LoadingState size="md" label="Đang tải cấu hình" />
       </div>
     );
   }

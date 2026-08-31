@@ -138,10 +138,8 @@ const formatNum = (value: number) => value.toString().padStart(2, '0');
 const formatPrice = (value: number) => `${value.toLocaleString('vi-VN')} đ`;
 
 export const HomePage = () => {
-  const [activeCampaigns, setActiveCampaigns] = useState<ActiveCampaignResponse[]>([]);
   const [activeDeals, setActiveDeals] = useState<ActiveCampaignResponse[]>([]);
   const [activeDealIndex, setActiveDealIndex] = useState(0);
-  const [isCampaignOverlayOpen, setIsCampaignOverlayOpen] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(null));
 
@@ -167,10 +165,8 @@ export const HomePage = () => {
             : [];
         const runningCampaigns = campaigns.filter((item: ActiveCampaignResponse) => isCampaignCurrentlyRunning(item.campaign));
         const dealCampaigns = runningCampaigns.filter((item: ActiveCampaignResponse) => ['DEAL', 'FLASH_SALE'].includes(item.campaign.type));
-        setActiveCampaigns(runningCampaigns);
         setActiveDeals(dealCampaigns);
         setActiveDealIndex(0);
-        setIsCampaignOverlayOpen(true);
         setTimeLeft(getTimeLeft(dealCampaigns[0]?.campaign?.endsAt));
       })
       .catch(() => {
@@ -183,8 +179,6 @@ export const HomePage = () => {
   }, []);
 
   const activeDeal = activeDeals[activeDealIndex] || null;
-  const activeOverlayCampaign =
-    activeCampaigns.find((item) => item.campaign.type === 'PROMOTION' && Boolean(item.campaign.bannerImage)) || null;
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -201,12 +195,6 @@ export const HomePage = () => {
     return () => window.clearInterval(timer);
   }, [activeDeals.length]);
 
-  useEffect(() => {
-    if (!activeOverlayCampaign || !isCampaignOverlayOpen) return undefined;
-    const timer = window.setTimeout(() => setIsCampaignOverlayOpen(false), 9000);
-    return () => window.clearTimeout(timer);
-  }, [activeOverlayCampaign?.campaign.id, isCampaignOverlayOpen]);
-
   const displayProducts = products.length ? products : SAMPLE_PRODUCTS;
   const dealProducts = activeDeal?.products?.length ? activeDeal.products : displayProducts.slice(0, 5);
   const dealLink = activeDeal?.campaign?.slug ? `/${activeDeal.campaign.slug}` : '/flash-sale';
@@ -215,83 +203,30 @@ export const HomePage = () => {
   return (
     <div className="warm-page">
       <div className="mx-auto max-w-[1500px] space-y-10 px-3 py-4 sm:px-5 md:py-6 lg:space-y-12">
-        <AnimatePresence>
-          {activeOverlayCampaign && isCampaignOverlayOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[90] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-black/72 px-3 py-3 backdrop-blur-sm"
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 24, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 16, scale: 0.98 }}
-                className="relative w-full max-w-4xl overflow-hidden rounded-2xl border border-white/20 bg-card shadow-2xl"
-              >
-                <button
-                  type="button"
-                  onClick={() => setIsCampaignOverlayOpen(false)}
-                  className="absolute right-3 top-3 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white text-2xl font-black leading-none text-primary shadow-lg transition-colors hover:bg-primary hover:text-white"
-                  aria-label="Đóng banner khuyến mãi"
-                >
-                  ×
-                </button>
-                <Link to={`/${activeOverlayCampaign.campaign.slug}`} onClick={() => setIsCampaignOverlayOpen(false)} className="block">
-                  <img
-                    src={activeOverlayCampaign.campaign.bannerImage || ''}
-                    alt={activeOverlayCampaign.campaign.name}
-                    className="max-h-[calc(100dvh-1.5rem)] w-full object-cover"
-                  />
-                </Link>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <section className="grid gap-4 lg:grid-cols-[1.15fr_.85fr]">
-          <div className="relative min-h-[360px] overflow-hidden rounded-3xl bg-primary text-white shadow-soft sm:min-h-[430px]">
-            <img
-              src="https://images.unsplash.com/photo-1607083206968-13611e3d76db?q=80&w=1600&auto=format&fit=crop"
-              alt="Sản phẩm nổi bật tại Hai Tụi Mình"
-              className="absolute inset-0 h-full w-full object-cover opacity-55"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/85 to-primary/20" />
-            <div className="relative flex h-full max-w-2xl flex-col justify-center gap-5 p-6 sm:p-9 lg:p-12">
-              <span className="w-fit rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-primary">
-                Deal ngon mỗi ngày
-              </span>
-              <h1 className="text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl lg:text-6xl">
-                Sắm hàng chất, giá dễ chịu.
-              </h1>
-              <p className="max-w-lg text-base font-semibold leading-7 text-white/88 sm:text-lg">
-                Hàng có sẵn, giá rõ, bảo hành minh bạch. Mua nhanh các món công nghệ, mỹ phẩm và gia dụng đang hot.
-              </p>
-              <div className="flex flex-wrap gap-3 pt-1">
-                <Link to="/products" className="rounded-full bg-accent px-6 py-3 text-sm font-black uppercase tracking-[0.08em] text-white shadow-lg transition-transform hover:scale-[1.02]">
-                  Mua sắm ngay
-                </Link>
-                <Link to="/flash-sale" className="rounded-full bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.08em] text-primary transition-transform hover:scale-[1.02]">
-                  Xem deal
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-            {[
-              { title: 'Hàng mới cập nhật', text: 'Lọc nhanh các sản phẩm vừa lên kệ', to: '/products?sort=newest' },
-              { title: 'Freeship 500K', text: 'Tự áp dụng theo chương trình thành viên', to: '/membership' },
-            ].map((item) => (
-              <Link key={item.title} to={item.to} className="group flex min-h-[150px] flex-col justify-between rounded-3xl border border-border bg-card p-5 shadow-soft transition-all hover:border-primary/35 hover:-translate-y-1">
-                <span className="text-xs font-black uppercase tracking-[0.12em] text-accent">{item.title}</span>
-                <span className="text-sm font-semibold leading-6 text-muted-foreground">{item.text}</span>
-                <span className="inline-flex items-center gap-2 text-sm font-black text-primary">
-                  Xem ngay <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </span>
+        <section className="relative overflow-hidden rounded-3xl bg-primary text-white shadow-soft">
+          <img
+            src="https://images.unsplash.com/photo-1607083206968-13611e3d76db?q=80&w=1600&auto=format&fit=crop"
+            alt="Sản phẩm nổi bật tại Hai Tụi Mình"
+            className="absolute inset-0 h-full w-full object-cover opacity-55"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/85 to-primary/20" />
+          <div className="relative flex min-h-[360px] max-w-3xl flex-col justify-center gap-5 p-6 sm:min-h-[430px] sm:p-9 lg:p-12">
+            <span className="w-fit rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-primary">
+              Deal ngon mỗi ngày
+            </span>
+            <h1 className="text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl lg:text-6xl">
+              Sắm hàng chất, giá dễ chịu.
+            </h1>
+            <p className="max-w-lg text-base font-semibold leading-7 text-white/88 sm:text-lg">
+              Hàng có sẵn, giá rõ, bảo hành minh bạch. Mua nhanh các món công nghệ, mỹ phẩm và gia dụng đang hot.
+            </p>
+            <div className="pt-1">
+              <Link to="/products" className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 text-sm font-black uppercase tracking-[0.08em] text-white shadow-lg transition-transform hover:scale-[1.02]">
+                Mua sắm ngay
+                <ArrowRight className="h-4 w-4" />
               </Link>
-            ))}
+            </div>
           </div>
         </section>
 

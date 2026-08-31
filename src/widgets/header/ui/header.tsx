@@ -12,6 +12,7 @@ import { CartDrawer } from '@/src/widgets/cart-drawer';
 import { NotificationDropdown } from '@/src/shared/ui/notification-dropdown';
 import { AccountDropdown } from './account-dropdown';
 import { MegaMenu } from './mega-menu';
+import { AnnouncementBar } from './announcement-bar';
 
 export const Header = () => {
   const theme = useThemeStore((state) => state.theme);
@@ -95,15 +96,7 @@ export const Header = () => {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-[70] w-full border-b border-primary/20 bg-card text-foreground shadow-[0_12px_34px_-28px_rgba(0,0,0,.8)]">
-      <div className="bg-primary text-primary-foreground">
-        <div className="mx-auto flex h-8 max-w-[1500px] items-center justify-between px-3 text-[11px] font-bold sm:px-5">
-          <span className="truncate">Freeship từ 500.000đ, xử lý đơn nhanh trong ngày</span>
-          <Link to="/tracking" className="hidden whitespace-nowrap hover:underline sm:inline">
-            Tra cứu đơn hàng
-          </Link>
-        </div>
-      </div>
-
+      <AnnouncementBar />
       <div className="mx-auto flex h-16 max-w-[1500px] items-center gap-3 px-3 sm:px-5 lg:h-[4.8rem]">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>

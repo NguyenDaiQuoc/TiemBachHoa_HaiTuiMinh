@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/src/shared/ui/card';
 import { Button } from '@/src/shared/ui/button';
-import { Heart, ShoppingBag, Loader2, Star, ArrowUpRight } from 'lucide-react';
+import { EmptyState } from '@/src/shared/ui/empty-state';
+import { LoadingState } from '@/src/shared/ui/loading-state';
+import { Heart, ShoppingBag, Star, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useWishlistStore } from '@/src/shared/store/wishlist-store';
 import { productService } from '@/src/entities/product/api/product-service';
@@ -38,7 +40,7 @@ export const WishlistTab: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingState size="md" label="Đang tải danh sách yêu thích" />
       </div>
     );
   }
@@ -123,18 +125,22 @@ export const WishlistTab: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="col-span-full w-full rounded-[48px] border border-dashed border-border/50 bg-white/30 py-24 text-center dark:bg-slate-900/30"
+              className="col-span-full w-full"
             >
-              <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/20">
-                <Heart className="h-10 w-10 text-muted-foreground/30" />
-              </div>
-              <h3 className="mb-2 text-xl font-black uppercase italic tracking-tight">DANH SÁCH TRỐNG</h3>
-              <p className="mx-auto mb-8 max-w-[280px] text-xs font-medium text-muted-foreground">Bạn chưa lưu sản phẩm nào. Hãy khám phá bộ sưu tập của chúng tôi để tìm món đồ yêu thích.</p>
-              <Link to="/products">
-                <Button className="h-14 rounded-2xl px-10 text-[11px] font-black uppercase italic tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
-                  Khám phá ngay
-                </Button>
-              </Link>
+              <EmptyState
+                icon={Heart}
+                title="DANH SÁCH TRỐNG"
+                description="Bạn chưa lưu sản phẩm nào. Hãy khám phá bộ sưu tập của chúng tôi để tìm món đồ yêu thích."
+                size="lg"
+                tone="soft"
+                action={
+                  <Link to="/products">
+                    <Button className="h-14 rounded-2xl px-10 text-[11px] font-black uppercase italic tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+                      Khám phá ngay
+                    </Button>
+                  </Link>
+                }
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -142,4 +148,3 @@ export const WishlistTab: React.FC = () => {
     </div>
   );
 };
-

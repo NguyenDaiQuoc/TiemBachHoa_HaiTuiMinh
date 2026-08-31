@@ -3,17 +3,17 @@ import { Card } from '@/src/shared/ui/card';
 import { Button } from '@/src/shared/ui/button';
 import { Badge } from '@/src/shared/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
-import { 
-  Package, 
-  Truck, 
-  ChevronRight, 
-  Loader2, 
-  Search, 
-  Filter,
+import { EmptyState } from '@/src/shared/ui/empty-state';
+import { LoadingState } from '@/src/shared/ui/loading-state';
+import {
+  Package,
+  Truck,
+  ChevronRight,
+  Loader2,
+  Search,
   CheckCircle2,
   Clock,
   XCircle,
-  AlertCircle,
   ShoppingCart
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -83,7 +83,7 @@ export const OrdersTab: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <LoadingState size="md" label="Đang tải đơn hàng" />
       </div>
     );
   }
@@ -201,14 +201,19 @@ export const OrdersTab: React.FC = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-24 bg-white/30 dark:bg-slate-900/30 rounded-[48px] border border-dashed border-border/50 overflow-hidden"
             >
-              <Package className="w-16 h-16 text-muted-foreground/20 mx-auto mb-6" />
-              <h3 className="text-xl font-black uppercase italic tracking-tight mb-2">KHÔNG TÌM THẤY ĐƠN HÀNG</h3>
-              <p className="text-xs text-muted-foreground font-medium mb-8">Bạn chưa có đơn hàng nào phù hợp với bộ lọc này.</p>
-              <Link to="/products">
-                <Button className="h-14 px-10 rounded-2xl font-black uppercase tracking-widest italic text-[11px] shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">MUA SẮM NGAY</Button>
-              </Link>
+              <EmptyState
+                icon={Package}
+                title="KHÔNG TÌM THẤY ĐƠN HÀNG"
+                description="Bạn chưa có đơn hàng nào phù hợp với bộ lọc này."
+                size="lg"
+                tone="soft"
+                action={
+                  <Link to="/products">
+                    <Button className="h-14 px-10 rounded-2xl font-black uppercase tracking-widest italic text-[11px] shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">MUA SẮM NGAY</Button>
+                  </Link>
+                }
+              />
             </motion.div>
           )}
         </AnimatePresence>
